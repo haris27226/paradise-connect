@@ -4,6 +4,7 @@ import 'package:progress_group/core/utils/widget/custom_header.dart';
 
 import '../../../../core/constants/assets.dart';
 import '../../../../core/constants/colors.dart';
+import '../../../../core/utils/widget/custom_dropdown_group.dart';
 import '../../../../core/utils/widget/custom_search_field.dart';
 import '../../data/arguments/saleskit_detail_args.dart';
 
@@ -94,42 +95,37 @@ class _SalesKitPageState extends State<SalesKitPage> {
       children: [
         customHeader(context, widget.args.title ?? "SalesKit", isBack: true),
         SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        CustomDropdownGroupContact(
+          hint: "Residential",
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-               children: [
-                 Text("Residential",style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold,color: Color(blue2Color))),
-                 Text("See All",style: TextStyle(fontSize: 14,fontWeight: FontWeight.w400,color: Color(primaryColor))),
-               ],
-             ),
-             SizedBox(height: 15),
-             _buildResidential(name: "Vista", image: logoExVista, onTap: () {
+              SizedBox(height: 15),
+             _buildResidential( image: logoExVista, onTap: () {
                context.pushNamed("salesKit", extra: SalesKitDetailArgs(page: 2, title: "Vista" ));
              },),
              SizedBox(height: 15),
-             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-               children: [
-                 Text("Commercial",style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold,color: Color(blue2Color))),
-                 Text("See All",style: TextStyle(fontSize: 14,fontWeight: FontWeight.w400,color: Color(primaryColor))),
-               ],
-             ),
-             SizedBox(height: 15),
-             _buildResidential(name: "Soho", image: logoExSoho, onTap: () {
-               context.pushNamed("salesKit", extra: SalesKitDetailArgs(page: 2, title: "Soho" ));
+             _buildResidential( image: logoExAdventures, onTap: () {
+               context.pushNamed("salesKit", extra: SalesKitDetailArgs(page: 2, title: "Adventures" ));
              },),
             ],
           ),
         ),
+        CustomDropdownGroupContact(
+          hint: "Commercial",
+          child: Column(
+            children: [
+              SizedBox(height: 15),
+             _buildResidential( image: logoExSoho, onTap: () {
+               context.pushNamed("salesKit", extra: SalesKitDetailArgs(page: 2, title: "Soho" ));
+             },),
+            ],
+          ),
+        ),     
       ],
     );
   }
 
-Widget _buildResidential({required String name, required String image, required VoidCallback onTap}){
+Widget _buildResidential({required String image, required VoidCallback onTap}){
   return Column(
     children: [
       GestureDetector(
@@ -147,8 +143,6 @@ Widget _buildResidential({required String name, required String image, required 
         ),
       ),
       SizedBox(height: 15),
-      Text(name, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300, color: Color(blue2Color))),
-
     ],
   );
 }

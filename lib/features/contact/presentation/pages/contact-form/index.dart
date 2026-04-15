@@ -116,7 +116,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
             child: Column(
               children: [
                 CustomDropdownGroupContact(
-                  hint: "Contact Info",
+                  hint: "Contact Information",
                   child: Column(
                     children: [
                       _buildFieldDown(label: "Owner", value:null, onTap: () {context.pushNamed('detailContactDropdown', extra: ContactDropdownArgs(title: 'Owner'));}),

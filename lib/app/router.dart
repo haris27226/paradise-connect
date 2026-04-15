@@ -22,7 +22,7 @@ import '../features/inbox/presentation/pages/inbox-detail/index.dart';
 import '../features/inbox/presentation/pages/inbox-page/index.dart';
 import '../features/notif/presentation/pages/notif-page/index.dart';
 import '../features/saleskit/data/arguments/saleskit_detail_args.dart';
-import '../features/saleskit/presentation/inventory-page/index.dart';
+import '../features/saleskit/presentation/saleskit-page/index.dart';
 import '../features/site-plan/domain/entities/project_site.dart';
 import '../features/site-plan/presentation/project-list/index.dart';
 import '../features/site-plan/presentation/site-plan-page/index.dart';

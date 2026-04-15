@@ -8,6 +8,7 @@ import 'package:progress_group/features/contact/data/models/selectbox_model.dart
 import 'package:progress_group/features/inbox/data/arguments/inbox_detail_args.dart';
 import 'package:progress_group/features/inbox/data/models/dropdown_model.dart';
 
+import '../../../../../core/constants/assets.dart';
 import '../../../../../core/utils/widget/custom_button.dart';
 
 class InboxPage extends StatefulWidget {
@@ -18,8 +19,15 @@ class InboxPage extends StatefulWidget {
 }
 
 class _InboxPageState extends State<InboxPage> {
-  final TextEditingController _searchController = TextEditingController();
-  final FocusNode _searchFocus = FocusNode();
+  bool isFilter = false;
+  bool isFilterPhone = false;
+
+  final TextEditingController searchTC = TextEditingController();
+  final TextEditingController filterUserTC = TextEditingController();
+  final TextEditingController filterStatusTC = TextEditingController();
+  final FocusNode searchFN = FocusNode();
+  final FocusNode filterUserFN = FocusNode();
+  final FocusNode filterStatusFN = FocusNode();
 
   final List<SelectBoxModel> selectBoxes = [
     SelectBoxModel(items: ['Owner', 'B', 'C'], hint: "Owner"),
@@ -29,121 +37,23 @@ class _InboxPageState extends State<InboxPage> {
     SelectBoxModel(items: ['Open', 'Close'], hint: "State")];
 
   final List<DropdownItemModel> itemsGroup = [
-    DropdownItemModel(
-      id: 1,
-      title: "John Doe",
-      subtitle: "Hallo",
-      image: "https://i.pravatar.cc/150?img=1",
-      count: "12",
-      time: "12:00",
-    ),
-    DropdownItemModel(
-      id: 2,
-      title: "Jane Smith",
-      subtitle: "Hai",
-      image: "https://i.pravatar.cc/150?img=1",
-      count: "1",
-      time: "12:00",
-    ),
+    DropdownItemModel(id: 1,title: "John Doe",subtitle: "Hallo",image: "https://i.pravatar.cc/150?img=1",count: "12",time: "12:00",),
+    DropdownItemModel(id: 2,title: "Jane Smith",subtitle: "Hai",image: "https://i.pravatar.cc/150?img=1",count: "1",time: "12:00",),
   ];
 
   final List<DropdownItemModel> itemsPersonal = [
-    DropdownItemModel(
-      id: 1,
-      title: "John Doe",
-      subtitle: "Hallo",
-      image: "https://i.pravatar.cc/150?img=1",
-      count: "12",
-      time: "12:00",
-    ),
-    DropdownItemModel(
-      id: 2,
-      title: "Jane Smith",
-      subtitle: "Hai",
-      image: "https://i.pravatar.cc/150?img=1",
-      count: "1",
-      time: "12:00",
-    ),
-    DropdownItemModel(
-      id: 3,
-      title: "John Doe",
-      subtitle: "Hallo",
-      image: "https://i.pravatar.cc/150?img=1",
-      count: "12",
-      time: "12:00",
-    ),
-    DropdownItemModel(
-      id: 4,
-      title: "Jane Smith",
-      subtitle: "Hai",
-      image: "https://i.pravatar.cc/150?img=1",
-      count: "1",
-      time: "12:00",
-    ),
-    DropdownItemModel(
-      id: 5,
-      title: "John Doe",
-      subtitle: "Hallo",
-      image: "https://i.pravatar.cc/150?img=1",
-      count: "12",
-      time: "12:00",
-    ),
-    DropdownItemModel(
-      id: 6,
-      title: "Jane Smith",
-      subtitle: "Hai",
-      image: "https://i.pravatar.cc/150?img=1",
-      count: "1",
-      time: "12:00",
-    ),
-    DropdownItemModel(
-      id: 7,
-      title: "John Doe",
-      subtitle: "Hallo",
-      image: "https://i.pravatar.cc/150?img=1",
-      count: "12",
-      time: "12:00",
-    ),
-    DropdownItemModel(
-      id: 8,
-      title: "Jane Smith",
-      subtitle: "Hai",
-      image: "https://i.pravatar.cc/150?img=1",
-      count: "1",
-      time: "12:00",
-    ),
-    DropdownItemModel(
-      id: 1,
-      title: "John Doe",
-      subtitle: "Hallo",
-      image: "https://i.pravatar.cc/150?img=1",
-      count: "12",
-      time: "12:00",
-    ),
-    DropdownItemModel(
-      id: 2,
-      title: "Jane Smith",
-      subtitle: "Hai",
-      image: "https://i.pravatar.cc/150?img=1",
-      count: "1",
-      time: "12:00",
-    ),
-    DropdownItemModel(
-      id: 3,
-      title: "John Doe",
-      subtitle: "Hallo",
-      image: "https://i.pravatar.cc/150?img=1",
-      count: "12",
-      time: "12:00",
-    ),
-    DropdownItemModel(
-      id: 4,
-      title: "Jane Smith",
-      subtitle: "Hai",
-      image: "https://i.pravatar.cc/150?img=1",
-      count: "1",
-      time: "12:00",
-    ),
+    DropdownItemModel(id: 1,title: "John Doe",subtitle: "Hallo",image: "https://i.pravatar.cc/150?img=1",count: "12",time: "12:00",),
+    DropdownItemModel(id: 2,title: "Jane Smith",subtitle: "Hai",image: "https://i.pravatar.cc/150?img=1",count: "1",time: "12:00",),
+    DropdownItemModel(id: 3,title: "John Doe",subtitle: "Hallo",image: "https://i.pravatar.cc/150?img=1",count: "12",time: "12:00",),
+    DropdownItemModel(id: 4,title: "Jane Smith",subtitle: "Hai",image: "https://i.pravatar.cc/150?img=1",count: "1",time: "12:00",),
+    DropdownItemModel(id: 5,title: "John Doe",subtitle: "Hallo",image: "https://i.pravatar.cc/150?img=1",count: "12",time: "12:00",),
+    DropdownItemModel(id: 6,title: "Jane Smith",subtitle: "Hai",image: "https://i.pravatar.cc/150?img=1",count: "1",time: "12:00",),
+    DropdownItemModel(id: 7,title: "John Doe",subtitle: "Hallo",image: "https://i.pravatar.cc/150?img=1",count: "12",time: "12:00",),
+    DropdownItemModel(id: 8,title: "Jane Smith",subtitle: "Hai",image: "https://i.pravatar.cc/150?img=1",count: "1",time: "12:00",),
+    DropdownItemModel(id: 1,title: "John Doe",subtitle: "Hallo",image: "https://i.pravatar.cc/150?img=1",count: "12",time: "12:00",),
+    DropdownItemModel(id: 2,title: "Jane Smith",subtitle: "Hai",image: "https://i.pravatar.cc/150?img=1",count: "1",time: "12:00",),
+    DropdownItemModel(id: 3,title: "John Doe",subtitle: "Hallo",image: "https://i.pravatar.cc/150?img=1",count: "12",time: "12:00",),
+    DropdownItemModel(id: 4,title: "Jane Smith",subtitle: "Hai",image: "https://i.pravatar.cc/150?img=1",count: "1",time: "12:00",),
   ];
     
   @override
@@ -161,24 +71,85 @@ class _InboxPageState extends State<InboxPage> {
                 children: [
                   Row(
                     children: [
-                      Expanded(child: customSearchField(controller: _searchController,focusNode: _searchFocus)),
-                      SizedBox(width: 10),
+                      Expanded(child: customSearchField(controller: searchTC,focusNode: searchFN)),
+                      SizedBox(width: 5),
                       GestureDetector(
                         onTap: () {
-                          _showInboxQRDialog();
+                          setState(() {
+                            isFilter = !isFilter;
+                          });
                         },
                         child: Container(
                           width: 40,
                           height: 40,
+                          padding: EdgeInsets.all(5),
                           decoration: BoxDecoration(
                             color: Color(whiteColor),
                             border: Border.all(color: Color(primaryColor), width: 1),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(Icons.qr_code, color: Color(primaryColor)),
+                          child: Image.asset(icFilter,width: 5,height: 5,)
                         ),
-                      )
+                      ),
+                      SizedBox(width: 5),
+                      GestureDetector(
+                        onTap: () {
+                         setState(() {
+                            isFilterPhone = !isFilterPhone;
+                          });
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          padding: EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: Color(whiteColor),
+                            border: Border.all(color: Color(orangeColor), width: 1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Image.asset(icContactDetailWA,width: 5,height: 5, color: Color(orangeColor),)
+                        ),
+                      ),
+                     SizedBox(width: 10,)
                     ],
+                  ),
+                  if(isFilterPhone)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Container(
+                      padding: EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Color(whiteColor),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          _buildListPhone(phone: "62856111777", name: "Aulia Mila", image: icContactDetailWA, colorImg: Color(greenPercentColor), onTap: () {_showInboxQRDialog();}),
+                          Divider(),
+                          _buildListPhone(phone: "62856111777", name: "Aulia Mila", image: icQR, colorImg: Color(primaryColor), onTap: () {_showInboxQRDialog();}),
+                          Divider(),
+                        
+                        ],
+                      ),
+                    ),
+                  ),
+                  if(isFilter)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Container(
+                      padding: EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Color(whiteColor),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          _buildTextField(controller: filterUserTC, focusNode: filterUserFN, hintText: "Filter Status"),
+                          SizedBox(height: 5),
+                          _buildTextField(controller: filterStatusTC, focusNode: filterStatusFN, hintText: "Filter Status"),
+                        ],
+                      ),
+                    ),
                   ),
                   SizedBox(
                     height: 50,
@@ -229,6 +200,79 @@ class _InboxPageState extends State<InboxPage> {
           
         ],
       ),
+    );
+  }
+
+  Widget _buildTextField({required TextEditingController controller, required FocusNode focusNode, required String hintText}){
+    return Container(
+     height: 40,
+     child: TextFormField(
+       controller: controller,
+       focusNode: focusNode,
+       onTap: () => focusNode.unfocus(),
+       decoration: InputDecoration(
+         contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+         hintText: hintText,
+         border: OutlineInputBorder(
+           borderRadius: BorderRadius.circular(8),
+           borderSide: BorderSide(color: Color(grey11Color), width: 1),
+         ),
+         enabledBorder: OutlineInputBorder(
+           borderRadius: BorderRadius.circular(8),
+           borderSide: BorderSide(color: Color(grey11Color), width: 1),
+         ),
+         focusedBorder: OutlineInputBorder(
+           borderRadius: BorderRadius.circular(8),
+           borderSide: BorderSide(color: Color(primaryColor), width: 1),
+         ),
+       ),
+     ),
+   );
+  }
+
+  Widget _buildListPhone({required String phone, required String name, required String image, required Color colorImg, required VoidCallback onTap}){
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 40,
+              alignment: Alignment.center,
+              child: Row(
+                children: [
+                  Image.asset(icContactDetailPhone,width: 15,height: 15,color: Color(primaryColor),),
+                  SizedBox(width: 5),
+                  Text(phone,style: TextStyle(color: Color(blackColor),fontSize: 16, fontWeight: FontWeight.bold),),
+                ],
+              ),
+            ),
+            Row(
+              children: [
+                Image.asset(icPerson,width: 15,height: 15,color: Color(primaryColor),),
+                SizedBox(width: 5),
+                Text(name,style: TextStyle(color: Color(grey7Color),fontSize: 14),),
+              ],
+            ),
+          ],
+        ),
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: 40,
+            height: 40,
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Color(whiteColor),
+              border: Border.all(color: colorImg, width: 1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Image.asset(image,width: 15,height: 15,color: colorImg,),
+          ),
+        )
+      ],
     );
   }
 

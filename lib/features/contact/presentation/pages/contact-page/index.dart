@@ -59,7 +59,7 @@ class _ContactPageState extends State<ContactPage> {
                     ),
                   ),
                   SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.6,
+                    height: MediaQuery.of(context).size.height * 0.65,
                     child: ListView.separated(
                       itemCount: peopleList.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 10),

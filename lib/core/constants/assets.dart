@@ -4,7 +4,7 @@ const String logoParadiseSerpong2 = 'assets/img/logo-paradise-serpong2.png';
 
 const String logoExVista = 'assets/img/logo-ex-vista.png';
 const String logoExSoho = 'assets/img/logo-ex-soho.png';
-
+const String logoExAdventures = 'assets/img/logo-ex-adventures.png';
 
 
 const String icHomeDashboard = "assets/img/ic-home-dashboard.png";
@@ -35,5 +35,8 @@ const String icAttacment = 'assets/img/ic-attachment.png';
 const String icProductKnowlage = 'assets/img/ic-product-knowlage.png';
 const String icPriceList = 'assets/img/ic-price-list.png';
 const String icEBrouchure = 'assets/img/ic-ebrochre.png';
+const String icFilter = 'assets/img/ic-filter.png';
+const String icPerson = 'assets/img/ic-person.png';
+const String icQR = 'assets/img/ic-qr.png';
 
 const String bannerSaleskitProyek = 'assets/img/banner-saleskit-proyek.png';

@@ -37,8 +37,8 @@ class _MainLayoutState extends State<MainLayout> {
     final String newUri = GoRouterState.of(context).uri.toString();
     if (_currentUri != newUri) {
       _currentUri = newUri;
-      _lastPressedAt = null; // Reset double tap timer on page change
-      ScaffoldMessenger.of(context).hideCurrentSnackBar(); // Remove message on navigation
+      _lastPressedAt = null; 
+      ScaffoldMessenger.of(context).hideCurrentSnackBar(); 
     }
   }
 
@@ -48,9 +48,7 @@ class _MainLayoutState extends State<MainLayout> {
     final location = GoRouterState.of(context).uri.path;
     final isAttendance = location.startsWith('/attandance');
 
-    final statusBarStyle = isAttendance
-        ? const SystemUiOverlayStyle(statusBarColor: Color(primaryColor),statusBarIconBrightness: Brightness.light,statusBarBrightness: Brightness.dark)
-        : const SystemUiOverlayStyle(statusBarColor: Colors.white,statusBarIconBrightness: Brightness.dark,statusBarBrightness: Brightness.light,);
+    final statusBarStyle = isAttendance  ? const SystemUiOverlayStyle(statusBarColor: Color(primaryColor),statusBarIconBrightness: Brightness.light,statusBarBrightness: Brightness.dark)  : const SystemUiOverlayStyle(statusBarColor: Colors.white,statusBarIconBrightness: Brightness.dark,statusBarBrightness: Brightness.light,);
     
     return AnnotatedRegion<SystemUiOverlayStyle>(
     value: statusBarStyle,
@@ -130,7 +128,7 @@ class _MainLayoutState extends State<MainLayout> {
             ),
           ],
         ),
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical:10, horizontal: 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [

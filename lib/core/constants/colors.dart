@@ -45,5 +45,6 @@ const int redColor =0xFFF65160;
 
 const int purpleColor = 0xFF6D5DD3;
 
+const int orangeColor = 0xFFD1A250;
 
 //dark

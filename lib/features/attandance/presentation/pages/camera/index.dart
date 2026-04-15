@@ -200,7 +200,7 @@ class _CameraPageState extends State<CameraPage> {
           Stack(
             children: [
               Container(
-                height: 350,
+                height: 330,
                 width: double.infinity,
                 child: Image.file(File(_imageFile!.path), fit: BoxFit.cover),
               ),
@@ -280,7 +280,6 @@ class _CameraPageState extends State<CameraPage> {
                 SizedBox(height: 20),
                 Text("Notes",style: TextStyle(fontSize: 14, color: Color(grey2Color))),
                 SizedBox(height: 5),
-
                 Container(
                   height: 80,
                   child: TextFormField(
