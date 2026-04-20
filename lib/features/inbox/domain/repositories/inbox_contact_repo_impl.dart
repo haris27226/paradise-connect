@@ -11,21 +11,10 @@ class InboxContactRepositoryImpl implements InboxContactRepository {
   InboxContactRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<(List<InboxContact> contacts, List<InboxContact> groups)> getContacts({
-    String? search,
-    int? cPage,
-    int? gPage,
-  }) async {
-    final result = await remoteDataSource.getInboxContacts(
-      search: search,
-      cPage: cPage,
-      gPage: gPage,
-    );
+  Future<(List<InboxContact> contacts, List<InboxContact> groups)> getContacts({String? search,int? cPage,int? gPage}) async {
+    final result = await remoteDataSource.getInboxContacts(search: search,cPage: cPage,gPage: gPage);
 
-    final response = BaseResponse<Map<String, dynamic>>.fromJson(
-      result,
-      (data) => data,
-    );
+    final response = BaseResponse<Map<String, dynamic>>.fromJson(result,(data) => data,);
 
     if (!response.status) {
       throw Exception(response.message);
@@ -33,12 +22,8 @@ class InboxContactRepositoryImpl implements InboxContactRepository {
 
     final data = response.data!;
 
-    final contactsList = (data["contact_list"] as List? ?? [])
-        .map((e) => InboxContactModel.fromJson(e))
-        .toList();
-    final groupsList = (data["group_list"] as List? ?? [])
-        .map((e) => InboxContactModel.fromJson(e))
-        .toList();
+    final contactsList = (data["contact_list"] as List? ?? []).map((e) => InboxContactModel.fromJson(e)).toList();
+    final groupsList = (data["group_list"] as List? ?? []).map((e) => InboxContactModel.fromJson(e)).toList();
 
     return (contactsList, groupsList);
   }

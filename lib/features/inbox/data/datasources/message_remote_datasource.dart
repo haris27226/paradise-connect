@@ -1,26 +1,20 @@
+
 import 'dart:convert';
 import 'package:dio/dio.dart';
 
-abstract class InboxContactRemoteDataSource {
-  Future<Map<String, dynamic>> getInboxContacts({String? search,int? cPage,int? gPage});
+abstract class MessageRemoteDataSource {
+  Future<Map<String, dynamic>> getMessages(String sessionId, String jid);
 }
 
-class InboxContactRemoteDataSourceImpl implements InboxContactRemoteDataSource {
+class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
   final Dio dio;
 
-  InboxContactRemoteDataSourceImpl(this.dio);
+  MessageRemoteDataSourceImpl(this.dio);
 
   @override
-  Future<Map<String, dynamic>> getInboxContacts({String? search, int? cPage, int? gPage}) async {
+  Future<Map<String, dynamic>> getMessages(String sessionId, String jid) async {
     try {
-      final response = await dio.get(
-        '/whatsapp/contacts',
-        queryParameters: {
-          'search': search ?? '',
-          'c_page': cPage ?? 1,
-          'g_page': gPage ?? 1,
-        },
-      );
+      final response = await dio.get('/whatsapp/messages/$sessionId/$jid');
 
       if (response.data is String) {
         return jsonDecode(response.data) as Map<String, dynamic>;

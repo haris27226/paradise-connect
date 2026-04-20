@@ -1,4 +1,4 @@
-import '../../domain/entities/inbox_contact_entity.dart';
+import '../../../domain/entities/inbox_contact_entity.dart';
 
 abstract class InboxContactState {}
 

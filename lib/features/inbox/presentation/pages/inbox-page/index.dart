@@ -9,9 +9,9 @@ import 'package:progress_group/core/utils/widget/custom_selectbox.dart';
 import 'package:progress_group/features/contact/data/models/selectbox_model.dart';
 import 'package:progress_group/features/inbox/data/arguments/inbox_detail_args.dart';
 import 'package:progress_group/features/inbox/domain/entities/inbox_contact_entity.dart';
-import 'package:progress_group/features/inbox/presentation/state/inbox_block.dart';
-import 'package:progress_group/features/inbox/presentation/state/inbox_event.dart';
-import 'package:progress_group/features/inbox/presentation/state/inbox_statte.dart';
+import 'package:progress_group/features/inbox/presentation/state/inbox/inbox_block.dart';
+import 'package:progress_group/features/inbox/presentation/state/inbox/inbox_event.dart';
+import 'package:progress_group/features/inbox/presentation/state/inbox/inbox_statte.dart';
 
 
 import '../../../../../core/constants/assets.dart';

@@ -10,6 +10,7 @@ class InboxContactModel extends InboxContact {
     required super.initials,
     super.lastConversationDate,
     super.ownerName,
+    required super.sessionCode,
   });
 
   factory InboxContactModel.fromJson(Map<String, dynamic> json) {
@@ -22,6 +23,7 @@ class InboxContactModel extends InboxContact {
       initials: json["initials"] ?? "",
       lastConversationDate: json["last_conversation_date"],
       ownerName: json["owner_name"],
+      sessionCode: json["session_code"]
     );
   }
 

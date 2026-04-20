@@ -14,9 +14,13 @@ import 'package:progress_group/features/auth/domain/usecase/reset_password_useca
 import 'package:progress_group/features/auth/presentation/state/bloc/auth_bloc.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
 import 'package:progress_group/features/inbox/data/datasources/inbox_remote_datasource.dart';
-import 'package:progress_group/features/inbox/data/repositories/inbox_contact_repo_impl.dart';
+import 'package:progress_group/features/inbox/data/datasources/message_remote_datasource.dart';
+import 'package:progress_group/features/inbox/domain/repositories/inbox_contact_repo_impl.dart';
+import 'package:progress_group/features/inbox/domain/repositories/message_repository.dart';
+import 'package:progress_group/features/inbox/domain/usecases/get_messages_usecase.dart';
 import 'package:progress_group/features/inbox/domain/usecases/inbox_contact_usecase.dart';
-import 'package:progress_group/features/inbox/presentation/state/inbox_block.dart';
+import 'package:progress_group/features/inbox/presentation/state/inbox/inbox_block.dart';
+import 'package:progress_group/features/inbox/presentation/state/message/message_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/router.dart';
@@ -60,6 +64,10 @@ class MyApp extends StatelessWidget {
     final inboxRepository = InboxContactRepositoryImpl(inboxRemoteDataSource);
     final getInboxContactsUsecase = GetInboxContactsUsecase(inboxRepository);
 
+    final messageRemoteDataSource = MessageRemoteDataSourceImpl(dioClient.dio);
+    final messageRepository = MessageRepositoryImpl(messageRemoteDataSource);
+    final getMessagesUseCase = GetMessagesUseCase(messageRepository);
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -75,6 +83,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) => ProfileBloc(getProfileUseCase: getProfileUseCase),
+        ),
+        BlocProvider(
+          create: (_) => MessageBloc(getMessagesUseCase),
         ),
       ],
       child: MaterialApp.router(

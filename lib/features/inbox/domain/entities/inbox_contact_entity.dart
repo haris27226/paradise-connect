@@ -7,6 +7,7 @@ class InboxContact {
   final String initials;
   final String? lastConversationDate;
   final String? ownerName;
+  final String sessionCode;
 
   InboxContact({
     required this.id,
@@ -17,5 +18,6 @@ class InboxContact {
     required this.initials,
     this.lastConversationDate,
     this.ownerName,
+    required this.sessionCode,
   });
 }
