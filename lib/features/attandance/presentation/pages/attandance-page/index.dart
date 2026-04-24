@@ -222,6 +222,11 @@ class _AttandancePageState extends State<AttandancePage> {
     );
   }
 
+  Future<void> _onRefresh() async {
+    await Future.delayed(const Duration(seconds: 1));
+    // Refresh logic
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -255,9 +260,13 @@ class _AttandancePageState extends State<AttandancePage> {
                     Text("Log", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(blackColor)),),
                     SizedBox(height: 5),
                     Expanded(
-                      child: ListView.builder(
-                        itemCount: 20,
-                        itemBuilder: (_, __) => _buildCard(),
+                      child: RefreshIndicator(
+                        onRefresh: _onRefresh,
+                        child: ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: 20,
+                          itemBuilder: (_, __) => _buildCard(),
+                        ),
                       ),
                     ),
                   ],

@@ -15,15 +15,35 @@ class InboxContactBloc extends Bloc<InboxContactEvent, InboxContactState> {
     GetInboxContactsEvent event,
     Emitter<InboxContactState> emit,
   ) async {
-    emit(InboxContactLoading());
+    final currentState = state;
+    if (!event.isLoadMore) {
+      emit(InboxContactLoading());
+    }
 
     try {
+      if (event.isLoadMore && currentState is InboxContactLoaded) {
+        emit(InboxContactLoaded(
+          currentState.contacts,
+          currentState.groups,
+          isFetchingMore: true,
+        ));
+      }
+
       final (contacts, groups) = await getContacts(
         search: event.search,
         cPage: event.cPage,
         gPage: event.gPage,
       );
-      emit(InboxContactLoaded(contacts, groups));
+
+      if (event.isLoadMore && currentState is InboxContactLoaded) {
+        emit(InboxContactLoaded(
+          currentState.contacts + contacts,
+          currentState.groups + groups,
+          isFetchingMore: false,
+        ));
+      } else {
+        emit(InboxContactLoaded(contacts, groups));
+      }
     } catch (e) {
       emit(InboxContactError(e.toString()));
     }

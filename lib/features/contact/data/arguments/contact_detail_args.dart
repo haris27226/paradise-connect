@@ -1,7 +1,7 @@
-import 'package:progress_group/features/contact/data/models/person_model.dart';
+import 'package:progress_group/features/contact/domain/entities/contact.dart';
 
 class ContactDetailArgs {
-  final PersonModel? data;
+  final Contact? data;
   final int page;
 
   ContactDetailArgs({

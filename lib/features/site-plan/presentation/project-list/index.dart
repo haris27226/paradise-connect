@@ -17,26 +17,32 @@ class ProjectListPage extends StatelessWidget {
             customHeader(context, "Site Plan", isBack: true),
             SizedBox(height: 16),
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: sites.length,
-                itemBuilder: (context, index) {
-                  final site = sites[index];
-                  bool showHeader = index == 0 || sites[index - 1].groupName != site.groupName;
-              
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (showHeader) ...[
-                        Text(site.groupName.toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
-                      ],
-                      ListTile(
-                        title: Text(site.unitName),
-                        onTap: () => context.pop(site), // MENGIRIM DATA KEMBALI
-                      ),
-                    ],
-                  );
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  await Future.delayed(const Duration(seconds: 1));
                 },
+                child: ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  itemCount: sites.length,
+                  itemBuilder: (context, index) {
+                    final site = sites[index];
+                    bool showHeader = index == 0 || sites[index - 1].groupName != site.groupName;
+                
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (showHeader) ...[
+                          Text(site.groupName.toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
+                        ],
+                        ListTile(
+                          title: Text(site.unitName),
+                          onTap: () => context.pop(site), // MENGIRIM DATA KEMBALI
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
           ],

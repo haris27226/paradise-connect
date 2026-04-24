@@ -1,0 +1,13 @@
+import 'package:dartz/dartz.dart';
+import '../entities/prospect_status.dart';
+import '../repositories/contact_repository.dart';
+
+class GetProspectStatusesUseCase {
+  final ContactRepository repository;
+
+  GetProspectStatusesUseCase(this.repository);
+
+  Future<Either<String, List<ProspectStatus>>> call() async {
+    return await repository.getProspectStatuses();
+  }
+}

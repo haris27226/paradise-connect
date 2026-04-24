@@ -34,25 +34,59 @@ class _InboxPageState extends State<InboxPage> {
   final FocusNode searchFN = FocusNode();
   Timer? _debounce;
 
+  late ScrollController _personalScrollController;
+  late ScrollController _groupScrollController;
+  int _cPage = 1;
+  int _gPage = 1;
+  bool _isFetchingMore = false;
+
   @override
   void dispose() {
     _debounce?.cancel();
     searchTC.dispose();
     searchFN.dispose();
+    _personalScrollController.dispose();
+    _groupScrollController.dispose();
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
+    _personalScrollController = ScrollController()..addListener(_onScroll);
+    _groupScrollController = ScrollController()..addListener(_onScroll);
     _fetchInbox();
   }
 
-  void _fetchInbox({String? search}) {
+  void _onScroll() {
+    final pc = _personalScrollController;
+    final gc = _groupScrollController;
+    
+    bool isPersonalAtBottom = pc.hasClients && pc.position.pixels >= pc.position.maxScrollExtent - 200;
+    bool isGroupAtBottom = gc.hasClients && gc.position.pixels >= gc.position.maxScrollExtent - 200;
+
+    if ((isPersonalAtBottom || isGroupAtBottom) && !_isFetchingMore) {
+      _loadMore();
+    }
+  }
+
+  Future<void> _loadMore() async {
+    _isFetchingMore = true;
+    _cPage++;
+    _gPage++;
+    _fetchInbox(isLoadMore: true);
+  }
+
+  Future<void> _fetchInbox({String? search, bool isLoadMore = false}) async {
+    if (!isLoadMore) {
+      _cPage = 1;
+      _gPage = 1;
+    }
     context.read<InboxContactBloc>().add(GetInboxContactsEvent(
       search: search ?? searchTC.text,
-      cPage: 1,
-      gPage: 1,
+      cPage: _cPage,
+      gPage: _gPage,
+      isLoadMore: isLoadMore,
     ));
   }
 
@@ -312,13 +346,15 @@ class _InboxPageState extends State<InboxPage> {
           return const Center(child: CircularProgressIndicator());
         }
         if (state is InboxContactError) {
+          _isFetchingMore = false;
           return Center(child: Text(state.message));
         }
         if (state is InboxContactLoaded) {
+          _isFetchingMore = state.isFetchingMore;
           return TabBarView(
             children: [
-              _buildList(state.contacts, Icons.person),
-              _buildList(state.groups, Icons.group),
+              _buildList(state.contacts, Icons.person, _personalScrollController, state.isFetchingMore),
+              _buildList(state.groups, Icons.group, _groupScrollController, state.isFetchingMore),
             ],
           );
         }
@@ -328,19 +364,35 @@ class _InboxPageState extends State<InboxPage> {
     );
   }
 
-  Widget _buildList(List<InboxContact> items, IconData icon) {
+  Widget _buildList(List<InboxContact> items, IconData icon, ScrollController controller, bool isFetchingMore) {
     if (items.isEmpty) {
-      return Center(
-        child: Text(
-          "Tidak ada data",
-          style: TextStyle(color: Colors.grey, fontSize: 14),
+      return RefreshIndicator(
+        onRefresh: _fetchInbox,
+        child: ListView(
+          controller: controller,
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.5,
+              child: Center(
+                child: Text(
+                  "Tidak ada data",
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }
 
-    return ListView(
-      padding: EdgeInsets.all(16),
-      children: [
+    return RefreshIndicator(
+      onRefresh: _fetchInbox,
+      child: ListView(
+        controller: controller,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.all(16),
+        children: [
         Container(
           margin: const EdgeInsets.only(top: 5),
           decoration: BoxDecoration(
@@ -434,8 +486,13 @@ class _InboxPageState extends State<InboxPage> {
             },
           ),
         ),
+        if (isFetchingMore)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          ),
       ],
-    );
+    ));
   }
 
   Widget _avatarPlaceholder(IconData icon, String initials) {
@@ -455,10 +512,11 @@ class _InboxPageState extends State<InboxPage> {
   }
   
   void _showInboxQRDialog(String sessionId) {
+    bool hasPopped = false;
     showDialog(
       context: context,
       barrierColor: Colors.black54, 
-      builder: (context) {
+      builder: (dialogContext) {
         return Dialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
@@ -470,11 +528,16 @@ class _InboxPageState extends State<InboxPage> {
               padding: const EdgeInsets.all(16),
               child: BlocConsumer<WhatsappQrBloc, WhatsappQrState>(
                 listener: (context, state) {
-                  if (state is WhatsappQrStreaming && state.status == 'CONNECTED') {
+                  if (state is WhatsappQrStreaming && state.status == 'CONNECTED' && !hasPopped) {
+                    hasPopped = true;
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('WhatsApp Terhubung!'), backgroundColor: Colors.green),
                     );
-                    Navigator.pop(context); // Tutup dialog jika terhubung
+                    Navigator.pop(dialogContext); // Tutup dialog
+                    
+                    // Refresh data setelah terhubung
+                    this.context.read<WhatsappDeviceBloc>().add(GetWhatsappDevicesEvent());
+                    _fetchInbox();
                   }
                 },
                 builder: (context, state) {

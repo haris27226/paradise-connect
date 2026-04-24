@@ -8,8 +8,9 @@ class MessageLoading extends MessageState {}
 
 class MessageLoaded extends MessageState {
   final ChatHistory chatHistory;
+  final bool isFetchingMore;
 
-  MessageLoaded(this.chatHistory);
+  MessageLoaded(this.chatHistory, {this.isFetchingMore = false});
 }
 
 class MessageError extends MessageState {

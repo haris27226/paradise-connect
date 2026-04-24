@@ -10,8 +10,15 @@ class CustomSelectBox extends StatefulWidget {
   final List<String> items;
   final String hints;
   final double? width;
+  final ValueChanged<String?>? onChanged;
 
-  const CustomSelectBox({super.key,required this.items,required this.hints,this.width});
+  const CustomSelectBox({
+    super.key,
+    required this.items,
+    required this.hints,
+    this.width,
+    this.onChanged,
+  });
 
   @override
   State<CustomSelectBox> createState() => _CustomSelectBoxState();
@@ -45,6 +52,9 @@ class _CustomSelectBoxState extends State<CustomSelectBox> {
             setState(() {
               selectedValue = value;
             });
+            if (widget.onChanged != null) {
+              widget.onChanged!(value);
+            }
           },
         ),
       ),

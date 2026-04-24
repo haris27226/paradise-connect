@@ -9,7 +9,7 @@ class GetMessagesUseCase {
 
   GetMessagesUseCase(this.repository);
 
-  Future<ChatHistory> call(String sessionId, String jid) {
-    return repository.getMessages(sessionId, jid);
+  Future<ChatHistory> call(String sessionId, String jid, {int page = 1}) {
+    return repository.getMessages(sessionId, jid, page: page);
   }
 }

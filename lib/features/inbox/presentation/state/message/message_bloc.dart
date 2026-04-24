@@ -3,6 +3,8 @@ import 'package:progress_group/features/inbox/domain/usecases/get_messages_useca
 import 'package:progress_group/features/inbox/presentation/state/message/message_event.dart';
 import 'package:progress_group/features/inbox/presentation/state/message/message_state.dart';
 
+import '../../../domain/entities/chat_message_entity.dart';
+
 class MessageBloc extends Bloc<MessageEvent, MessageState> {
   final GetMessagesUseCase getMessagesUseCase;
 
@@ -14,11 +16,34 @@ class MessageBloc extends Bloc<MessageEvent, MessageState> {
     GetChatHistoryEvent event,
     Emitter<MessageState> emit,
   ) async {
-    emit(MessageLoading());
+    final currentState = state;
+    
+    if (!event.isLoadMore) {
+      emit(MessageLoading());
+    } else if (currentState is MessageLoaded) {
+      emit(MessageLoaded(currentState.chatHistory, isFetchingMore: true));
+    }
 
     try {
-      final chatHistory = await getMessagesUseCase(event.sessionId, event.jid);
-      emit(MessageLoaded(chatHistory));
+      final chatHistory = await getMessagesUseCase(
+        event.sessionId, 
+        event.jid, 
+        page: event.page
+      );
+
+      if (event.isLoadMore && currentState is MessageLoaded) {
+        // Gabungkan pesan yang sudah ada dengan pesan baru (yang lebih lama) di bagian akhir
+        final combinedMessages = [...currentState.chatHistory.messages, ...chatHistory.messages];
+        emit(MessageLoaded(
+          ChatHistory(
+            messages: combinedMessages,
+            contactInfo: currentState.chatHistory.contactInfo,
+          ),
+          isFetchingMore: false,
+        ));
+      } else {
+        emit(MessageLoaded(chatHistory));
+      }
     } catch (e) {
       emit(MessageError(e.toString()));
     }

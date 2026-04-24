@@ -8,6 +8,9 @@ import 'package:progress_group/features/home/data/datasource/chart_service.dart'
 import 'package:progress_group/features/home/presentation/state/report-whatsapp/report_bloc.dart';
 import 'package:progress_group/features/home/presentation/state/report-whatsapp/report_event.dart';
 import 'package:progress_group/features/home/presentation/state/report-whatsapp/report_state.dart';
+import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
+import 'package:progress_group/features/auth/presentation/state/profile/profile_event.dart';
+import 'package:progress_group/features/auth/presentation/state/profile/profile_state.dart';
 
 import '../../../../core/utils/widget/custom_header.dart';
 
@@ -92,7 +95,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadData() async {
-    
     if (mounted) {
       context.read<ReportBloc>().add(
         GetVolumeReportEvent(
@@ -101,6 +103,10 @@ class _HomePageState extends State<HomePage> {
           groupBy: "Annual",
         ),
       );
+    }
+
+    if (mounted) {
+      context.read<ProfileBloc>().add(GetProfileEvent());
     }
 
     try {
@@ -121,45 +127,56 @@ class _HomePageState extends State<HomePage> {
           }),
           SizedBox(height: 16),
           Expanded(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Welcome back, User", style: TextStyle(fontSize: 16, color: Color(grey2Color))),
-                  SizedBox(height: 6),
-                   GestureDetector(
-                    onTap: _selectDateRange,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Color(grey1Color),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        children: [
-                          Image.asset(icCalendar, width: 22, height: 22),
-                          const SizedBox(width: 10),
-                          Text(
-                            "${DateFormat('MMM dd, yyyy').format(_chartStartDate)} - ${DateFormat('MMM dd, yyyy').format(_chartEndDate)}",
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(grey2Color)),
-                          ),
-                        ],
+            child: RefreshIndicator(
+              onRefresh: _loadData,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                  BlocBuilder<ProfileBloc, ProfileState>(
+                    builder: (context, state) {
+                      String userName = "User";
+                      if (state is ProfileLoaded) {
+                        userName = state.profile.fullName;
+                      }
+                      return Text("Welcome back, $userName !", style: TextStyle(fontSize: 16, color: Color(grey2Color)));
+                    },
+                  ),
+                    SizedBox(height: 6),
+                     GestureDetector(
+                      onTap: _selectDateRange,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Color(grey1Color),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            Image.asset(icCalendar, width: 22, height: 22),
+                            const SizedBox(width: 10),
+                            Text(
+                              "${DateFormat('MMM dd, yyyy').format(_chartStartDate)} - ${DateFormat('MMM dd, yyyy').format(_chartEndDate)}",
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(grey2Color)),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: 6),
-                  Text("Funnel", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 5),
-                  Row(children: [_buildCard(), _buildCard()]),
-                  Row(children: [_buildCard(), _buildCard()]),
-                  Row(children: [_buildCard(), _buildCard()]),
-                  SizedBox(height: 6),
-                  Text("WhatsApp", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 5),
-                  _buildchart(),
-                ],
+                    SizedBox(height: 6),
+                    Text("Funnel", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 5),
+                    Row(children: [_buildCard(), _buildCard()]),
+                    Row(children: [_buildCard(), _buildCard()]),
+                    Row(children: [_buildCard(), _buildCard()]),
+                    SizedBox(height: 6),
+                    Text("WhatsApp", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 5),
+                    _buildchart(),
+                  ],
+                ),
               ),
             ),
           ),

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:progress_group/core/constants/assets.dart';
 import 'package:progress_group/core/constants/colors.dart';
+import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
+import 'package:progress_group/features/auth/presentation/state/profile/profile_state.dart';
 
 class MainLayout extends StatefulWidget {
   final Widget child;
@@ -174,11 +177,24 @@ class _MainLayoutState extends State<MainLayout> {
                             child: Icon(Icons.person, color: Colors.white, size: 37),
                           ),
                           SizedBox(width: 10),
-                          Column(
-                            children: [
-                              Text('Progress Group',style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: Color(grey2Color))),
-                              Text('joe@progressgroup.co.id',style: TextStyle(fontSize: 10, fontWeight: FontWeight.w400, color: Color(grey2Color))),
-                            ],
+                          BlocBuilder<ProfileBloc, ProfileState>(
+                            builder: (context, state) {
+                              String userName = "User";
+                              String userEmail = "";
+                              if (state is ProfileLoaded) {
+                                userName = state.profile.fullName;
+                                userEmail = state.profile.email;
+                              }
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(userName,style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: Color(grey2Color))),
+                                  Container(
+                                    width: 120,
+                                    child: Text(userEmail,maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10,  fontWeight: FontWeight.w400, color: Color(grey2Color)))),
+                                ],
+                              );
+                            },
                           ),
                         ],
                       ),

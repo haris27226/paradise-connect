@@ -9,8 +9,9 @@ class InboxContactLoading extends InboxContactState {}
 class InboxContactLoaded extends InboxContactState {
   final List<InboxContact> contacts;
   final List<InboxContact> groups;
+  final bool isFetchingMore;
 
-  InboxContactLoaded(this.contacts, this.groups);
+  InboxContactLoaded(this.contacts, this.groups, {this.isFetchingMore = false});
 }
 
 class InboxContactError extends InboxContactState {

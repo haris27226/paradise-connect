@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 abstract class MessageRemoteDataSource {
-  Future<Map<String, dynamic>> getMessages(String sessionId, String jid);
+  Future<Map<String, dynamic>> getMessages(String sessionId, String jid, {int page = 1});
 }
 
 class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
@@ -12,9 +12,12 @@ class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
   MessageRemoteDataSourceImpl(this.dio);
 
   @override
-  Future<Map<String, dynamic>> getMessages(String sessionId, String jid) async {
+  Future<Map<String, dynamic>> getMessages(String sessionId, String jid, {int page = 1}) async {
     try {
-      final response = await dio.get('/whatsapp/messages/$sessionId/$jid');
+      final response = await dio.get(
+        '/whatsapp/messages/$sessionId/$jid',
+        queryParameters: {'page': page},
+      );
 
       if (response.data is String) {
         return jsonDecode(response.data) as Map<String, dynamic>;

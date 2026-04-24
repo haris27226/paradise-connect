@@ -13,6 +13,7 @@ import 'package:progress_group/features/auth/domain/usecase/get_profile_usecase.
 import 'package:progress_group/features/auth/domain/usecase/reset_password_usecase.dart';
 import 'package:progress_group/features/auth/presentation/state/auth/auth_bloc.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
+import 'package:progress_group/features/contact/domain/usecases/get_sales_executives_usecase.dart';
 import 'package:progress_group/features/home/domain/usecases/get_report_whatsapp_usecase.dart';
 import 'package:progress_group/features/home/presentation/state/report-whatsapp/report_bloc.dart';
 import 'package:progress_group/features/inbox/data/datasources/inbox_remote_datasource.dart';
@@ -33,6 +34,23 @@ import 'app/router.dart';
 import 'core/utils/theme.dart';
 import 'features/home/data/datasources/report_remote_datasource.dart';
 import 'features/home/domain/repositories/report_whatsapp_repository.dart';
+import 'features/contact/data/datasources/contact_remote_datasource.dart';
+import 'features/contact/data/repositories/contact_repository_impl.dart';
+import 'features/contact/domain/usecases/get_contacts_usecase.dart';
+import 'features/contact/domain/usecases/get_contact_detail_usecase.dart';
+import 'features/contact/domain/usecases/create_contact_usecase.dart';
+import 'features/contact/presentation/state/contact/contact_bloc.dart';
+import 'features/contact/domain/usecases/get_activities_usecase.dart';
+import 'features/contact/domain/usecases/create_activity_usecase.dart';
+import 'features/contact/presentation/state/activity/activity_bloc.dart';
+import 'features/contact/domain/usecases/get_owners_usecase.dart';
+import 'features/contact/presentation/state/owner/owner_bloc.dart';
+import 'features/contact/domain/usecases/get_prospect_statuses_usecase.dart';
+import 'features/contact/presentation/state/prospect_status/prospect_status_bloc.dart';
+import 'features/contact/presentation/state/sales_executive/sales_executive_bloc.dart';
+import 'features/contact/domain/usecases/get_sales_managers_usecase.dart';
+import 'features/contact/presentation/state/sales_manager/sales_manager_bloc.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -82,34 +100,40 @@ class MyApp extends StatelessWidget {
     final reportRepository = ReportRepositoryImpl(reportRemoteDataSource);
     final getVolumeReportUseCase = GetVolumeReportUseCase(reportRepository);
 
+    final contactRemoteDataSource = ContactRemoteDataSourceImpl(dioClient.dio);
+    final contactRepository = ContactRepositoryImpl(contactRemoteDataSource);
+    final getContactsUseCase = GetContactsUseCase(contactRepository);
+    final getContactDetailUseCase = GetContactDetailUseCase(contactRepository);
+    final getOwnersUseCase = GetOwnersUseCase(contactRepository);
+    final getProspectStatusesUseCase = GetProspectStatusesUseCase(contactRepository);
+    final getActivitiesUseCase = GetActivitiesUseCase(contactRepository);
+    final createActivityUseCase = CreateActivityUseCase(contactRepository);
+    final createContactUseCase = CreateContactUseCase(contactRepository);
+    final getSalesExecutivesUseCase = GetSalesExecutivesUseCase(contactRepository);
+    final getSalesManagersUseCase = GetSalesManagersUseCase(contactRepository);
+
     return MultiBlocProvider(
       providers: [
-        BlocProvider(
-          create: (_) => AuthBloc(
-            loginUseCase: loginUseCase,
-            forgotPasswordUseCase: forgotPasswordUseCase,
-            getRememberMeUseCase: getRememberMeUseCase,
-            resetPasswordUsecase: resetPasswordUsecase
-          ),
-        ),
-        BlocProvider(
-          create: (_) => InboxContactBloc(getInboxContactsUsecase),
-        ),
-        BlocProvider(
-          create: (_) => WhatsappDeviceBloc(getWhatsappDevicesUsecase),
-        ),
-        BlocProvider(
-          create: (_) => WhatsappQrBloc(getQrSessionUsecase),
-        ),
-        BlocProvider(
-          create: (_) => ProfileBloc(getProfileUseCase: getProfileUseCase),
-        ),
-        BlocProvider(
-          create: (_) => MessageBloc(getMessagesUseCase),
-        ),
-        BlocProvider(
-          create: (_) => ReportBloc(getVolumeReportUseCase),
-        ),
+        BlocProvider(create: (_) => AuthBloc(loginUseCase: loginUseCase,forgotPasswordUseCase: forgotPasswordUseCase,getRememberMeUseCase: getRememberMeUseCase,resetPasswordUsecase: resetPasswordUsecase)),
+        BlocProvider(create: (_) => InboxContactBloc(getInboxContactsUsecase)),
+        BlocProvider(create: (_) => WhatsappDeviceBloc(getWhatsappDevicesUsecase)),
+        BlocProvider(create: (_) => WhatsappQrBloc(getQrSessionUsecase)),
+        BlocProvider(create: (_) => ProfileBloc(getProfileUseCase: getProfileUseCase)),
+        BlocProvider(create: (_) => MessageBloc(getMessagesUseCase)),
+        BlocProvider(create: (_) => ReportBloc(getVolumeReportUseCase)),
+        BlocProvider(create: (_) => ContactBloc(
+          getContactsUseCase: getContactsUseCase,
+          createContactUseCase: createContactUseCase,
+          getContactDetailUseCase: getContactDetailUseCase,
+        )),
+        BlocProvider(create: (_) => OwnerBloc(getOwnersUseCase: getOwnersUseCase)),
+        BlocProvider(create: (_) => ProspectStatusBloc(getProspectStatusesUseCase: getProspectStatusesUseCase)),
+        BlocProvider(create: (_) => SalesExecutiveBloc(getSalesExecutivesUseCase: getSalesExecutivesUseCase)),
+        BlocProvider(create: (_) => SalesManagerBloc(getSalesManagersUseCase: getSalesManagersUseCase)),
+        BlocProvider(create: (_) => ActivityBloc(
+          getActivitiesUseCase: getActivitiesUseCase,
+          createActivityUseCase: createActivityUseCase,
+        )),
       ],
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
 import 'package:progress_group/core/constants/colors.dart';
 import 'package:progress_group/features/inbox/data/arguments/inbox_detail_args.dart';
 import 'package:progress_group/features/inbox/domain/entities/chat_message_entity.dart';
@@ -17,16 +19,45 @@ class InboxDetailPage extends StatefulWidget {
 }
 
 class _InboxDetailPageState extends State<InboxDetailPage> {
+  late ScrollController _scrollController;
+  int _page = 1;
+  bool _isFetchingMore = false;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController()..addListener(_onScroll);
+    _fetchMessages();
+  }
+
+  void _onScroll() {
+    // Detect scroll to bottom (older messages)
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 && !_isFetchingMore) {
+      _loadMore();
+    }
+  }
+
+  void _fetchMessages({int page = 1, bool isLoadMore = false}) {
     context.read<MessageBloc>().add(
       GetChatHistoryEvent(
         sessionId: widget.args.data.sessionCode,
         jid: widget.args.data.jid,
+        page: page,
+        isLoadMore: isLoadMore,
       ),
     );
+  }
+
+  Future<void> _loadMore() async {
+    _isFetchingMore = true;
+    _page++;
+    _fetchMessages(page: _page, isLoadMore: true);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   // --- LOGIKA TANGGAL ---
@@ -144,10 +175,12 @@ class _InboxDetailPageState extends State<InboxDetailPage> {
                     }
 
                     if (state is MessageError) {
+                      _isFetchingMore = false;
                       return Center(child: Text(state.message));
                     }
 
                     if (state is MessageLoaded) {
+                      _isFetchingMore = state.isFetchingMore;
                       final messages = state.chatHistory.messages;
 
                       if (messages.isEmpty) {
@@ -155,16 +188,29 @@ class _InboxDetailPageState extends State<InboxDetailPage> {
                       }
 
                       return ListView.builder(
-                        itemCount: messages.length,
+                        controller: _scrollController,
+                        itemCount: messages.length + (state.isFetchingMore ? 1 : 0),
                         itemBuilder: (context, index) {
-                          final msg = messages[index];
+                          if (state.isFetchingMore && index == messages.length) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+
+                          final actualIndex = index;
+                          if (actualIndex >= messages.length) return const SizedBox();
+
+                          final msg = messages[actualIndex];
                           final isMe = msg.isFromMe;
-                          final senderName = isMe ? (msg.senderName ?? "Saya") : widget.args.data.name;
+                          final senderName = isMe 
+                              ? "Saya" 
+                              : (msg.senderName ?? widget.args.data.name);
 
                           return Column(
                             children: [
                               // 1. Tampilkan Tanggal (Jika diperlukan)
-                              if (_shouldShowDate(index, messages))
+                              if (_shouldShowDate(actualIndex, messages))
                                 Padding(
                                   padding: const EdgeInsets.only(top: 16, bottom: 8),
                                   child: Container(
@@ -314,41 +360,73 @@ class _InboxDetailPageState extends State<InboxDetailPage> {
   // WIDGET FUNGSI ISI PESAN (GAMBAR & TEKS)
   // ==========================================
   Widget _buildMessageContent(ChatMessage msg) {
+    bool isVideo = msg.messageType == 'video';
+    String displayBody = msg.body.replaceAll("[REACTION]", "").trim();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (msg.mediaUrl != null && msg.mediaUrl!.isNotEmpty) ...[
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              msg.mediaUrl!,
-              width: MediaQuery.of(context).size.width * 0.6,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                width: MediaQuery.of(context).size.width * 0.6,
-                height: 150,
-                color: Color(grey1Color),
-                child: const Center(
-                  child: Icon(Icons.broken_image, color: Colors.grey, size: 40),
+          if (isVideo)
+             _VideoPlayerWidget(url: msg.mediaUrl!)
+          else
+            GestureDetector(
+              onTap: () => _showImagePreview(msg.mediaUrl!),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  msg.mediaUrl!,
+                  width: MediaQuery.of(context).size.width * 0.6,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    width: MediaQuery.of(context).size.width * 0.6,
+                    height: 150,
+                    color: Color(grey1Color),
+                    child: const Center(
+                      child: Icon(Icons.broken_image, color: Colors.grey, size: 40),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-          if (msg.body.isNotEmpty) const SizedBox(height: 6),
+          if (displayBody.isNotEmpty) const SizedBox(height: 6),
         ],
-        if (msg.body.isNotEmpty)
+        if (displayBody.isNotEmpty)
           Padding(
             padding: EdgeInsets.symmetric(
               horizontal: (msg.mediaUrl != null && msg.mediaUrl!.isNotEmpty) ? 6 : 0,
               vertical: (msg.mediaUrl != null && msg.mediaUrl!.isNotEmpty) ? 4 : 0,
             ),
             child: Text(
-              msg.body,
+              displayBody,
               softWrap: true,
               style: const TextStyle(fontSize: 14),
             ),
           ),
       ],
+    );
+  }
+
+  void _showImagePreview(String url) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            Center(child: Image.network(url)),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -360,9 +438,67 @@ class _InboxDetailPageState extends State<InboxDetailPage> {
       radius: 22, // diameter 44
       backgroundColor: Color(grey1Color),
       child: widget.args.data.initials.isNotEmpty
-          ? Text(widget.args.data.initials,
-              style: TextStyle(color: Color(blue3Color), fontWeight: FontWeight.bold))
+          ? Text(widget.args.data.initials, style: TextStyle(color: Color(blue3Color), fontWeight: FontWeight.bold))
           : Icon(widget.args.icon, color: Color(blue3Color)),
+    );
+  }
+}
+
+class _VideoPlayerWidget extends StatefulWidget {
+  final String url;
+  const _VideoPlayerWidget({required this.url});
+
+  @override
+  State<_VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
+}
+
+class _VideoPlayerWidgetState extends State<_VideoPlayerWidget> {
+  late VideoPlayerController _videoPlayerController;
+  ChewieController? _chewieController;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializePlayer();
+  }
+
+  Future<void> _initializePlayer() async {
+    _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+    await _videoPlayerController.initialize();
+    _chewieController = ChewieController(
+      videoPlayerController: _videoPlayerController,
+      autoPlay: false,
+      looping: false,
+      aspectRatio: _videoPlayerController.value.aspectRatio,
+      errorBuilder: (context, errorMessage) {
+        return Center(child: Text(errorMessage, style: const TextStyle(color: Colors.white)));
+      },
+    );
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _videoPlayerController.dispose();
+    _chewieController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: MediaQuery.of(context).size.width * 0.6,
+      height: 200,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: _chewieController != null && _chewieController!.videoPlayerController.value.isInitialized
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Chewie(controller: _chewieController!),
+            )
+          : const Center(child: CircularProgressIndicator()),
     );
   }
 }

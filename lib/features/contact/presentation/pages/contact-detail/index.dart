@@ -4,11 +4,17 @@ import 'package:progress_group/core/constants/assets.dart';
 import 'package:progress_group/core/constants/colors.dart';
 import 'package:progress_group/core/utils/widget/custom_search_field.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_detail_args.dart';
-import 'package:progress_group/features/contact/data/models/activity_model.dart';
+import 'package:progress_group/features/contact/domain/entities/activity.dart';
 import 'package:progress_group/features/contact/presentation/pages/contact-form/index.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'package:progress_group/features/contact/presentation/state/activity/activity_bloc.dart';
+import 'package:progress_group/features/contact/presentation/state/activity/activity_event.dart';
+import 'package:progress_group/features/contact/presentation/state/activity/activity_state.dart';
 
 import '../../../../../core/utils/widget/custom_bg_icon.dart';
 import '../../../../../core/utils/widget/custom_buttomsheet.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 
 class ContactDetailPage extends StatefulWidget {
@@ -30,38 +36,12 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
 
   final tabs = ["Activity", "About", "Attachment"];
 
-  final Map<String, List<ActivityModel>> activityByMonth = {
-      "JAN 2024": [
-        ActivityModel(
-          title: "Meeting",
-          subtitle: "Client A",
-          message: "Discuss project",
-          color: Colors.purple,
-        ),
-      ],
-      "FEB 2024": [
-        ActivityModel(
-          title: "Call",
-          subtitle: "Team",
-          message: "Daily sync",
-          color: Colors.green,
-        ),
-        ActivityModel(
-          title: "Review",
-          subtitle: "Design",
-          message: "Check UI",
-          color: Colors.orange,
-        ),
-      ],
-      "DES 2024": [
-        ActivityModel(
-          title: "Launch",
-          subtitle: "Product",
-          message: "Go live 🚀",
-          color: Colors.blue,
-        ),
-      ],
-    };
+  Future<void> _onRefresh() async {
+    final contactId = widget.args.data?.contactId;
+    if (contactId != null) {
+      context.read<ActivityBloc>().add(FetchActivitiesEvent(contactId: contactId, isRefresh: true));
+    }
+  }
 
 
   late PageController _pageController;
@@ -70,6 +50,11 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: selectedIndex);
+    
+    final contactId = widget.args.data?.contactId;
+    if (contactId != null) {
+      context.read<ActivityBloc>().add(FetchActivitiesEvent(contactId: contactId));
+    }
   }
 
   @override
@@ -134,7 +119,7 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text("Contacts",style: TextStyle(fontSize: 11,color: Color(blue2Color))),
-                                    Text(widget.args.data?.name ?? '-',style: const TextStyle(fontSize: 20,fontWeight: FontWeight.w700)),
+                                    Text(widget.args.data?.fullName ?? '-',style: const TextStyle(fontSize: 20,fontWeight: FontWeight.w700)),
                                   ],
                                 ),
                               ],
@@ -142,8 +127,30 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                BgIcon(asset: icContactDetailPhone),
-                                BgIcon(asset: icContactDetailWA),
+                                BgIcon(
+                                  asset: icContactDetailPhone,
+                                  onTap: () async {
+                                    final phone = widget.args.data?.primaryPhone;
+                                    if (phone != null && phone.isNotEmpty) {
+                                      final Uri launchUri = Uri(scheme: 'tel', path: phone);
+                                      await launchUrl(launchUri);
+                                    }
+                                  },
+                                ),
+                                BgIcon(
+                                  asset: icContactDetailWA,
+                                  onTap: () async {
+                                    var phone = widget.args.data?.whatsappNumber ?? widget.args.data?.primaryPhone;
+                                    if (phone != null && phone.isNotEmpty) {
+                                      phone = phone.replaceAll(RegExp(r'[^0-9]'), '');
+                                      if (phone.startsWith('0')) {
+                                        phone = '62${phone.substring(1)}';
+                                      }
+                                      final Uri whatsappUri = Uri.parse("https://wa.me/$phone");
+                                      await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
+                                    }
+                                  },
+                                ),
                                 BgIcon(asset: null, onTap: (){showCustomBottomSheet(context: context,child: buildContenBSdit(context));}),
                               ],
                             )
@@ -169,7 +176,7 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
                 child: TabBarView(
                   children: [
                     _buildActivityContent(),
-                    ContactFormPage(args: ContactDetailArgs(page: 2)),
+                    ContactFormPage(args: ContactDetailArgs(data: widget.args.data, page: 2)),
                     _buildAttachmentContent(),
                   ],
                 ),
@@ -230,84 +237,126 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
   }
 
   Widget _buildActivityContent() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: activityByMonth.entries.map((entry) {
-        final month = entry.key;
-        final activities = entry.value;
+    return BlocBuilder<ActivityBloc, ActivityState>(
+      builder: (context, state) {
+        if (state.status == ActivityStatus.loading && state.activities.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              month,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Color(blackColor),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Column(
-              children: activities.map((item) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Color(whiteColor),
-                    borderRadius: BorderRadius.circular(12),
+        if (state.status == ActivityStatus.error && state.activities.isEmpty) {
+          return Center(child: Text(state.errorMessage ?? 'Error loading activities'));
+        }
+
+        if (state.activities.isEmpty) {
+          return const Center(child: Text('No activities found'));
+        }
+
+        // Group activities by month
+        final Map<String, List<Activity>> grouped = {};
+        for (var activity in state.activities) {
+          try {
+            final date = DateTime.parse(activity.activityDate);
+            final monthYear = DateFormat('MMM yyyy').format(date).toUpperCase();
+            if (!grouped.containsKey(monthYear)) {
+              grouped[monthYear] = [];
+            }
+            grouped[monthYear]!.add(activity);
+          } catch (e) {
+            const monthYear = "UNKNOWN";
+            if (!grouped.containsKey(monthYear)) grouped[monthYear] = [];
+            grouped[monthYear]!.add(activity);
+          }
+        }
+
+        return RefreshIndicator(
+          onRefresh: _onRefresh,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            children: grouped.entries.map((entry) {
+              final month = entry.key;
+              final activities = entry.value;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    month,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(blackColor),
+                    ),
                   ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        height: 50,
-                        width: 5,
-                        decoration: BoxDecoration(
-                          color: Color(purpleColor),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
+                  const SizedBox(height: 10),
+                  Column(
+                    children: activities.map((item) {
+                      Color activityColor = Colors.blue;
+                      if (item.activityType == 'Call') activityColor = Colors.green;
+                      if (item.activityType == 'Meeting') activityColor = Colors.purple;
+                      if (item.activityType == 'Visit') activityColor = Colors.orange;
 
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Color(whiteColor),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              item.title,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: Color(blackColor),
+                            Container(
+                              height: 50,
+                              width: 5,
+                              decoration: BoxDecoration(
+                                color: activityColor,
+                                borderRadius: BorderRadius.circular(16),
                               ),
                             ),
-                            Text(
-                              item.subtitle,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Color(grey7Color),
-                              ),
-                            ),
-                            Text(
-                              item.message,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Color(blackColor),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.activityType,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(blackColor),
+                                    ),
+                                  ),
+                                  Text(
+                                    DateFormat('dd MMM yyyy HH:mm').format(DateTime.parse(item.activityDate)),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Color(grey7Color),
+                                    ),
+                                  ),
+                                  if (item.notes != null)
+                                    Text(
+                                      item.notes!,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Color(blackColor),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
+                      );
+                    }).toList(),
                   ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
-          ],
+                  const SizedBox(height: 16),
+                ],
+              );
+            }).toList(),
+          ),
         );
-      }).toList(),
+      },
     );
   }
 
@@ -344,47 +393,49 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            itemCount: 10,
-            itemBuilder: (context, index) {
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Color(whiteColor),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 12,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [ 
-                    BgIcon(asset: icAttacment, onTap: (){}),
-                    SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Attachment",style: TextStyle(fontSize: 14,fontWeight: FontWeight.w700)),
-                        Text("Attachment",style: TextStyle(fontSize: 12,fontWeight: FontWeight.w400)),
-                      ],
-                    ),
-                    Spacer(),
-                    BgIcon(asset: null, onTap: (){}),
-                  ],
-                ),
-              );
-            },
+          child: RefreshIndicator(
+            onRefresh: _onRefresh,
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: 10,
+              itemBuilder: (context, index) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Color(whiteColor),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 12,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [ 
+                      BgIcon(asset: icAttacment, onTap: (){}),
+                      SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Attachment",style: TextStyle(fontSize: 14,fontWeight: FontWeight.w700)),
+                          Text("Attachment",style: TextStyle(fontSize: 12,fontWeight: FontWeight.w400)),
+                        ],
+                      ),
+                      Spacer(),
+                      BgIcon(asset: null, onTap: (){}),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ],
     );
   }
-}
-
 
   Widget buildContenBSdit(BuildContext context){
     return Container(
@@ -393,6 +444,12 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           buildIconLink(icEdit, "Edit Contact", (){context.pushNamed('formContact', extra: ContactDetailArgs(page: 1));}),
+          buildIconLink(icCalendar, "Add Activity", (){
+            context.pushNamed('addActivity', extra: {
+              'contactId': widget.args.data?.contactId,
+              'dealId': null,
+            });
+          }),
           buildIconLink(icDelete, "Delete Contact", (){}),
           buildIconLink(icShare, "Share Contact", (){}),
 
@@ -425,4 +482,5 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
       ),
     );
   }
+}
 

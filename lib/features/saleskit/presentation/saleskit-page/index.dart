@@ -21,6 +21,11 @@ class _SalesKitPageState extends State<SalesKitPage> {
   bool isOpenRedential = true;
   bool isOpenCommercial = true;
 
+  Future<void> _onRefresh() async {
+    await Future.delayed(const Duration(seconds: 1));
+    // Refresh logic
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -35,31 +40,35 @@ class _SalesKitPageState extends State<SalesKitPage> {
       children: [
         customHeader(context, widget.args.title!, isBack: true),
         SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-             
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _onRefresh,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                 SizedBox(height: 15),
+                 _buildButtonBorder(title: "Price List",colorBg: whiteColor,colorTitle: primaryColor,  logo: icPriceList, onTap: () {
+                   
+                 }),
+                 SizedBox(height: 15),
+                 _buildButtonBorder(title: "EBrouchure",colorBg: whiteColor,colorTitle: primaryColor,  logo: icEBrouchure, onTap: () {
+                   
+                 }),
+                 SizedBox(height: 15),
+                 _buildButtonBorder(title: "Product Knowledge",colorBg: whiteColor,colorTitle: primaryColor,  logo: icProductKnowlage, onTap: () {
+                   
+                 }),
             
-             SizedBox(height: 15),
-             _buildButtonBorder(title: "Price List",colorBg: whiteColor,colorTitle: primaryColor,  logo: icPriceList, onTap: () {
-               
-             }),
-             SizedBox(height: 15),
-             _buildButtonBorder(title: "EBrouchure",colorBg: whiteColor,colorTitle: primaryColor,  logo: icEBrouchure, onTap: () {
-               
-             }),
-             SizedBox(height: 15),
-             _buildButtonBorder(title: "Product Knowledge",colorBg: whiteColor,colorTitle: primaryColor,  logo: icProductKnowlage, onTap: () {
-               
-             }),
-
-             SizedBox(height: 30),
-             _buildButtonBorder(title: "Share",colorBg: blue3Color,colorTitle: whiteColor,  logo: icShare, onTap: () {
-               
-             }),
-            ],
+                 SizedBox(height: 30),
+                 _buildButtonBorder(title: "Share",colorBg: blue3Color,colorTitle: whiteColor,  logo: icShare, onTap: () {
+                   
+                 }),
+                ],
+              ),
+            ),
           ),
         ),
       ],
@@ -95,37 +104,47 @@ class _SalesKitPageState extends State<SalesKitPage> {
     return Column(
       children: [
         customHeader(context, widget.args.title ?? "SalesKit", isBack: true),
-          SizedBox(height: 1),
-        _dropdown("Residential", () {
-          setState(() {
-            isOpenRedential = !isOpenRedential;
-          });
-        }, isOpenRedential, Column(
-            children: [
-              SizedBox(height: 5),
-             _buildResidential( image: logoExVista, onTap: () {
-               context.pushNamed("salesKit", extra: SalesKitDetailArgs(page: 2, title: "Vista" ));
-             },),
-             SizedBox(height: 5),
-             _buildResidential( image: logoExAdventures, onTap: () {
-               context.pushNamed("salesKit", extra: SalesKitDetailArgs(page: 2, title: "Adventures" ));
-             },),
-            SizedBox(height: 25),
-
-            ],
-          ),
-        ),
-        _dropdown("Commercial", () {
-          setState(() {
-            isOpenCommercial = !isOpenCommercial;
-          });
-        }, isOpenCommercial, Column(
-            children: [
-              SizedBox(height: 5),
-             _buildResidential( image: logoExSoho, onTap: () {
-               context.pushNamed("salesKit", extra: SalesKitDetailArgs(page: 2, title: "Soho" ));
-             },),
-            ],
+        SizedBox(height: 1),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _onRefresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                _dropdown("Residential", () {
+                  setState(() {
+                    isOpenRedential = !isOpenRedential;
+                  });
+                }, isOpenRedential, Column(
+                    children: [
+                      SizedBox(height: 5),
+                     _buildResidential( image: logoExVista, onTap: () {
+                       context.pushNamed("salesKit", extra: SalesKitDetailArgs(page: 2, title: "Vista" ));
+                     },),
+                     SizedBox(height: 5),
+                     _buildResidential( image: logoExAdventures, onTap: () {
+                       context.pushNamed("salesKit", extra: SalesKitDetailArgs(page: 2, title: "Adventures" ));
+                     },),
+                    SizedBox(height: 25),
+            
+                    ],
+                  ),
+                ),
+                _dropdown("Commercial", () {
+                  setState(() {
+                    isOpenCommercial = !isOpenCommercial;
+                  });
+                }, isOpenCommercial, Column(
+                    children: [
+                      SizedBox(height: 5),
+                     _buildResidential( image: logoExSoho, onTap: () {
+                       context.pushNamed("salesKit", extra: SalesKitDetailArgs(page: 2, title: "Soho" ));
+                     },),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),     
       ],
@@ -207,41 +226,44 @@ class _SalesKitPageState extends State<SalesKitPage> {
       children: [
         customHeader(context, "SalesKit", isBack: false),
         SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              customSearchField(controller: searchTC, focusNode: searchFN),
-              SizedBox(height: 15),
-              Text("Projects",style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold,color: Color(blue2Color))),
-              SizedBox(height: 15),
-              buildProjectBanner(
-                backgroundImage: bannerSaleskitProyek,
-                logoImage: logoParadiseResort,
-                title: "Paradise Resort City",
-                subtitle: "500 hectare Eco Urban City in South Serpong",
-                ontap: (){
-                  context.pushNamed("salesKit", extra: SalesKitDetailArgs(page: 1, title: "Paradise Resort City" ));
-                }
-              ),
-              buildProjectBanner(
-                backgroundImage: bannerSaleskitProyek,
-                logoImage: logoParadiseSerpong,
-                title: "Paradise Serpong City",
-                subtitle: "500 hectare Eco Urban City in South Serpong",
-                ontap: (){context.pushNamed("salesKit", extra: SalesKitDetailArgs(page: 1, title: "Paradise Serpong City" ));}
-              ),
-              buildProjectBanner(
-                backgroundImage: bannerSaleskitProyek,
-                logoImage: logoParadiseSerpong2,
-                title: "Paradise Serpong City 2",
-                subtitle: "500 hectare Eco Urban City in South Serpong",
-                ontap: (){
-                  context.pushNamed("salesKit", extra: SalesKitDetailArgs(page: 1, title: "Paradise Serpong City 2" ));
-                }
-              ),
-            ],
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _onRefresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              children: [
+                customSearchField(controller: searchTC, focusNode: searchFN),
+                SizedBox(height: 15),
+                Text("Projects",style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold,color: Color(blue2Color))),
+                SizedBox(height: 15),
+                buildProjectBanner(
+                  backgroundImage: bannerSaleskitProyek,
+                  logoImage: logoParadiseResort,
+                  title: "Paradise Resort City",
+                  subtitle: "500 hectare Eco Urban City in South Serpong",
+                  ontap: (){
+                    context.pushNamed("salesKit", extra: SalesKitDetailArgs(page: 1, title: "Paradise Resort City" ));
+                  }
+                ),
+                buildProjectBanner(
+                  backgroundImage: bannerSaleskitProyek,
+                  logoImage: logoParadiseSerpong,
+                  title: "Paradise Serpong City",
+                  subtitle: "500 hectare Eco Urban City in South Serpong",
+                  ontap: (){context.pushNamed("salesKit", extra: SalesKitDetailArgs(page: 1, title: "Paradise Serpong City" ));}
+                ),
+                buildProjectBanner(
+                  backgroundImage: bannerSaleskitProyek,
+                  logoImage: logoParadiseSerpong2,
+                  title: "Paradise Serpong City 2",
+                  subtitle: "500 hectare Eco Urban City in South Serpong",
+                  ontap: (){
+                    context.pushNamed("salesKit", extra: SalesKitDetailArgs(page: 1, title: "Paradise Serpong City 2" ));
+                  }
+                ),
+              ],
+            ),
           ),
         ),
       ],

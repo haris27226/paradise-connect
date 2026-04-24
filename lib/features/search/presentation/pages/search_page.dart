@@ -5,9 +5,12 @@ class SearchPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return RefreshIndicator(
+      onRefresh: () async {
+        await Future.delayed(const Duration(seconds: 1));
+      },
       child: SingleChildScrollView(
-        physics: BouncingScrollPhysics(),
+        physics: AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

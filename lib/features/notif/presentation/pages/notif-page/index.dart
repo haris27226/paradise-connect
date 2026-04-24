@@ -29,20 +29,29 @@ class _NotifPageState extends State<NotifPage> {
     );
   }
 
+  Future<void> _onRefresh() async {
+    await Future.delayed(const Duration(seconds: 1));
+    // Refresh logic
+  }
+
   Widget _buildListNotif() {
     List<bool> readStatus = List.generate(120, (index) => index % 3 == 0);
 
-    return ListView.builder(
-      itemCount: readStatus.length,
-      itemBuilder: (context, index) {
-        return _buildNotif(
-          title: "Notifikasi $index",
-          subtitle: "Ini isi notifikasi",
-          icon: icContactDetailPhone,
-          date: "2022-01-01",
-          isRead: readStatus[index], 
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: _onRefresh,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: readStatus.length,
+        itemBuilder: (context, index) {
+          return _buildNotif(
+            title: "Notifikasi $index",
+            subtitle: "Ini isi notifikasi",
+            icon: icContactDetailPhone,
+            date: "2022-01-01",
+            isRead: readStatus[index], 
+          );
+        },
+      ),
     );
   }
 
