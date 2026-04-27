@@ -1,3 +1,27 @@
+class HierarchyNodeEntity {
+  final int? salesRoleId;
+  final int salesPersonId;
+  final int? salesPersonParentId;
+  final int? salesTeamId;
+  final int? companyId;
+  final String fullName;
+  final String? positionName;
+  final HierarchyNodeEntity? parent;
+  final List<HierarchyNodeEntity> subordinates;
+
+  HierarchyNodeEntity({
+    this.salesRoleId,
+    required this.salesPersonId,
+    this.salesPersonParentId,
+    this.salesTeamId,
+    this.companyId,
+    required this.fullName,
+    this.positionName,
+    this.parent,
+    this.subordinates = const [],
+  });
+}
+
 class UserProfileEntity {
   final int userId;
   final String fullName;
@@ -7,6 +31,9 @@ class UserProfileEntity {
   final bool isActive;
   final String? photo;
   final String permissionScope;
+  final String? positionName;
+  final List<HierarchyNodeEntity> salesRoles;
+  final List<HierarchyNodeEntity> subordinates;
 
   UserProfileEntity({
     required this.userId,
@@ -17,5 +44,8 @@ class UserProfileEntity {
     required this.isActive,
     this.photo,
     required this.permissionScope,
+    this.positionName,
+    this.salesRoles = const [],
+    this.subordinates = const [],
   });
 }

@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import 'package:progress_group/core/constants/assets.dart';
 import 'package:progress_group/core/constants/colors.dart';
+import 'package:progress_group/core/utils/widget/custom_bg_icon.dart';
 import 'package:progress_group/core/utils/widget/custom_header.dart';
 import 'package:progress_group/core/utils/widget/custom_search_field.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -352,9 +354,61 @@ Widget _buildListContacts(BuildContext context, Contact contact) {
           ),
           GestureDetector(
             onTap: () {
-              showCustomBottomSheet(context: context, child: buildContenBSdit(context));
+              showCustomBottomSheet(context: context, child: _buildContactOptions(context, contact));
             },
             child: Icon(Icons.more_vert, size: 27, color: Color(blackColor)),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _buildContactOptions(BuildContext context, Contact contact) {
+  return Container(
+    width: double.infinity,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildIconLink(context, icEdit, "Edit Contact", () {
+          context.pushNamed('formContact', extra: ContactDetailArgs(data: contact, page: 1));
+        }),
+        _buildIconLink(context, icCalendar, "Add Activity", () {
+          context.pushNamed('addActivity', extra: {
+            'contactId': contact.contactId,
+            'dealId': null,
+          });
+        }),
+        _buildIconLink(context, icDelete, "Delete Contact", () {
+          // TODO: Implement delete
+        }),
+        _buildIconLink(context, icShare, "Share Contact", () {
+          // TODO: Implement share
+        }),
+      ],
+    ),
+  );
+}
+
+Widget _buildIconLink(BuildContext context, String asset, String label, VoidCallback onTap, {Color? color}) {
+  return InkWell(
+    onTap: () {
+      Navigator.pop(context);
+      onTap();
+    },
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          BgIcon(asset: asset, onTap: null, color: color),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              color: Color(blue2Color),
+              fontWeight: FontWeight.w400,
+            ),
           ),
         ],
       ),
