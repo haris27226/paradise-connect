@@ -1,13 +1,23 @@
+class OwnerDropdownItem {
+  final int? id;
+  final String name;
+  final String? subtitle;
 
-import 'package:progress_group/features/contact/data/models/list_dropdown_model.dart';
+  OwnerDropdownItem({this.id, required this.name, this.subtitle});
+}
 
 class ContactDropdownArgs {
-  final ListDropdownModel? data;
   final String title;
+  final List<OwnerDropdownItem> items;
+  final int? selectedId;
+  final List<int>? selectedIds;
+  final bool isMultiSelect;
 
-  
   ContactDropdownArgs({
-    this.data,
     required this.title,
+    required this.items,
+    this.selectedId,
+    this.selectedIds,
+    this.isMultiSelect = false,
   });
 }

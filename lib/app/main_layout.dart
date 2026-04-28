@@ -188,7 +188,9 @@ class _MainLayoutState extends State<MainLayout> {
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(userName,style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: Color(grey2Color))),
+                                  Container(
+                                    width: 130,
+                                    child: Text(userName,maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: Color(grey2Color)))),
                                   Container(
                                     width: 120,
                                     child: Text(userEmail,maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10,  fontWeight: FontWeight.w400, color: Color(grey2Color)))),

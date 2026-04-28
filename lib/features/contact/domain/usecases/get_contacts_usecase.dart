@@ -7,15 +7,15 @@ class GetContactsUseCase {
 
   GetContactsUseCase(this.repository);
 
-  Future<Either<String, ContactResponse>> call({  int page = 1,  int perPage = 10,  String? search,  String? startDate,  String? endDate,  int? ownerId,  int? statusProspectId,}) {
+  Future<Either<String, ContactResponse>> call({  int page = 1,  int perPage = 10,  String? search,  String? startDate,  String? endDate,  List<int>? ownerIds,  List<int>? statusProspectIds,}) {
     return repository.getContacts(
       page: page,
       perPage: perPage,
       search: search,
       startDate: startDate,
       endDate: endDate,
-      ownerId: ownerId,
-      statusProspectId: statusProspectId,
+      ownerIds: ownerIds,
+      statusProspectIds: statusProspectIds,
     );
   }
 }

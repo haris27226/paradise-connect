@@ -1,5 +1,4 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../domain/entities/create_activity_params.dart';
 import '../../../domain/usecases/create_activity_usecase.dart';
 import '../../../domain/usecases/get_activities_usecase.dart';
 import 'activity_event.dart';

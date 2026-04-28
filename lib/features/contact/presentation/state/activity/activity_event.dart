@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import '../../../domain/entities/activity.dart';
 import '../../../domain/entities/create_activity_params.dart';
 
 abstract class ActivityEvent extends Equatable {

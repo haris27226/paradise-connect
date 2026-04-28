@@ -13,7 +13,6 @@ import 'package:progress_group/features/auth/domain/usecase/get_profile_usecase.
 import 'package:progress_group/features/auth/domain/usecase/reset_password_usecase.dart';
 import 'package:progress_group/features/auth/presentation/state/auth/auth_bloc.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
-import 'package:progress_group/features/contact/domain/usecases/get_sales_executives_usecase.dart';
 import 'package:progress_group/features/home/domain/usecases/get_report_whatsapp_usecase.dart';
 import 'package:progress_group/features/home/presentation/state/report-whatsapp/report_bloc.dart';
 import 'package:progress_group/features/inbox/data/datasources/inbox_remote_datasource.dart';
@@ -43,15 +42,8 @@ import 'features/contact/presentation/state/contact/contact_bloc.dart';
 import 'features/contact/domain/usecases/get_activities_usecase.dart';
 import 'features/contact/domain/usecases/create_activity_usecase.dart';
 import 'features/contact/presentation/state/activity/activity_bloc.dart';
-import 'features/contact/domain/usecases/get_owners_usecase.dart';
-import 'features/contact/presentation/state/owner/owner_bloc.dart';
 import 'features/contact/domain/usecases/get_prospect_statuses_usecase.dart';
 import 'features/contact/presentation/state/prospect_status/prospect_status_bloc.dart';
-import 'features/contact/presentation/state/sales_executive/sales_executive_bloc.dart';
-import 'features/contact/domain/usecases/get_sales_managers_usecase.dart';
-import 'features/contact/presentation/state/sales_manager/sales_manager_bloc.dart';
-
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
@@ -104,13 +96,10 @@ class MyApp extends StatelessWidget {
     final contactRepository = ContactRepositoryImpl(contactRemoteDataSource);
     final getContactsUseCase = GetContactsUseCase(contactRepository);
     final getContactDetailUseCase = GetContactDetailUseCase(contactRepository);
-    final getOwnersUseCase = GetOwnersUseCase(contactRepository);
     final getProspectStatusesUseCase = GetProspectStatusesUseCase(contactRepository);
     final getActivitiesUseCase = GetActivitiesUseCase(contactRepository);
     final createActivityUseCase = CreateActivityUseCase(contactRepository);
     final createContactUseCase = CreateContactUseCase(contactRepository);
-    final getSalesExecutivesUseCase = GetSalesExecutivesUseCase(contactRepository);
-    final getSalesManagersUseCase = GetSalesManagersUseCase(contactRepository);
 
     return MultiBlocProvider(
       providers: [
@@ -126,10 +115,7 @@ class MyApp extends StatelessWidget {
           createContactUseCase: createContactUseCase,
           getContactDetailUseCase: getContactDetailUseCase,
         )),
-        BlocProvider(create: (_) => OwnerBloc(getOwnersUseCase: getOwnersUseCase)),
         BlocProvider(create: (_) => ProspectStatusBloc(getProspectStatusesUseCase: getProspectStatusesUseCase)),
-        BlocProvider(create: (_) => SalesExecutiveBloc(getSalesExecutivesUseCase: getSalesExecutivesUseCase)),
-        BlocProvider(create: (_) => SalesManagerBloc(getSalesManagersUseCase: getSalesManagersUseCase)),
         BlocProvider(create: (_) => ActivityBloc(
           getActivitiesUseCase: getActivitiesUseCase,
           createActivityUseCase: createActivityUseCase,

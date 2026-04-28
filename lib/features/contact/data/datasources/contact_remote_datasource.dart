@@ -1,31 +1,19 @@
 import 'package:dio/dio.dart';
 import 'package:progress_group/features/contact/data/models/contact_model.dart';
-import 'package:progress_group/features/contact/data/models/sales_manager_model.dart';
 import '../models/contact_response_model.dart';
-import '../models/owner_model.dart';
 import '../models/activity_api_model.dart';
 import '../models/prospect_status_model.dart';
-import '../models/sales_executive_model.dart';
 import '../../domain/entities/create_activity_params.dart';
 import '../../domain/entities/create_contact_params.dart';
 
 abstract class ContactRemoteDataSource {
-  Future<ContactResponseModel> getContacts({  int page = 1,  int perPage = 10,  String? search,  String? startDate,  String? endDate,  int? ownerId,  int? statusProspectId,});
+  Future<ContactResponseModel> getContacts({  int page = 1,  int perPage = 10,  String? search,  String? startDate,  String? endDate,  List<int>? ownerIds,  List<int>? statusProspectIds,});
 
   Future<ContactModel> getContactDetail(int id);
 
-  Future<List<OwnerModel>> getOwners({String search, int page});
   Future<List<ProspectStatusModel>> getProspectStatuses();
-  Future<List<SalesExecutiveModel>> getSalesExecutives({String search, int page});
-  Future<List<SalesManagerModel>> getSalesManagers({String search, int page});
   Future<void> createContact(CreateContactParams params);
-  Future<ActivityResponseModel> getActivities({
-    required int contactId,
-    int? dealId,
-    String? activityType,
-    int page = 1,
-    int perPage = 15,
-  });
+  Future<ActivityResponseModel> getActivities({  required int contactId,  int? dealId,  String? activityType,  int page = 1,  int perPage = 15,});
   Future<void> createActivity(CreateActivityParams params);
 }
 
@@ -35,10 +23,7 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
   ContactRemoteDataSourceImpl(this.dio);
 
   @override
-  Future<ContactResponseModel> getContacts({  int page = 1,  int perPage = 10,  String? search,  String? startDate,    String? endDate,
-    int? ownerId,
-    int? statusProspectId,
-  }) async {
+  Future<ContactResponseModel> getContacts({  int page = 1,  int perPage = 10,  String? search,  String? startDate,    String? endDate,  List<int>? ownerIds,  List<int>? statusProspectIds,}) async {
     try {
       final response = await dio.get('/contacts', queryParameters: {
         'page': page,
@@ -46,8 +31,8 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
         if (search != null && search.isNotEmpty) 'search': search,
         if (startDate != null && startDate.isNotEmpty) 'start_date': startDate,
         if (endDate != null && endDate.isNotEmpty) 'end_date': endDate,
-        if (ownerId != null) 'sales_executive_id': ownerId,
-        if (statusProspectId != null) 'status_prospect_id': statusProspectId,
+        if (ownerIds != null && ownerIds.isNotEmpty) 'sales_executive_id': ownerIds.join(','),
+        if (statusProspectIds != null && statusProspectIds.isNotEmpty) 'status_prospect_id': statusProspectIds.join(','),
       });
 
       if (response.data['status'] == true) {
@@ -75,13 +60,7 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
   }
 
   @override
-  Future<ActivityResponseModel> getActivities({
-    required int contactId,
-    int? dealId,
-    String? activityType,
-    int page = 1,
-    int perPage = 15,
-  }) async {
+  Future<ActivityResponseModel> getActivities({  required int contactId,  int? dealId,  String? activityType,  int page = 1,  int perPage = 15,}) async {
     try {
       final response = await dio.get('/activities', queryParameters: {
         'contact_id': contactId,
@@ -113,93 +92,6 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
     }
   }
 
-
-
-  @override
-  Future<List<OwnerModel>> getOwners({String search = '', int page = 1}) async {
-    try {
-      final response = await dio.get(
-        '/sales/owners',
-        queryParameters: {
-          'search': search,
-          'per_page': 10,
-          'page': page,
-        },
-      );
-      if (response.data['status'] == true) {
-        final dynamic outerData = response.data['data'];
-        List listData = [];
-        
-        if (outerData is Map && outerData.containsKey('data')) {
-          listData = outerData['data'];
-        } else if (outerData is List) {
-          listData = outerData;
-        }
-        
-        return listData.map((json) => OwnerModel.fromJson(json)).toList();
-      } else {
-        throw Exception(response.data['message'] ?? 'Failed to load owners');
-      }
-    } on DioException catch (e) {
-      throw Exception(e.message ?? 'Failed to load owners');
-    }
-  }
-
-  @override
-  Future<List<SalesExecutiveModel>> getSalesExecutives({String search = '', int page = 1}) async {
-    try {
-      final response = await dio.get(
-        '/sales/executives',
-        queryParameters: {
-          'search': search,
-          'per_page': 10,
-          'page': page,
-        },
-      );
-      if (response.data['status'] == true) {
-        final dynamic outerData = response.data['data'];
-        List listData = [];
-        if (outerData is Map && outerData.containsKey('data')) {
-          listData = outerData['data'];
-        } else if (outerData is List) {
-          listData = outerData;
-        }
-        return listData.map((json) => SalesExecutiveModel.fromJson(json)).toList();
-      } else {
-        throw Exception(response.data['message'] ?? 'Failed to load sales executives');
-      }
-    } on DioException catch (e) {
-      throw Exception(e.message ?? 'Failed to load sales executives');
-    }
-  }
-
-  @override
-  Future<List<SalesManagerModel>> getSalesManagers({String search = '', int page = 1}) async {
-    try {
-      final response = await dio.get(
-        '/sales/managers',
-        queryParameters: {
-          'search': search,
-          'per_page': 10,
-          'page': page,
-        },
-      );
-      if (response.data['status'] == true) {
-        final dynamic outerData = response.data['data'];
-        List listData = [];
-        if (outerData is Map && outerData.containsKey('data')) {
-          listData = outerData['data'];
-        } else if (outerData is List) {
-          listData = outerData;
-        }
-        return listData.map((json) => SalesManagerModel.fromJson(json)).toList();
-      } else {
-        throw Exception(response.data['message'] ?? 'Failed to load sales managers');
-      }
-    } on DioException catch (e) {
-      throw Exception(e.message ?? 'Failed to load sales managers');
-    }
-  }
 
   @override
   Future<List<ProspectStatusModel>> getProspectStatuses() async {

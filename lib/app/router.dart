@@ -17,10 +17,6 @@ import '../features/contact/presentation/pages/contact-add/index.dart';
 import '../features/contact/presentation/pages/contact-detail/index.dart';
 import '../features/contact/presentation/pages/contact-form/index.dart';
 import '../features/contact/presentation/pages/contact-page/index.dart';
-import '../features/contact/presentation/pages/contact-page/owner_selection_page.dart';
-import '../features/contact/presentation/pages/contact-page/prospect_status_selection_page.dart';
-import '../features/contact/presentation/pages/contact-page/sales_executive_selection_page.dart';
-import '../features/contact/presentation/pages/contact-page/sales_manager_selection_page.dart';
 import '../features/contact/presentation/pages/contact-form/activity_form.dart';
 import '../features/home/presentation/pages/index.dart';
 import '../features/inbox/data/arguments/inbox_detail_args.dart';
@@ -100,38 +96,6 @@ class AppRouter {
                 builder: (context, state) {
                   final args = state.extra as ContactDetailArgs;
                   return ContactAddPage(args: args);
-                },
-              ),
-              GoRoute(
-                name: 'selectOwner',
-                path: 'select-owner',
-                builder: (context, state) {
-                  final args = state.extra as int?;
-                  return OwnerSelectionPage(selectedOwnerId: args);
-                },
-              ),
-              GoRoute(
-                name: 'selectStatus',
-                path: 'select-status',
-                builder: (context, state) {
-                  final args = state.extra as int?;
-                  return ProspectStatusSelectionPage(selectedStatusId: args);
-                },
-              ),
-              GoRoute(
-                name: 'selectSalesExecutive',
-                path: 'select-sales-executive',
-                builder: (context, state) {
-                  final args = state.extra as int?;
-                  return SalesExecutiveSelectionPage(selectedSalesExecutiveId: args);
-                },
-              ),
-              GoRoute(
-                name: 'selectSalesManager',
-                path: 'select-sales-manager',
-                builder: (context, state) {
-                  final args = state.extra as int?;
-                  return SalesManagerSelectionPage(selectedSalesManagerId: args);
                 },
               ),
               GoRoute(

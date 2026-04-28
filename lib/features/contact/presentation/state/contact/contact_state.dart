@@ -13,8 +13,8 @@ class ContactState extends Equatable {
   final String? search;
   final String? startDate;
   final String? endDate;
-  final int? ownerId;
-  final int? statusProspectId;
+  final List<int>? ownerIds;
+  final List<int>? statusProspectIds;
   final Contact? contactDetail;
 
   const ContactState({
@@ -26,8 +26,8 @@ class ContactState extends Equatable {
     this.search,
     this.startDate,
     this.endDate,
-    this.ownerId,
-    this.statusProspectId,
+    this.ownerIds,
+    this.statusProspectIds,
     this.contactDetail,
   });
 
@@ -40,8 +40,8 @@ class ContactState extends Equatable {
     String? search,
     String? startDate,
     String? endDate,
-    int? ownerId,
-    int? statusProspectId,
+    List<int>? ownerIds,
+    List<int>? statusProspectIds,
     bool clearSearch = false,
     bool clearDates = false,
     bool clearOwner = false,
@@ -57,8 +57,8 @@ class ContactState extends Equatable {
       search: clearSearch ? null : (search ?? this.search),
       startDate: clearDates ? null : (startDate ?? this.startDate),
       endDate: clearDates ? null : (endDate ?? this.endDate),
-      ownerId: clearOwner ? null : (ownerId ?? this.ownerId),
-      statusProspectId: clearStatus ? null : (statusProspectId ?? this.statusProspectId),
+      ownerIds: clearOwner ? null : (ownerIds ?? this.ownerIds),
+      statusProspectIds: clearStatus ? null : (statusProspectIds ?? this.statusProspectIds),
       contactDetail: contactDetail ?? this.contactDetail,
     );
   }
@@ -73,8 +73,8 @@ class ContactState extends Equatable {
         search,
         startDate,
         endDate,
-        ownerId,
-        statusProspectId,
+        ownerIds,
+        statusProspectIds,
         contactDetail,
       ];
 }

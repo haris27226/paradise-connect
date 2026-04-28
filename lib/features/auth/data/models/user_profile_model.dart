@@ -55,6 +55,7 @@ class UserProfileModel extends UserProfileEntity {
     super.photo,
     required super.permissionScope,
     super.positionName,
+    super.salesPersonId,
     super.salesRoles,
     super.subordinates,
   });
@@ -70,6 +71,7 @@ class UserProfileModel extends UserProfileEntity {
       photo: json['photo'],
       permissionScope: json['permission_scope'] ?? '',
       positionName: json['position_name'],
+      salesPersonId: json['sales_person_id'],
       salesRoles: json['sales_roles'] != null
           ? (json['sales_roles'] as List).map((i) => HierarchyNodeModel.fromJson(i)).toList()
           : const [],
@@ -90,6 +92,7 @@ class UserProfileModel extends UserProfileEntity {
       'photo': photo,
       'permission_scope': permissionScope,
       'position_name': positionName,
+      'sales_person_id': salesPersonId,
       'sales_roles': salesRoles.map((i) => (i as HierarchyNodeModel).toJson()).toList(),
       'subordinates': subordinates.map((i) => (i as HierarchyNodeModel).toJson()).toList(),
     };

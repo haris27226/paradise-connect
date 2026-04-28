@@ -14,9 +14,13 @@ class FetchContactsEvent extends ContactEvent {
   final String? search;
   final String? startDate;
   final String? endDate;
-  final int? ownerId;
-  final int? statusProspectId;
+  final List<int>? ownerIds;
+  final List<int>? statusProspectIds;
   final bool isRefresh;
+  final bool clearSearch;
+  final bool clearDates;
+  final bool clearOwner;
+  final bool clearStatus;
 
   const FetchContactsEvent({
     this.page = 1,
@@ -24,14 +28,17 @@ class FetchContactsEvent extends ContactEvent {
     this.search,
     this.startDate,
     this.endDate,
-    this.ownerId,
-    this.statusProspectId,
+    this.ownerIds,
+    this.statusProspectIds,
     this.isRefresh = false,
+    this.clearSearch = false,
+    this.clearDates = false,
+    this.clearOwner = false,
+    this.clearStatus = false,
   });
 
   @override
-  List<Object?> get props => [page, perPage, search, startDate, endDate, ownerId, statusProspectId, isRefresh];
-}
+  List<Object?> get props => [  page,  perPage,  search,  startDate,  endDate,  ownerIds,  statusProspectIds,  isRefresh,  clearSearch,  clearDates,  clearOwner,  clearStatus];}
 
 class CreateContactEvent extends ContactEvent {
   final CreateContactParams params;

@@ -3,10 +3,7 @@ import '../../domain/entities/activity.dart';
 import '../../domain/entities/contact.dart';
 import '../../domain/entities/contact_response.dart';
 import '../../domain/entities/create_activity_params.dart';
-import '../../domain/entities/owner.dart';
 import '../../domain/entities/prospect_status.dart';
-import '../../domain/entities/sales_executive.dart';
-import '../../domain/entities/sales_manager.dart';
 import '../../domain/entities/create_contact_params.dart';
 import '../../domain/repositories/contact_repository.dart';
 import '../datasources/contact_remote_datasource.dart';
@@ -17,7 +14,7 @@ class ContactRepositoryImpl implements ContactRepository {
   ContactRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<Either<String, ContactResponse>> getContacts({int page = 1, int perPage = 10, String? search, String? startDate, String? endDate, int? ownerId, int? statusProspectId}) async {
+  Future<Either<String, ContactResponse>> getContacts({int page = 1, int perPage = 10, String? search, String? startDate, String? endDate, List<int>? ownerIds, List<int>? statusProspectIds}) async {
     try {
       final result = await remoteDataSource.getContacts(
         page: page,
@@ -25,8 +22,8 @@ class ContactRepositoryImpl implements ContactRepository {
         search: search,
         startDate: startDate,
         endDate: endDate,
-        ownerId: ownerId,
-        statusProspectId: statusProspectId,
+        ownerIds: ownerIds,
+        statusProspectIds: statusProspectIds,
       );
       return Right(result);
     } catch (e) {
@@ -44,50 +41,12 @@ class ContactRepositoryImpl implements ContactRepository {
     }
   }
 
-  @override
-  Future<Either<String, List<Owner>>> getOwners({String? search, int? page}) async {
-    try {
-      final owners = await remoteDataSource.getOwners(
-        search: search ?? '',
-        page: page ?? 1,
-      );
-      return Right(owners);
-    } catch (e) {
-      return Left(e.toString());
-    }
-  }
 
   @override
   Future<Either<String, List<ProspectStatus>>> getProspectStatuses() async {
     try {
       final result = await remoteDataSource.getProspectStatuses();
       return Right(result);
-    } catch (e) {
-      return Left(e.toString());
-    }
-  }
-
-  @override
-  Future<Either<String, List<SalesExecutive>>> getSalesExecutives({String? search, int? page}) async {
-    try {
-      final salesExecutives = await remoteDataSource.getSalesExecutives(
-        search: search ?? '',
-        page: page ?? 1,
-      );
-      return Right(salesExecutives);
-    } catch (e) {
-      return Left(e.toString());
-    }
-  }
-
-  @override
-  Future<Either<String, List<SalesManager>>> getSalesManagers({String? search, int? page}) async {
-    try {
-      final salesManagers = await remoteDataSource.getSalesManagers(
-        search: search ?? '',
-        page: page ?? 1,
-      );
-      return Right(salesManagers);
     } catch (e) {
       return Left(e.toString());
     }

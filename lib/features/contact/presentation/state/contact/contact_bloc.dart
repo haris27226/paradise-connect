@@ -31,12 +31,12 @@ class ContactBloc extends Bloc<ContactEvent, ContactState> {
         search: event.search,
         startDate: event.startDate,
         endDate: event.endDate,
-        ownerId: event.ownerId,
-        statusProspectId: event.statusProspectId,
-        clearSearch: event.search == null && state.search != null,
-        clearDates: (event.startDate == null || event.endDate == null) && (state.startDate != null || state.endDate != null),
-        clearOwner: event.ownerId == null && state.ownerId != null,
-        clearStatus: event.statusProspectId == null && state.statusProspectId != null,
+        ownerIds: event.ownerIds,
+        statusProspectIds: event.statusProspectIds,
+        clearSearch: event.clearSearch,
+        clearDates: event.clearDates,
+        clearOwner: event.clearOwner,
+        clearStatus: event.clearStatus,
       ));
     } else {
       if (state.hasReachedMax && state.status == ContactStatus.loaded) return;
@@ -46,8 +46,8 @@ class ContactBloc extends Bloc<ContactEvent, ContactState> {
           search: event.search,
           startDate: event.startDate,
           endDate: event.endDate,
-          ownerId: event.ownerId,
-          statusProspectId: event.statusProspectId,
+          ownerIds: event.ownerIds,
+          statusProspectIds: event.statusProspectIds,
         ));
       }
     }
@@ -60,8 +60,8 @@ class ContactBloc extends Bloc<ContactEvent, ContactState> {
       search: event.search ?? state.search,
       startDate: event.startDate ?? state.startDate,
       endDate: event.endDate ?? state.endDate,
-      ownerId: event.ownerId ?? state.ownerId,
-      statusProspectId: event.statusProspectId ?? state.statusProspectId,
+      ownerIds: event.ownerIds ?? state.ownerIds,
+      statusProspectIds: event.statusProspectIds ?? state.statusProspectIds,
     );
 
     result.fold(

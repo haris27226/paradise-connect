@@ -11,7 +11,6 @@ import '../../../../../core/constants/colors.dart';
 import '../../../../../core/utils/helpers/date_helper.dart';
 import '../../../../../core/utils/widget/custom_header.dart';
 import '../../../data/arguments/contact_detail_args.dart';
-import '../../../data/arguments/contact_dropdown_args.dart';
 
 class ContactAddPage extends StatefulWidget {
   final ContactDetailArgs args;
@@ -31,7 +30,6 @@ class _ContactAddPageState extends State<ContactAddPage> {
   File? selectedImage;
   final ImagePicker picker = ImagePicker();
 
-
   Future<void> pickImage() async {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
@@ -41,7 +39,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
       });
     }
   }
-  
+
   Future<void> pickDateTime(BuildContext context) async {
     final now = DateTime.now();
 
@@ -62,10 +60,15 @@ class _ContactAddPageState extends State<ContactAddPage> {
     if (time == null) return;
 
     setState(() {
-      selectedDate = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+      selectedDate = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -73,24 +76,41 @@ class _ContactAddPageState extends State<ContactAddPage> {
       body: SafeArea(
         child: Column(
           children: [
-           customHeader(context, widget.args.page == 0 ? "Call" : widget.args.page == 1 ? "WhatsApp" : widget.args.page == 2 ? "Meeting" : widget.args.page == 3 ? "Task" : widget.args.page == 4 ? "Visit" : "Attachment", isBack: true, colorBack: Color(primaryColor)),
-           SizedBox(height: 16),
-           Expanded(child: Padding(
-             padding: EdgeInsets.all(16.0),
-             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-               children: [
-                 widget.args.page == 5 ? _buildAttachment() : _buildForm(),
-               ],
-             ),
-           )),
+            customHeader(
+              context,
+              widget.args.page == 0
+                  ? "Call"
+                  : widget.args.page == 1
+                  ? "WhatsApp"
+                  : widget.args.page == 2
+                  ? "Meeting"
+                  : widget.args.page == 3
+                  ? "Task"
+                  : widget.args.page == 4
+                  ? "Visit"
+                  : "Attachment",
+              isBack: true,
+              colorBack: Color(primaryColor),
+            ),
+            SizedBox(height: 16),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    widget.args.page == 5 ? _buildAttachment() : _buildForm(),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildAttachment(){
+  Widget _buildAttachment() {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
@@ -148,56 +168,90 @@ class _ContactAddPageState extends State<ContactAddPage> {
             ),
           ),
           SizedBox(height: 12),
-          Text("Attachment Type",style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold, color: Color(grey2Color))),
+          Text(
+            "Attachment Type",
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Color(grey2Color),
+            ),
+          ),
           SizedBox(height: 6),
           GestureDetector(
-            onTap: () => context.pushNamed('detailContactDropdown', extra: ContactDropdownArgs(title: 'Owner')),
+            // onTap: () => context.pushNamed('detailContactDropdown', extra: ContactDropdownArgs(title: 'Attachment Type')),
             child: Container(
-               width: double.infinity,
-               height: 40,
-               decoration: BoxDecoration(
-                 border: Border.all(color: Color(grey4Color)),
-                 borderRadius: BorderRadius.circular(8),
-               ),
-               padding: EdgeInsets.symmetric(horizontal: 16),
-               alignment: Alignment.centerLeft,
-               child: Row(
-                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                 children: [
-                   Text("Select type",style: TextStyle(fontSize: 14, color: Color(grey2Color))),
-                   Icon(Icons.keyboard_arrow_down_rounded, color: Color(grey2Color), size: 30),
-                 ],
-               ), 
-             ),
-          ),
-           SizedBox(height: 12,),
-           Text("Description",style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold, color: Color(grey2Color))),
-           SizedBox(height: 6),
-           TextField(
-              maxLines: 4,
-              minLines: 3,
-              controller: descTC,
-              focusNode: descFN,
-              onTapOutside: (event) => descFN.unfocus(),
-              textInputAction: TextInputAction.newline,
-              decoration: InputDecoration(
-                hintText: "Describe the attachment...",
-                hintStyle: TextStyle(color: Color(grey2Color),fontSize: 14),
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey11Color))),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey11Color))),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(primaryColor))),
+              width: double.infinity,
+              height: 40,
+              decoration: BoxDecoration(
+                border: Border.all(color: Color(grey4Color)),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              alignment: Alignment.centerLeft,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Select type",
+                    style: TextStyle(fontSize: 14, color: Color(grey2Color)),
+                  ),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Color(grey2Color),
+                    size: 30,
+                  ),
+                ],
               ),
             ),
-            SizedBox(height: 20),
-           customButton( (){context.pop();}, "Save")
-
+          ),
+          SizedBox(height: 12),
+          Text(
+            "Description",
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Color(grey2Color),
+            ),
+          ),
+          SizedBox(height: 6),
+          TextField(
+            maxLines: 4,
+            minLines: 3,
+            controller: descTC,
+            focusNode: descFN,
+            onTapOutside: (event) => descFN.unfocus(),
+            textInputAction: TextInputAction.newline,
+            decoration: InputDecoration(
+              hintText: "Describe the attachment...",
+              hintStyle: TextStyle(color: Color(grey2Color), fontSize: 14),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Color(grey11Color)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Color(grey11Color)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Color(primaryColor)),
+              ),
+            ),
+          ),
+          SizedBox(height: 20),
+          customButton(() {
+            context.pop();
+          }, "Save"),
         ],
       ),
     );
   }
 
-  Widget _buildForm(){
+  Widget _buildForm() {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
@@ -208,24 +262,43 @@ class _ContactAddPageState extends State<ContactAddPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Call",style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold, color: Color(grey2Color))),
+          Text(
+            "Call",
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Color(grey2Color),
+            ),
+          ),
           SizedBox(height: 6),
           TextField(
-              maxLines: 4,
-              minLines: 3,
-              controller: descTC,
-              focusNode: descFN,
-              onTapOutside: (event) => descFN.unfocus(),
-              textInputAction: TextInputAction.newline,
-              decoration: InputDecoration(
-                hintText: "Describe the call...",
-                hintStyle: TextStyle(color: Color(grey2Color),fontSize: 14),
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey11Color))),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey11Color))),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(primaryColor))),
+            maxLines: 4,
+            minLines: 3,
+            controller: descTC,
+            focusNode: descFN,
+            onTapOutside: (event) => descFN.unfocus(),
+            textInputAction: TextInputAction.newline,
+            decoration: InputDecoration(
+              hintText: "Describe the call...",
+              hintStyle: TextStyle(color: Color(grey2Color), fontSize: 14),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Color(grey11Color)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Color(grey11Color)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Color(primaryColor)),
               ),
             ),
+          ),
           SizedBox(height: 12),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -236,10 +309,18 @@ class _ContactAddPageState extends State<ContactAddPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(DateHelper.nowFull(),style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold, color: Color(grey2Color))),
+                Text(
+                  DateHelper.nowFull(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(grey2Color),
+                  ),
+                ),
                 Icon(Icons.calendar_today, color: Color(grey2Color), size: 16),
               ],
-            )),
+            ),
+          ),
           SizedBox(height: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,14 +341,14 @@ class _ContactAddPageState extends State<ContactAddPage> {
                     scale: 0.8,
                     child: CupertinoSwitch(
                       value: isFollowUp,
-                      activeColor: Color(primaryColor),
+                      activeTrackColor: Color(primaryColor),
                       onChanged: (value) {
                         setState(() {
                           isFollowUp = value;
                         });
                       },
                     ),
-                  )
+                  ),
                 ],
               ),
               if (isFollowUp) ...[
@@ -292,18 +373,32 @@ class _ContactAddPageState extends State<ContactAddPage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(selectedDate != null? DateHelper.formatFull(selectedDate!): DateHelper.nowFull(), style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold,color: Color(blackColor),),),
-                        Icon(Icons.calendar_today,color: Color(primaryColor), size: 16),
+                        Text(
+                          selectedDate != null
+                              ? DateHelper.formatFull(selectedDate!)
+                              : DateHelper.nowFull(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color(blackColor),
+                          ),
+                        ),
+                        Icon(
+                          Icons.calendar_today,
+                          color: Color(primaryColor),
+                          size: 16,
+                        ),
                       ],
                     ),
                   ),
                 ),
               ],
-               SizedBox(height: 32,),
-              customButton( (){context.pop();}, "Save")
-              
+              SizedBox(height: 32),
+              customButton(() {
+                context.pop();
+              }, "Save"),
             ],
-          )
+          ),
         ],
       ),
     );

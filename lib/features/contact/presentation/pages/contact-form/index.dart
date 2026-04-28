@@ -1,31 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:progress_group/features/contact/domain/entities/create_contact_params.dart';
 import 'package:progress_group/features/contact/domain/entities/prospect_status.dart';
+import 'package:progress_group/features/contact/presentation/state/prospect_status/prospect_status_event.dart';
 
 import '../../../../../core/constants/colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/utils/widget/custom_dropdown_group.dart';
+import '../../../../auth/domain/entities/user_profile.dart';
+import '../../../../auth/presentation/state/profile/profile_bloc.dart';
+import '../../../../auth/presentation/state/profile/profile_state.dart';
 import '../../../data/arguments/contact_detail_args.dart';
+import '../../../data/arguments/contact_dropdown_args.dart';
 import '../../state/contact/contact_bloc.dart';
 import '../../state/contact/contact_event.dart';
 import '../../state/contact/contact_state.dart';
-import '../../../domain/entities/create_contact_params.dart';
-import '../../../domain/entities/owner.dart';
-import '../../../domain/entities/sales_executive.dart';
-import '../../../domain/entities/sales_manager.dart';
-import '../../state/owner/owner_bloc.dart';
-import '../../state/owner/owner_event.dart';
-import '../../state/owner/owner_state.dart';
 import '../../state/prospect_status/prospect_status_bloc.dart';
-import '../../state/prospect_status/prospect_status_event.dart';
 import '../../state/prospect_status/prospect_status_state.dart';
-import '../../state/sales_executive/sales_executive_bloc.dart';
-import '../../state/sales_executive/sales_executive_event.dart';
-import '../../state/sales_executive/sales_executive_state.dart';
-import '../../state/sales_manager/sales_manager_bloc.dart';
-import '../../state/sales_manager/sales_manager_event.dart';
-import '../../state/sales_manager/sales_manager_state.dart';
-import '../../../domain/entities/sales_manager.dart';
+
 
 class ContactFormPage extends StatefulWidget {
   final ContactDetailArgs args;
@@ -61,6 +53,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
   String? selectedSalesExecutiveName;
   int? selectedSalesManagerId;
   String? selectedSalesManagerName;
+  List<Map<String, dynamic>> salesInfoFields = [];
 
   FocusNode fullNameFN = FocusNode();
   FocusNode emailFN = FocusNode();
@@ -87,10 +80,8 @@ class _ContactFormPageState extends State<ContactFormPage> {
     }
 
     // Always ensure master data is loaded for mapping IDs to names
-    context.read<OwnerBloc>().add(FetchOwnersEvent());
+    // Always ensure master data is loaded for mapping IDs to names
     context.read<ProspectStatusBloc>().add(FetchProspectStatusesEvent());
-    context.read<SalesExecutiveBloc>().add(const FetchSalesExecutivesEvent());
-    context.read<SalesManagerBloc>().add(const FetchSalesManagersEvent());
   }
 
   void _fillForm(dynamic contact) {
@@ -111,25 +102,185 @@ class _ContactFormPageState extends State<ContactFormPage> {
       selectedSalesExecutiveId = contact.salesExecutiveId;
       selectedSalesManagerId = contact.salesManagerId;
 
-      // Map Names from BLoCs
-      final ownerState = context.read<OwnerBloc>().state;
-      if (ownerState.status == OwnerStatus.loaded) {
-        selectedOwnerName = ownerState.owners.cast<Owner?>().firstWhere((e) => e?.salesPersonId == selectedOwnerId, orElse: () => null)?.fullName;
+      final profileState = context.read<ProfileBloc>().state;
+      if (profileState is ProfileLoaded) {
+         final user = profileState.profile;
+         
+         String? findName(int? id) {
+           if (id == null) return null;
+           if (user.salesPersonId == id) return user.fullName;
+           
+           HierarchyNodeEntity? foundSub;
+           void searchSub(List<HierarchyNodeEntity> subs) {
+             for(var s in subs) {
+                if (s.salesPersonId == id) foundSub = s;
+                if (foundSub == null && s.subordinates.isNotEmpty) searchSub(s.subordinates);
+             }
+           }
+           searchSub(user.subordinates);
+           if (foundSub != null) return foundSub!.fullName;
+           
+           HierarchyNodeEntity? foundAtasan;
+           void searchAtasan(HierarchyNodeEntity? current) {
+             while (current != null) {
+               if (current.salesPersonId == id) { foundAtasan = current; break; }
+               current = current.parent;
+             }
+           }
+           for (var role in user.salesRoles) {
+             searchAtasan(role);
+             if (foundAtasan != null) break;
+           }
+           if (foundAtasan != null) return foundAtasan!.fullName;
+
+           return null;
+         }
+
+         selectedOwnerName = findName(selectedOwnerId);
+         selectedSalesExecutiveName = findName(selectedSalesExecutiveId);
+         selectedSalesManagerName = findName(selectedSalesManagerId);
       }
 
       final statusState = context.read<ProspectStatusBloc>().state;
       if (statusState.status == ProspectStatusEnum.loaded) {
         selectedStatusName = statusState.statuses.cast<ProspectStatus?>().firstWhere((e) => e?.statusProspectId == selectedStatusId, orElse: () => null)?.statusProspectName;
       }
+    });
+  }
 
-      final executiveState = context.read<SalesExecutiveBloc>().state;
-      if (executiveState.status == SalesExecutiveStatus.loaded) {
-        selectedSalesExecutiveName = executiveState.salesExecutives.cast<SalesExecutive?>().firstWhere((e) => e?.salesPersonId == selectedSalesExecutiveId, orElse: () => null)?.fullName;
+  void _autoFillFromProfile() {
+    final profileState = context.read<ProfileBloc>().state;
+    if (profileState is ProfileLoaded) {
+      final user = profileState.profile;
+      
+      if (widget.args.page == 0) {
+        if (user.subordinates.isEmpty) {
+          setState(() {
+            selectedOwnerId = user.salesPersonId;
+            selectedOwnerName = user.fullName;
+          });
+          _updateSalesInformation(user.salesPersonId!, user);
+        }
       }
+    }
+  }
 
-      final managerState = context.read<SalesManagerBloc>().state;
-      if (managerState.status == SalesManagerStatus.loaded) {
-        selectedSalesManagerName = managerState.salesManagers.cast<SalesManager?>().firstWhere((e) => e?.salesPersonId == selectedSalesManagerId, orElse: () => null)?.fullName;
+  void _updateSalesInformation(int ownerId, UserProfileEntity user) {
+    List<HierarchyNodeEntity> chain = [];
+
+    // 1. Helper to find path in subordinates
+    List<HierarchyNodeEntity>? findPath(List<HierarchyNodeEntity> nodes, int id) {
+      for (var node in nodes) {
+        if (node.salesPersonId == id) return [node];
+        var subPath = findPath(node.subordinates, id);
+        if (subPath != null) return [node, ...subPath];
+      }
+      return null;
+    }
+
+    // 2. Check if owner is a subordinate
+    var subordinatePath = findPath(user.subordinates, ownerId);
+    if (subordinatePath != null) {
+      // Chain: [User, Sub1, Sub2, ..., Owner]
+      // We create a mock node for the current user to include them in the chain
+      final userNode = HierarchyNodeEntity(
+        salesPersonId: user.salesPersonId!,
+        fullName: user.fullName,
+        positionName: user.positionName,
+      );
+      chain = [userNode, ...subordinatePath];
+    } else if (user.salesPersonId == ownerId) {
+      // 3. Case: Selecting themselves. Chain: [User, Boss, Grandboss...]
+      final userNode = HierarchyNodeEntity(
+        salesPersonId: user.salesPersonId!,
+        fullName: user.fullName,
+        positionName: user.positionName,
+      );
+      chain = [userNode];
+      
+      if (user.salesRoles.isNotEmpty) {
+        HierarchyNodeEntity? current = user.salesRoles.first.parent;
+        while (current != null) {
+          chain.add(current);
+          current = current.parent;
+        }
+      }
+    } else {
+      // 4. Case: Maybe owner is a superior? Search in salesRoles parent chain
+      for (var role in user.salesRoles) {
+        HierarchyNodeEntity? current = role;
+        List<HierarchyNodeEntity> temp = [];
+        bool found = false;
+        while (current != null) {
+          temp.add(current);
+          if (current.salesPersonId == ownerId) {
+            found = true;
+            break;
+          }
+          current = current.parent;
+        }
+        if (found) {
+           chain = temp;
+           break;
+        }
+      }
+    }
+
+    setState(() {
+      salesInfoFields.clear();
+      if (chain.isNotEmpty) {
+        // The user wants Owner first, then bosses? 
+        // Example: "Devisari (SE) -> Siti (SS) -> Gleydy (SM) -> Radithya (GM)"
+        // Our 'chain' is [Root, ..., Owner] if subordinate, or [Owner, ..., Boss] if self/superior.
+        // Let's normalize it to [Owner, Boss, Grandboss...]
+        
+        List<HierarchyNodeEntity> displayChain;
+        if (subordinatePath != null) {
+           // It was [User, ..., Owner]. Reverse it.
+           displayChain = chain.reversed.toList();
+        } else {
+           // It was [Owner, Boss, ...]. Keep it.
+           displayChain = chain;
+        }
+
+        for (var node in displayChain) {
+          salesInfoFields.add({
+            'label': node.positionName ?? 'Sales',
+            'name': node.fullName,
+            'id': node.salesPersonId,
+          });
+        }
+
+        // Map to specific API roles for the form params
+        // Owner is always Executive
+        selectedSalesExecutiveId = ownerId;
+        selectedSalesExecutiveName = displayChain.first.fullName;
+        
+        // Find Team from the owner node if possible
+        selectedTeamId = displayChain.first.salesTeamId;
+
+        selectedSupervisorId = null;
+        selectedSalesManagerId = null;
+        selectedSalesManagerName = null;
+
+        if (displayChain.length > 1) {
+          // Supervisor is the immediate boss
+          selectedSupervisorId = displayChain[1].salesPersonId;
+          
+          // Manager is the first person with "Manager" in position
+          for (int i = 1; i < displayChain.length; i++) {
+            if (displayChain[i].positionName?.toLowerCase().contains("manager") ?? false) {
+              selectedSalesManagerId = displayChain[i].salesPersonId;
+              selectedSalesManagerName = displayChain[i].fullName;
+              break;
+            }
+          }
+          // Fallback manager
+          if (selectedSalesManagerId == null) {
+             selectedSalesManagerId = displayChain[1].salesPersonId;
+             selectedSalesManagerName = displayChain[1].fullName;
+          }
+        }
       }
     });
   }
@@ -188,11 +339,10 @@ class _ContactFormPageState extends State<ContactFormPage> {
       },
       child: MultiBlocListener(
         listeners: [
-          BlocListener<OwnerBloc, OwnerState>(
+          BlocListener<ProfileBloc, ProfileState>(
             listener: (context, state) {
-              if (state.status == OwnerStatus.loaded && widget.args.page != 0) {
-                final contact = context.read<ContactBloc>().state.contactDetail ?? widget.args.data;
-                if (contact != null) _fillForm(contact);
+              if (state is ProfileLoaded && widget.args.page == 0) {
+                _autoFillFromProfile();
               }
             },
           ),
@@ -204,34 +354,30 @@ class _ContactFormPageState extends State<ContactFormPage> {
               }
             },
           ),
-          BlocListener<SalesExecutiveBloc, SalesExecutiveState>(
-            listener: (context, state) {
-              if (state.status == SalesExecutiveStatus.loaded && widget.args.page != 0) {
-                final contact = context.read<ContactBloc>().state.contactDetail ?? widget.args.data;
-                if (contact != null) _fillForm(contact);
-              }
-            },
-          ),
-          BlocListener<SalesManagerBloc, SalesManagerState>(
-            listener: (context, state) {
-              if (state.status == SalesManagerStatus.loaded && widget.args.page != 0) {
-                final contact = context.read<ContactBloc>().state.contactDetail ?? widget.args.data;
-                if (contact != null) _fillForm(contact);
-              }
-            },
-          ),
         ],
-        child: Scaffold(
-          body: SafeArea(
-            child: _createContact(),
-          ),
+        child: BlocBuilder<ProfileBloc, ProfileState>(
+          builder: (context, profileState) {
+            if (profileState is ProfileLoading) {
+              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            }
+            if (profileState is ProfileLoaded && widget.args.page == 0 && selectedOwnerId == null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                 _autoFillFromProfile();
+              });
+            }
+            return Scaffold(
+              body: SafeArea(
+                child: _createContact(profileState),
+              ),
+            );
+          }
         ),
       ),
     );
   }
-
   
-  Widget _createContact() {
+    
+  Widget _createContact(ProfileState profileState) {
     return Column(
       children: [
         /// 🔹 HEADER
@@ -272,8 +418,8 @@ class _ContactFormPageState extends State<ContactFormPage> {
                       firstBlokNo: blockNoTC.text.isNotEmpty ? blockNoTC.text : null,
                       salesExecutiveId: selectedSalesExecutiveId,
                       salesManagerId: selectedSalesManagerId ?? 6, // Use selected or default
-                      salesSupervisorId: 73, // Hardcoded in example?
-                      salesTeamId: 1, // Hardcoded in example?
+                      salesSupervisorId: selectedSupervisorId ?? 73, 
+                      salesTeamId: selectedTeamId ?? 1,
                       salesChannelId: selectedChannelId ?? 1,
                       statusProspectId: selectedStatusId ?? 1,
                       sumberInformasi2: selectedSumberInformasi ?? "Instagram Ads",
@@ -315,14 +461,51 @@ class _ContactFormPageState extends State<ContactFormPage> {
                     children: [
                       _buildField(label: "Full Name", controller: fullNameTC, focusNode: fullNameFN),
                       _buildFieldDown(label: "Owner", value: selectedOwnerName, onTap: () async {
-                        // Assuming OwnerSelectionPage returns an Owner object
-                        final result = await context.pushNamed('selectOwner', extra: selectedOwnerId);
-                        if (result != null) {
-                          final owner = result as Owner;
-                          setState(() {
-                            selectedOwnerId = owner.salesPersonId;
-                            selectedOwnerName = owner.fullName;
-                          });
+                        if (profileState is ProfileLoaded) {
+                          final user = profileState.profile;
+                          // Build list: user + all subordinates flat
+                          final List<OwnerDropdownItem> ownerItems = [];
+                          ownerItems.add(OwnerDropdownItem(
+                            id: user.salesPersonId,
+                            name: user.fullName,
+                            subtitle: user.positionName,
+                          ));
+                          void addSubs(List<HierarchyNodeEntity> subs) {
+                            for (var s in subs) {
+                              ownerItems.add(OwnerDropdownItem(
+                                id: s.salesPersonId,
+                                name: s.fullName,
+                                subtitle: s.positionName,
+                              ));
+                              if (s.subordinates.isNotEmpty) addSubs(s.subordinates);
+                            }
+                          }
+                          addSubs(user.subordinates);
+
+                          if (ownerItems.length == 1) {
+                            // Only self, no selection needed
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Anda tidak memiliki bawahan untuk dipilih.')),
+                            );
+                            return;
+                          }
+
+                          final result = await context.pushNamed(
+                            'detailContactDropdown',
+                            extra: ContactDropdownArgs(
+                              title: 'Pilih Owner',
+                              items: ownerItems,
+                              selectedId: selectedOwnerId,
+                            ),
+                          );
+                          if (result != null) {
+                            final owner = result as OwnerDropdownItem;
+                            setState(() {
+                              selectedOwnerId = owner.id;
+                              selectedOwnerName = owner.name;
+                            });
+                            _updateSalesInformation(owner.id??0, user);
+                          }
                         }
                       }),
                       _buildFieldDown(label: "Salutation", value: selectedSalutation, onTap: () {
@@ -360,26 +543,16 @@ class _ContactFormPageState extends State<ContactFormPage> {
                   hint: "Sales Information",
                   child: Column(
                     children: [
-                      _buildFieldDown(label: "Sales Executive", value: selectedSalesExecutiveName, onTap: () async {
-                        final result = await context.pushNamed('selectSalesExecutive', extra: selectedSalesExecutiveId);
-                        if (result != null) {
-                          final executive = result as SalesExecutive;
-                          setState(() {
-                            selectedSalesExecutiveId = executive.salesPersonId;
-                            selectedSalesExecutiveName = executive.fullName;
-                          });
-                        }
-                      }),
-                      _buildFieldDown(label: "Sales Manager", value: selectedSalesManagerName, onTap: () async {
-                        final result = await context.pushNamed('selectSalesManager', extra: selectedSalesManagerId);
-                        if (result != null) {
-                          final manager = result as SalesManager;
-                          setState(() {
-                            selectedSalesManagerId = manager.salesPersonId;
-                            selectedSalesManagerName = manager.fullName;
-                          });
-                        }
-                      }),
+                      if (salesInfoFields.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Text("Pilih owner untuk melihat informasi sales", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        ),
+                      ...salesInfoFields.map((field) => _buildFieldDown(
+                        label: field['label'] ?? "Sales",
+                        value: field['name'],
+                        onTap: null,
+                      )).toList(),
                     ],
                   ),
                 )

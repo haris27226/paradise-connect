@@ -12,82 +12,232 @@ class DropdownListContact extends StatefulWidget {
 }
 
 class _DropdownListContactState extends State<DropdownListContact> {
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    body: SafeArea(
-      child: Column( // ✅ langsung Column
-        children: [
-          /// 🔹 HEADER
-          Container(
-            height: 64,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  List<int> _tempSelectedIds = [];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.args.isMultiSelect) {
+      _tempSelectedIds = List.from(widget.args.selectedIds ?? []);
+    } else if (widget.args.selectedId != null) {
+      _tempSelectedIds = [widget.args.selectedId!];
+    }
+  }
+
+  List<OwnerDropdownItem> get _filteredItems {
+    if (_searchQuery.isEmpty) return widget.args.items;
+    final q = _searchQuery.toLowerCase();
+    return widget.args.items.where((item) {
+      return item.name.toLowerCase().contains(q) ||
+          (item.subtitle?.toLowerCase().contains(q) ?? false);
+    }).toList();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Color(grey11Color),
+      body: SafeArea(
+        child: Column(
+          children: [
+            /// 🔹 HEADER
+            Container(
+              height: 64,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: Color(whiteColor),
+                border: Border(
+                  bottom: BorderSide(width: 1, color: Color(grey10Color)),
+                ),
+              ),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => context.pop(),
+                    child: Icon(Icons.arrow_back, color: Color(primaryColor), size: 27),
+                  ),
+                  const SizedBox(width: 10),
+                   Expanded(
+                    child: Text(
+                      widget.args.title,
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (widget.args.isMultiSelect)
+                    TextButton(
+                      onPressed: () {
+                        final selectedItems = widget.args.items
+                            .where((item) => _tempSelectedIds.contains(item.id))
+                            .toList();
+                        context.pop(selectedItems);
+                      },
+                      child: Text("Save",
+                          style: TextStyle(
+                              color: Color(primaryColor),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16)),
+                    ),
+                ],
+              ),
+            ),
+
+            /// 🔍 SEARCH
+            Container(
               color: Color(whiteColor),
-              border: Border(
-                bottom: BorderSide(
-                  width: 1,
-                  color: Color(grey10Color),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (val) => setState(() => _searchQuery = val),
+                decoration: InputDecoration(
+                  hintText: 'Search...',
+                  hintStyle: TextStyle(color: Color(grey7Color), fontSize: 14),
+                  prefixIcon: Icon(Icons.search, color: Color(grey7Color)),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? GestureDetector(
+                          onTap: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                          child: Icon(Icons.close, color: Color(grey7Color)),
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: Color(grey11Color),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
             ),
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: () => context.pop(),
-                  child: Icon(
-                    Icons.arrow_back,
-                    color: Color(primaryColor),
-                    size: 27,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded( // ✅ ini baru boleh
-                  child: Text(
-                    widget.args.title,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
 
-          /// 🔥 CONTENT (BIAR AMAN)
-          Expanded(
-            child: ListView(
-              children: [
-                Container(
-                  height: 45,
-                  width: double.infinity,
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Color(whiteColor),
-                    border: Border(
-                      bottom: BorderSide(
-                        width: 1,
-                        color: Color(grey10Color),
+            /// 🔥 LIST
+            Expanded(
+              child: _filteredItems.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.search_off, size: 48, color: Color(grey7Color)),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Tidak ditemukan',
+                            style: TextStyle(color: Color(grey7Color), fontSize: 14),
+                          ),
+                        ],
                       ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: _filteredItems.length,
+                      separatorBuilder: (_, __) => Divider(
+                        height: 1,
+                        color: Color(grey10Color),
+                        indent: 72,
+                      ),
+                      itemBuilder: (context, index) {
+                        final item = _filteredItems[index];
+                        final isSelected = _tempSelectedIds.contains(item.id);
+
+                        return Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              if (widget.args.isMultiSelect) {
+                                setState(() {
+                                  if (isSelected) {
+                                    _tempSelectedIds.remove(item.id);
+                                  } else {
+                                    if (item.id != null) _tempSelectedIds.add(item.id!);
+                                  }
+                                });
+                              } else {
+                                context.pop(item);
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              color: isSelected ? Color(primaryColor).withOpacity(0.06) : Color(whiteColor),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 22,
+                                    backgroundColor: isSelected
+                                        ? Color(primaryColor)
+                                        : Color(primaryColor).withOpacity(0.12),
+                                    child: Text(
+                                      item.name.isNotEmpty ? item.name[0].toUpperCase() : '?',
+                                      style: TextStyle(
+                                        color: isSelected ? Colors.white : Color(primaryColor),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.name,
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(isSelected ? primaryColor : blue2Color),
+                                          ),
+                                        ),
+                                        if (item.subtitle != null && item.subtitle!.isNotEmpty) ...[
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            item.subtitle!,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Color(grey7Color),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  if (widget.args.isMultiSelect)
+                                    Checkbox(
+                                      value: isSelected,
+                                      activeColor: Color(primaryColor),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                      onChanged: (val) {
+                                        setState(() {
+                                          if (val == true) {
+                                            if (item.id != null) _tempSelectedIds.add(item.id!);
+                                          } else {
+                                            _tempSelectedIds.remove(item.id);
+                                          }
+                                        });
+                                      },
+                                    )
+                                  else if (isSelected)
+                                    Icon(Icons.check_circle, color: Color(primaryColor), size: 22),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                  child: Text(
-                    "01-PSC",
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Color(grey2Color),
-                    ),
-                  ),
-                ),
-              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}}
+    );
+  }
+}

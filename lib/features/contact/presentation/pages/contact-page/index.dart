@@ -11,20 +11,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_detail_args.dart';
 import 'package:progress_group/features/contact/data/models/selectbox_model.dart';
 import 'package:progress_group/features/contact/domain/entities/contact.dart';
-import 'package:progress_group/features/contact/presentation/state/owner/owner_bloc.dart';
-import 'package:progress_group/features/contact/presentation/state/owner/owner_event.dart';
+import 'package:progress_group/features/auth/domain/entities/user_profile.dart';
+import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
+import 'package:progress_group/features/auth/presentation/state/profile/profile_state.dart';
+import 'package:progress_group/features/contact/data/arguments/contact_dropdown_args.dart';
 import '../../../../../core/utils/widget/custom_buttomsheet.dart';
 import '../../state/contact/contact_bloc.dart';
 import '../../state/contact/contact_event.dart';
 import '../../state/contact/contact_state.dart';
-import '../../state/owner/owner_state.dart';
 import '../../state/prospect_status/prospect_status_bloc.dart';
 import '../../state/prospect_status/prospect_status_event.dart';
 import '../../state/prospect_status/prospect_status_state.dart';
 import '../../../../../core/utils/widget/custom_filter_button.dart';
-import '../../../domain/entities/owner.dart';
 import '../../../domain/entities/prospect_status.dart';
-import '../contact-detail/index.dart';
 
 
 class ContactPage extends StatefulWidget {
@@ -51,7 +50,6 @@ class _ContactPageState extends State<ContactPage> {
     super.initState();
     _scrollController = ScrollController()..addListener(_onScroll);
     context.read<ContactBloc>().add(const FetchContactsEvent());
-    context.read<OwnerBloc>().add(FetchOwnersEvent());
     context.read<ProspectStatusBloc>().add(FetchProspectStatusesEvent());
   }
 
@@ -108,60 +106,109 @@ class _ContactPageState extends State<ContactPage> {
                       itemBuilder: (context, index) {
                         final item = selectBoxes[index];
                         if (item.hint == "Owner") {
-                          return BlocBuilder<ContactBloc, ContactState>(
-                            builder: (context, contactState) {
-                              String label = item.hint;
-                              bool isSelected = contactState.ownerId != null;
-                              
-                              if (isSelected) {
-                                // We need the owner name. We can get it from OwnerBloc state if available
-                                final ownerState = context.read<OwnerBloc>().state;
-                                if (ownerState.status == OwnerStatus.loaded) {
-                                  final owner = ownerState.owners.cast<Owner?>().firstWhere(
-                                    (e) => e?.salesPersonId == contactState.ownerId,
-                                    orElse: () => null,
-                                  );
-                                  if (owner != null) {
-                                    label = owner.fullName;
+                          return BlocBuilder<ProfileBloc, ProfileState>(
+                            builder: (context, profileState) {
+                              return BlocBuilder<ContactBloc, ContactState>(
+                                builder: (context, contactState) {
+                                  String label = item.hint;
+                                  bool isSelected = contactState.ownerIds != null && contactState.ownerIds!.isNotEmpty;
+                                  
+                                  if (isSelected && profileState is ProfileLoaded) {
+                                    final user = profileState.profile;
+                                    
+                                    String? findName(int? id) {
+                                      if (id == null) return null;
+                                      if (user.salesPersonId == id) return user.fullName;
+                                      
+                                      HierarchyNodeEntity? found;
+                                      void search(List<HierarchyNodeEntity> nodes) {
+                                        for (var n in nodes) {
+                                          if (n.salesPersonId == id) found = n;
+                                          if (found == null && n.subordinates.isNotEmpty) search(n.subordinates);
+                                        }
+                                      }
+                                      search(user.subordinates);
+                                      return found?.fullName;
+                                    }
+                                    
+                                    if (contactState.ownerIds!.length == 1) {
+                                      label = findName(contactState.ownerIds!.first) ?? "Filtered";
+                                    } else {
+                                      label = "${contactState.ownerIds!.length} Owners";
+                                    }
                                   }
-                                }
-                              }
 
-                              return CustomFilterButton(
-                                label: label,
-                                isSelected: isSelected,
-                                onTap: () async {
-                                  final result = await context.pushNamed(
-                                    'selectOwner',
-                                    extra: contactState.ownerId,
+                                  return CustomFilterButton(
+                                    label: label,
+                                    isSelected: isSelected,
+                                    onTap: () async {
+                                      if (profileState is ProfileLoaded) {
+                                        final user = profileState.profile;
+                                        final List<OwnerDropdownItem> ownerItems = [];
+                                        
+                                        ownerItems.add(OwnerDropdownItem(
+                                          id: user.salesPersonId,
+                                          name: user.fullName,
+                                          subtitle: user.positionName,
+                                        ));
+
+                                        void addSubs(List<HierarchyNodeEntity> subs) {
+                                          for (var s in subs) {
+                                            ownerItems.add(OwnerDropdownItem(
+                                              id: s.salesPersonId,
+                                              name: s.fullName,
+                                              subtitle: s.positionName,
+                                            ));
+                                            if (s.subordinates.isNotEmpty) addSubs(s.subordinates);
+                                          }
+                                        }
+                                        addSubs(user.subordinates);
+
+                                        final result = await context.pushNamed(
+                                          'detailContactDropdown',
+                                          extra: ContactDropdownArgs(
+                                            title: 'Pilih Owner',
+                                            items: ownerItems,
+                                            selectedIds: contactState.ownerIds,
+                                            isMultiSelect: true,
+                                          ),
+                                        );
+
+                                        if (result != null) {
+                                          final selected = result as List<OwnerDropdownItem>;
+                                          context.read<ContactBloc>().add(FetchContactsEvent(
+                                            ownerIds: selected.map((e) => e.id!).toList(),
+                                            isRefresh: true,
+                                            clearOwner: selected.isEmpty,
+                                          ));
+                                        }
+                                      }
+                                    },
                                   );
-                                  if (result != null || contactState.ownerId != null) {
-                                    final owner = result as Owner?;
-                                    context.read<ContactBloc>().add(FetchContactsEvent(
-                                      ownerId: owner?.salesPersonId,
-                                      isRefresh: true,
-                                    ));
-                                  }
                                 },
                               );
-                            },
+                            }
                           );
                         }
                         if (item.hint == "Status") {
                           return BlocBuilder<ContactBloc, ContactState>(
                             builder: (context, contactState) {
-                              String label = item.hint;
-                              bool isSelected = contactState.statusProspectId != null;
+                               String label = item.hint;
+                              bool isSelected = contactState.statusProspectIds != null && contactState.statusProspectIds!.isNotEmpty;
 
                               if (isSelected) {
                                 final statusState = context.read<ProspectStatusBloc>().state;
                                 if (statusState.status == ProspectStatusEnum.loaded) {
-                                  final status = statusState.statuses.cast<ProspectStatus?>().firstWhere(
-                                    (e) => e?.statusProspectId == contactState.statusProspectId,
-                                    orElse: () => null,
-                                  );
-                                  if (status != null) {
-                                    label = status.statusProspectName;
+                                  if (contactState.statusProspectIds!.length == 1) {
+                                    final status = statusState.statuses.cast<ProspectStatus?>().firstWhere(
+                                      (e) => e?.statusProspectId == contactState.statusProspectIds!.first,
+                                      orElse: () => null,
+                                    );
+                                    if (status != null) {
+                                      label = status.statusProspectName;
+                                    }
+                                  } else {
+                                    label = "${contactState.statusProspectIds!.length} Statuses";
                                   }
                                 }
                               }
@@ -170,16 +217,31 @@ class _ContactPageState extends State<ContactPage> {
                                 label: label,
                                 isSelected: isSelected,
                                 onTap: () async {
-                                  final result = await context.pushNamed(
-                                    'selectStatus',
-                                    extra: contactState.statusProspectId,
-                                  );
-                                  if (result != null || contactState.statusProspectId != null) {
-                                    final status = result as ProspectStatus?;
-                                    context.read<ContactBloc>().add(FetchContactsEvent(
-                                      statusProspectId: status?.statusProspectId,
-                                      isRefresh: true,
-                                    ));
+                                  final statusState = context.read<ProspectStatusBloc>().state;
+                                  if (statusState.status == ProspectStatusEnum.loaded) {
+                                    final List<OwnerDropdownItem> statusItems = statusState.statuses.map((e) => OwnerDropdownItem(
+                                      id: e.statusProspectId,
+                                      name: e.statusProspectName,
+                                    )).toList();
+
+                                    final result = await context.pushNamed(
+                                      'detailContactDropdown',
+                                      extra: ContactDropdownArgs(
+                                        title: 'Pilih Status',
+                                        items: statusItems,
+                                        selectedIds: contactState.statusProspectIds,
+                                        isMultiSelect: true,
+                                      ),
+                                    );
+
+                                    if (result != null) {
+                                      final selected = result as List<OwnerDropdownItem>;
+                                      context.read<ContactBloc>().add(FetchContactsEvent(
+                                        statusProspectIds: selected.map((e) => e.id!).toList(),
+                                        isRefresh: true,
+                                        clearStatus: selected.isEmpty,
+                                      ));
+                                    }
                                   }
                                 },
                               );

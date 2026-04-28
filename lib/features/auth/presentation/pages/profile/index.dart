@@ -138,7 +138,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(user.fullName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            Container(
+                              width: MediaQuery.of(context).size.width * 0.6,
+                              child: Text(user.fullName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
                             if (user.positionName != null && user.positionName!.isNotEmpty)
                               Text(user.positionName!, style: const TextStyle(fontSize: 14, color: Colors.blueAccent)),
                             Text(user.permissionScope, style: const TextStyle(fontSize: 13, color: Colors.grey)),
