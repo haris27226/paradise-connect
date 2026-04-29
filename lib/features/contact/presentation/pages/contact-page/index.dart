@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:progress_group/core/constants/assets.dart';
 import 'package:progress_group/core/constants/colors.dart';
+import 'package:progress_group/core/utils/helpers/initial_name_helper.dart';
 import 'package:progress_group/core/utils/widget/custom_bg_icon.dart';
 import 'package:progress_group/core/utils/widget/custom_header.dart';
 import 'package:progress_group/core/utils/widget/custom_search_field.dart';
@@ -25,7 +26,6 @@ import '../../state/prospect_status/prospect_status_state.dart';
 import '../../../../../core/utils/widget/custom_filter_button.dart';
 import '../../../domain/entities/prospect_status.dart';
 
-
 class ContactPage extends StatefulWidget {
   const ContactPage({super.key});
 
@@ -43,7 +43,7 @@ class _ContactPageState extends State<ContactPage> {
     SelectBoxModel(items: ['Owner', 'B', 'C'], hint: "Owner"),
     SelectBoxModel(items: ['1', '2', '3'], hint: "Create Date"),
     SelectBoxModel(items: ['X', 'Y', 'Z'], hint: "Status"),
-    ];
+  ];
 
   @override
   void initState() {
@@ -62,7 +62,8 @@ class _ContactPageState extends State<ContactPage> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       context.read<ContactBloc>().add(const FetchContactsEvent());
     }
   }
@@ -90,10 +91,9 @@ class _ContactPageState extends State<ContactPage> {
                     onChanged: (value) {
                       if (_debounce?.isActive ?? false) _debounce?.cancel();
                       _debounce = Timer(const Duration(milliseconds: 500), () {
-                        context.read<ContactBloc>().add(FetchContactsEvent(
-                          search: value,
-                          isRefresh: true,
-                        ));
+                        context.read<ContactBloc>().add(
+                          FetchContactsEvent(search: value, isRefresh: true),
+                        );
                       });
                     },
                   ),
@@ -111,30 +111,44 @@ class _ContactPageState extends State<ContactPage> {
                               return BlocBuilder<ContactBloc, ContactState>(
                                 builder: (context, contactState) {
                                   String label = item.hint;
-                                  bool isSelected = contactState.ownerIds != null && contactState.ownerIds!.isNotEmpty;
-                                  
-                                  if (isSelected && profileState is ProfileLoaded) {
+                                  bool isSelected =
+                                      contactState.ownerIds != null &&
+                                      contactState.ownerIds!.isNotEmpty;
+
+                                  if (isSelected &&
+                                      profileState is ProfileLoaded) {
                                     final user = profileState.profile;
-                                    
+
                                     String? findName(int? id) {
                                       if (id == null) return null;
-                                      if (user.salesPersonId == id) return user.fullName;
-                                      
+                                      if (user.salesPersonId == id)
+                                        return user.fullName;
+
                                       HierarchyNodeEntity? found;
-                                      void search(List<HierarchyNodeEntity> nodes) {
+                                      void search(
+                                        List<HierarchyNodeEntity> nodes,
+                                      ) {
                                         for (var n in nodes) {
                                           if (n.salesPersonId == id) found = n;
-                                          if (found == null && n.subordinates.isNotEmpty) search(n.subordinates);
+                                          if (found == null &&
+                                              n.subordinates.isNotEmpty)
+                                            search(n.subordinates);
                                         }
                                       }
+
                                       search(user.subordinates);
                                       return found?.fullName;
                                     }
-                                    
+
                                     if (contactState.ownerIds!.length == 1) {
-                                      label = findName(contactState.ownerIds!.first) ?? "Filtered";
+                                      label =
+                                          findName(
+                                            contactState.ownerIds!.first,
+                                          ) ??
+                                          "Filtered";
                                     } else {
-                                      label = "${contactState.ownerIds!.length} Owners";
+                                      label =
+                                          "${contactState.ownerIds!.length} Owners";
                                     }
                                   }
 
@@ -144,24 +158,33 @@ class _ContactPageState extends State<ContactPage> {
                                     onTap: () async {
                                       if (profileState is ProfileLoaded) {
                                         final user = profileState.profile;
-                                        final List<OwnerDropdownItem> ownerItems = [];
-                                        
-                                        ownerItems.add(OwnerDropdownItem(
-                                          id: user.salesPersonId,
-                                          name: user.fullName,
-                                          subtitle: user.positionName,
-                                        ));
+                                        final List<OwnerDropdownItem>
+                                        ownerItems = [];
 
-                                        void addSubs(List<HierarchyNodeEntity> subs) {
+                                        ownerItems.add(
+                                          OwnerDropdownItem(
+                                            id: user.salesPersonId,
+                                            name: user.fullName,
+                                            subtitle: user.positionName,
+                                          ),
+                                        );
+
+                                        void addSubs(
+                                          List<HierarchyNodeEntity> subs,
+                                        ) {
                                           for (var s in subs) {
-                                            ownerItems.add(OwnerDropdownItem(
-                                              id: s.salesPersonId,
-                                              name: s.fullName,
-                                              subtitle: s.positionName,
-                                            ));
-                                            if (s.subordinates.isNotEmpty) addSubs(s.subordinates);
+                                            ownerItems.add(
+                                              OwnerDropdownItem(
+                                                id: s.salesPersonId,
+                                                name: s.fullName,
+                                                subtitle: s.positionName,
+                                              ),
+                                            );
+                                            if (s.subordinates.isNotEmpty)
+                                              addSubs(s.subordinates);
                                           }
                                         }
+
                                         addSubs(user.subordinates);
 
                                         final result = await context.pushNamed(
@@ -175,40 +198,58 @@ class _ContactPageState extends State<ContactPage> {
                                         );
 
                                         if (result != null) {
-                                          final selected = result as List<OwnerDropdownItem>;
-                                          context.read<ContactBloc>().add(FetchContactsEvent(
-                                            ownerIds: selected.map((e) => e.id!).toList(),
-                                            isRefresh: true,
-                                            clearOwner: selected.isEmpty,
-                                          ));
+                                          final selected =
+                                              result as List<OwnerDropdownItem>;
+                                          context.read<ContactBloc>().add(
+                                            FetchContactsEvent(
+                                              ownerIds: selected
+                                                  .map((e) => e.id!)
+                                                  .toList(),
+                                              isRefresh: true,
+                                              clearOwner: selected.isEmpty,
+                                            ),
+                                          );
                                         }
                                       }
                                     },
                                   );
                                 },
                               );
-                            }
+                            },
                           );
                         }
                         if (item.hint == "Status") {
                           return BlocBuilder<ContactBloc, ContactState>(
                             builder: (context, contactState) {
-                               String label = item.hint;
-                              bool isSelected = contactState.statusProspectIds != null && contactState.statusProspectIds!.isNotEmpty;
+                              String label = item.hint;
+                              bool isSelected =
+                                  contactState.statusProspectIds != null &&
+                                  contactState.statusProspectIds!.isNotEmpty;
 
                               if (isSelected) {
-                                final statusState = context.read<ProspectStatusBloc>().state;
-                                if (statusState.status == ProspectStatusEnum.loaded) {
-                                  if (contactState.statusProspectIds!.length == 1) {
-                                    final status = statusState.statuses.cast<ProspectStatus?>().firstWhere(
-                                      (e) => e?.statusProspectId == contactState.statusProspectIds!.first,
-                                      orElse: () => null,
-                                    );
+                                final statusState = context
+                                    .read<ProspectStatusBloc>()
+                                    .state;
+                                if (statusState.status ==
+                                    ProspectStatusEnum.loaded) {
+                                  if (contactState.statusProspectIds!.length ==
+                                      1) {
+                                    final status = statusState.statuses
+                                        .cast<ProspectStatus?>()
+                                        .firstWhere(
+                                          (e) =>
+                                              e?.statusProspectId ==
+                                              contactState
+                                                  .statusProspectIds!
+                                                  .first,
+                                          orElse: () => null,
+                                        );
                                     if (status != null) {
                                       label = status.statusProspectName;
                                     }
                                   } else {
-                                    label = "${contactState.statusProspectIds!.length} Statuses";
+                                    label =
+                                        "${contactState.statusProspectIds!.length} Statuses";
                                   }
                                 }
                               }
@@ -217,30 +258,44 @@ class _ContactPageState extends State<ContactPage> {
                                 label: label,
                                 isSelected: isSelected,
                                 onTap: () async {
-                                  final statusState = context.read<ProspectStatusBloc>().state;
-                                  if (statusState.status == ProspectStatusEnum.loaded) {
-                                    final List<OwnerDropdownItem> statusItems = statusState.statuses.map((e) => OwnerDropdownItem(
-                                      id: e.statusProspectId,
-                                      name: e.statusProspectName,
-                                    )).toList();
+                                  final statusState = context
+                                      .read<ProspectStatusBloc>()
+                                      .state;
+                                  if (statusState.status ==
+                                      ProspectStatusEnum.loaded) {
+                                    final List<OwnerDropdownItem> statusItems =
+                                        statusState.statuses
+                                            .map(
+                                              (e) => OwnerDropdownItem(
+                                                id: e.statusProspectId,
+                                                name: e.statusProspectName,
+                                              ),
+                                            )
+                                            .toList();
 
                                     final result = await context.pushNamed(
                                       'detailContactDropdown',
                                       extra: ContactDropdownArgs(
                                         title: 'Pilih Status',
                                         items: statusItems,
-                                        selectedIds: contactState.statusProspectIds,
+                                        selectedIds:
+                                            contactState.statusProspectIds,
                                         isMultiSelect: true,
                                       ),
                                     );
 
                                     if (result != null) {
-                                      final selected = result as List<OwnerDropdownItem>;
-                                      context.read<ContactBloc>().add(FetchContactsEvent(
-                                        statusProspectIds: selected.map((e) => e.id!).toList(),
-                                        isRefresh: true,
-                                        clearStatus: selected.isEmpty,
-                                      ));
+                                      final selected =
+                                          result as List<OwnerDropdownItem>;
+                                      context.read<ContactBloc>().add(
+                                        FetchContactsEvent(
+                                          statusProspectIds: selected
+                                              .map((e) => e.id!)
+                                              .toList(),
+                                          isRefresh: true,
+                                          clearStatus: selected.isEmpty,
+                                        ),
+                                      );
                                     }
                                   }
                                 },
@@ -252,46 +307,62 @@ class _ContactPageState extends State<ContactPage> {
                           return BlocBuilder<ContactBloc, ContactState>(
                             builder: (context, contactState) {
                               String label = item.hint;
-                              bool isSelected = contactState.startDate != null && contactState.endDate != null;
+                              bool isSelected =
+                                  contactState.startDate != null &&
+                                  contactState.endDate != null;
 
                               if (isSelected) {
-                                label = "${contactState.startDate} - ${contactState.endDate}";
+                                label =
+                                    "${contactState.startDate} - ${contactState.endDate}";
                               }
 
                               return CustomFilterButton(
                                 label: label,
                                 isSelected: isSelected,
                                 onTap: () async {
-                                  final DateTimeRange? picked = await showDateRangePicker(
-                                    context: context,
-                                    firstDate: DateTime(2020),
-                                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                                    initialDateRange: isSelected 
-                                      ? DateTimeRange(
-                                          start: DateTime.parse(contactState.startDate!),
-                                          end: DateTime.parse(contactState.endDate!),
-                                        )
-                                      : null,
-                                    builder: (context, child) {
-                                      return Theme(
-                                        data: Theme.of(context).copyWith(
-                                          colorScheme: ColorScheme.light(
-                                            primary: Color(primaryColor),
-                                          ),
+                                  final DateTimeRange? picked =
+                                      await showDateRangePicker(
+                                        context: context,
+                                        firstDate: DateTime(2020),
+                                        lastDate: DateTime.now().add(
+                                          const Duration(days: 365),
                                         ),
-                                        child: child!,
+                                        initialDateRange: isSelected
+                                            ? DateTimeRange(
+                                                start: DateTime.parse(
+                                                  contactState.startDate!,
+                                                ),
+                                                end: DateTime.parse(
+                                                  contactState.endDate!,
+                                                ),
+                                              )
+                                            : null,
+                                        builder: (context, child) {
+                                          return Theme(
+                                            data: Theme.of(context).copyWith(
+                                              colorScheme: ColorScheme.light(
+                                                primary: Color(primaryColor),
+                                              ),
+                                            ),
+                                            child: child!,
+                                          );
+                                        },
                                       );
-                                    },
-                                  );
 
                                   if (picked != null) {
-                                    final startDate = DateFormat('yyyy-MM-dd').format(picked.start);
-                                    final endDate = DateFormat('yyyy-MM-dd').format(picked.end);
-                                    context.read<ContactBloc>().add(FetchContactsEvent(
-                                      startDate: startDate,
-                                      endDate: endDate,
-                                      isRefresh: true,
-                                    ));
+                                    final startDate = DateFormat(
+                                      'yyyy-MM-dd',
+                                    ).format(picked.start);
+                                    final endDate = DateFormat(
+                                      'yyyy-MM-dd',
+                                    ).format(picked.end);
+                                    context.read<ContactBloc>().add(
+                                      FetchContactsEvent(
+                                        startDate: startDate,
+                                        endDate: endDate,
+                                        isRefresh: true,
+                                      ),
+                                    );
                                   }
                                 },
                               );
@@ -311,11 +382,19 @@ class _ContactPageState extends State<ContactPage> {
                     height: MediaQuery.of(context).size.height * 0.65,
                     child: BlocBuilder<ContactBloc, ContactState>(
                       builder: (context, state) {
-                        if (state.status == ContactStatus.loading && state.contacts.isEmpty) {
-                          return const Center(child: CircularProgressIndicator());
+                        if (state.status == ContactStatus.loading &&
+                            state.contacts.isEmpty) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
                         }
-                        if (state.status == ContactStatus.error && state.contacts.isEmpty) {
-                          return Center(child: Text(state.errorMessage ?? 'Error loading contacts'));
+                        if (state.status == ContactStatus.error &&
+                            state.contacts.isEmpty) {
+                          return Center(
+                            child: Text(
+                              state.errorMessage ?? 'Error loading contacts',
+                            ),
+                          );
                         }
                         if (state.contacts.isEmpty) {
                           return const Center(child: Text('No contacts found'));
@@ -325,14 +404,19 @@ class _ContactPageState extends State<ContactPage> {
                           child: ListView.separated(
                             controller: _scrollController,
                             physics: const AlwaysScrollableScrollPhysics(),
-                            itemCount: state.hasReachedMax ? state.contacts.length : state.contacts.length + 1,
-                            separatorBuilder: (_, __) => const SizedBox(height: 10),
+                            itemCount: state.hasReachedMax
+                                ? state.contacts.length
+                                : state.contacts.length + 1,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 10),
                             itemBuilder: (context, index) {
                               if (index >= state.contacts.length) {
-                                return const Center(child: Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 16),
-                                  child: CircularProgressIndicator(),
-                                ));
+                                return const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 16),
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
                               }
                               final contact = state.contacts[index];
                               return _buildListContacts(context, contact);
@@ -341,7 +425,7 @@ class _ContactPageState extends State<ContactPage> {
                         );
                       },
                     ),
-                  )     
+                  ),
                 ],
               ),
             ),
@@ -349,7 +433,7 @@ class _ContactPageState extends State<ContactPage> {
         ),
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 10), 
+        padding: const EdgeInsets.only(bottom: 10),
         child: FloatingActionButton(
           onPressed: () {
             context.pushNamed('formContact', extra: ContactDetailArgs(page: 0));
@@ -366,7 +450,10 @@ class _ContactPageState extends State<ContactPage> {
 Widget _buildListContacts(BuildContext context, Contact contact) {
   return GestureDetector(
     onTap: () {
-      context.pushNamed('detailContact', extra: ContactDetailArgs(data: contact, page: 2));
+      context.pushNamed(
+        'detailContact',
+        extra: ContactDetailArgs(data: contact, page: 2),
+      );
     },
     child: Container(
       height: 70,
@@ -390,7 +477,14 @@ Widget _buildListContacts(BuildContext context, Contact contact) {
               children: [
                 CircleAvatar(
                   backgroundColor: Color(primaryColor).withOpacity(0.1),
-                  child: Icon(Icons.person, color: Color(primaryColor)),
+                  child: Text(
+                    getInitials(contact.fullName ?? 'No Name'),
+                    style: TextStyle(
+                      color: Color(primaryColor),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16, // Sesuaikan ukuran font sesuai kebutuhan
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -400,12 +494,19 @@ Widget _buildListContacts(BuildContext context, Contact contact) {
                     children: [
                       Text(
                         contact.fullName ?? 'No Name',
-                        style: TextStyle(fontSize: 16, color: Color(blue2Color), fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color(blue2Color),
+                          fontWeight: FontWeight.bold,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        contact.primaryPhone ?? 'No Phone',
-                        style: TextStyle(fontSize: 14, color: Color(grey7Color)),
+                        contact.whatsappNumber ?? 'No Phone',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(grey7Color),
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -416,7 +517,10 @@ Widget _buildListContacts(BuildContext context, Contact contact) {
           ),
           GestureDetector(
             onTap: () {
-              showCustomBottomSheet(context: context, child: _buildContactOptions(context, contact));
+              showCustomBottomSheet(
+                context: context,
+                child: _buildContactOptions(context, contact),
+              );
             },
             child: Icon(Icons.more_vert, size: 27, color: Color(blackColor)),
           ),
@@ -433,13 +537,16 @@ Widget _buildContactOptions(BuildContext context, Contact contact) {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildIconLink(context, icEdit, "Edit Contact", () {
-          context.pushNamed('formContact', extra: ContactDetailArgs(data: contact, page: 1));
+          context.pushNamed(
+            'formContact',
+            extra: ContactDetailArgs(data: contact, page: 1),
+          );
         }),
         _buildIconLink(context, icCalendar, "Add Activity", () {
-          context.pushNamed('addActivity', extra: {
-            'contactId': contact.contactId,
-            'dealId': null,
-          });
+          context.pushNamed(
+            'addActivity',
+            extra: {'contactId': contact.contactId, 'dealId': null},
+          );
         }),
         _buildIconLink(context, icDelete, "Delete Contact", () {
           // TODO: Implement delete
@@ -452,7 +559,13 @@ Widget _buildContactOptions(BuildContext context, Contact contact) {
   );
 }
 
-Widget _buildIconLink(BuildContext context, String asset, String label, VoidCallback onTap, {Color? color}) {
+Widget _buildIconLink(
+  BuildContext context,
+  String asset,
+  String label,
+  VoidCallback onTap, {
+  Color? color,
+}) {
   return InkWell(
     onTap: () {
       Navigator.pop(context);

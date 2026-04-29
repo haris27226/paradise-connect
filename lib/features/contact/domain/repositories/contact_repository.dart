@@ -5,12 +5,31 @@ import '../entities/contact_response.dart';
 import '../entities/create_activity_params.dart';
 import '../entities/prospect_status.dart';
 import '../entities/create_contact_params.dart';
+import '../entities/contact_property.dart';
 
 abstract class ContactRepository {
-  Future<Either<String, ContactResponse>> getContacts({  int page = 1,  int perPage = 10,  String? search,  String? startDate,  String? endDate,  List<int>? ownerIds,  List<int>? statusProspectIds,});
+  Future<Either<String, ContactResponse>> getContacts({
+    int page = 1,
+    int perPage = 10,
+    String? search,
+    String? startDate,
+    String? endDate,
+    List<int>? ownerIds,
+    List<int>? statusProspectIds,
+  });
   Future<Either<String, Contact>> getContactDetail(int id);
   Future<Either<String, List<ProspectStatus>>> getProspectStatuses();
+  Future<Either<String, List<ContactPropertyGroup>>> getContactProperties();
+  Future<Either<String, void>> updateContact(
+    int id,
+    CreateContactParams params,
+  );
   Future<Either<String, void>> createContact(CreateContactParams params);
-  Future<Either<String, List<Activity>>> getActivities({required int contactId, int? dealId, String? activityType, int page = 1,});
+  Future<Either<String, List<Activity>>> getActivities({
+    required int contactId,
+    int? dealId,
+    String? activityType,
+    int page = 1,
+  });
   Future<Either<String, void>> createActivity(CreateActivityParams params);
 }

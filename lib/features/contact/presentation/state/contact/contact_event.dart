@@ -38,7 +38,21 @@ class FetchContactsEvent extends ContactEvent {
   });
 
   @override
-  List<Object?> get props => [  page,  perPage,  search,  startDate,  endDate,  ownerIds,  statusProspectIds,  isRefresh,  clearSearch,  clearDates,  clearOwner,  clearStatus];}
+  List<Object?> get props => [
+    page,
+    perPage,
+    search,
+    startDate,
+    endDate,
+    ownerIds,
+    statusProspectIds,
+    isRefresh,
+    clearSearch,
+    clearDates,
+    clearOwner,
+    clearStatus,
+  ];
+}
 
 class CreateContactEvent extends ContactEvent {
   final CreateContactParams params;
@@ -47,6 +61,16 @@ class CreateContactEvent extends ContactEvent {
 
   @override
   List<Object?> get props => [params];
+}
+
+class UpdateContactEvent extends ContactEvent {
+  final int contactId;
+  final CreateContactParams params;
+
+  const UpdateContactEvent(this.contactId, this.params);
+
+  @override
+  List<Object?> get props => [contactId, params];
 }
 
 class FetchContactDetailEvent extends ContactEvent {
