@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:progress_group/core/constants/colors.dart';
 
 Widget customButton(
-  VoidCallback onTap,
+  VoidCallback? onTap,
   String title, {
   Color? colorBg,
   Color? colorText,
@@ -30,3 +30,4 @@ Widget customButton(
     ),
   );
 }
+

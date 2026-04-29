@@ -249,19 +249,19 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
           ),
           SizedBox(height: 5),
           _buildIconLink(icContactDetailPhone, "Phone", () {
-            context.pushNamed('addContact', extra: ContactDetailArgs(page: 0));
+            context.pushNamed('addContact', extra: ContactDetailArgs(data: widget.args.data, page: 0, namePage: "Call"));
           }),
           _buildIconLink(icContactDetailWA, "WhatsApp", () {
-            context.pushNamed('addContact', extra: ContactDetailArgs(page: 1));
+            context.pushNamed('addContact', extra: ContactDetailArgs(data: widget.args.data, page: 1, namePage: "WhatsApp"));
           }),
           _buildIconLink(icContactDetailMeeting, "Meeting", () {
-            context.pushNamed('addContact', extra: ContactDetailArgs(page: 2));
+            context.pushNamed('addContact', extra: ContactDetailArgs(data: widget.args.data, page: 2,namePage: "Meeting"));
           }),
           _buildIconLink(icContactDetailReminder, "Task", () {
-            context.pushNamed('addContact', extra: ContactDetailArgs(page: 3));
+            context.pushNamed('addContact', extra: ContactDetailArgs(data: widget.args.data, page: 3,namePage: "Task"));
           }),
           _buildIconLink(icContactDetailVisit, "Visit", () {
-            context.pushNamed('addContact', extra: ContactDetailArgs(page: 4));
+            context.pushNamed('addContact', extra: ContactDetailArgs(data: widget.args.data, page: 4,namePage: "Visit"));
           }),
           _buildIconLink(
             icSidebarSalesKit,
@@ -270,7 +270,7 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
             () {
               context.pushNamed(
                 'addContact',
-                extra: ContactDetailArgs(page: 5),
+                extra: ContactDetailArgs(data: widget.args.data, page: 5,namePage: "Attachment"),
               );
             },
           ),

@@ -164,7 +164,10 @@ class ContactBloc extends Bloc<ContactEvent, ContactState> {
       (failure) => emit(
         state.copyWith(status: ContactStatus.error, errorMessage: failure),
       ),
-      (_) => emit(state.copyWith(status: ContactStatus.deleteSuccess)),
+      (_) {
+        emit(state.copyWith(status: ContactStatus.deleteSuccess));
+        add(const FetchContactsEvent(isRefresh: true));
+      },
     );
   }
 }

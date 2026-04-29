@@ -2,10 +2,16 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:progress_group/core/constants/assets.dart';
 import 'package:progress_group/core/utils/widget/custom_button.dart';
+import 'package:progress_group/features/contact/domain/entities/create_activity_params.dart';
+import 'package:progress_group/features/contact/presentation/state/activity/activity_bloc.dart';
+import 'package:progress_group/features/contact/presentation/state/activity/activity_event.dart';
+import 'package:progress_group/features/contact/presentation/state/activity/activity_state.dart';
 
 import '../../../../../core/constants/colors.dart';
 import '../../../../../core/utils/helpers/date_helper.dart';
@@ -29,6 +35,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
 
   File? selectedImage;
   final ImagePicker picker = ImagePicker();
+  
 
   Future<void> pickImage() async {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
@@ -70,41 +77,101 @@ class _ContactAddPageState extends State<ContactAddPage> {
     });
   }
 
+  void _submitActivity({
+    required String activityType,
+    required DateTime activityDate,
+    required TextEditingController notesTC,
+    required bool isFollowUp,
+    required DateTime? followUpDate,
+  }) {
+    final contactId = widget.args.data?.contactId;
+    if (contactId == null) return;
+
+    String mappedType = activityType;
+    String finalNotes = notesTC.text.trim();
+    
+    // Map unsupported types to 'Other' to avoid DB truncation error
+    if (!['Call', 'Meeting', 'Visit', 'Email', 'Other'].contains(activityType)) {
+      mappedType = 'Other';
+      finalNotes = '[$activityType] $finalNotes'.trim();
+    }
+
+    final params = CreateActivityParams(
+      contactId: contactId,
+      dealId: null,
+      activityType: mappedType,
+      activityDate: DateFormat('yyyy-MM-dd HH:mm:ss').format(activityDate),
+      notes: finalNotes.isEmpty ? null : finalNotes,
+      nextFollowUpDate: isFollowUp && followUpDate != null
+          ? DateFormat('yyyy-MM-dd HH:mm:ss').format(followUpDate)
+          : null,
+    );
+
+    context.read<ActivityBloc>().add(CreateActivityEvent(params));
+  }
+
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            customHeader(
-              context,
-              widget.args.page == 0
-                  ? "Call"
-                  : widget.args.page == 1
-                  ? "WhatsApp"
-                  : widget.args.page == 2
-                  ? "Meeting"
-                  : widget.args.page == 3
-                  ? "Task"
-                  : widget.args.page == 4
-                  ? "Visit"
-                  : "Attachment",
-              isBack: true,
-              colorBack: Color(primaryColor),
+    return BlocListener<ActivityBloc, ActivityState>(
+      listener: (context, state) {
+        if (state.status == ActivityStatus.createSuccess) {
+          final contactId = widget.args.data?.contactId;
+          if (contactId != null) {
+            context.read<ActivityBloc>().add(
+              FetchActivitiesEvent(contactId: contactId, isRefresh: true),
+            );
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Activity berhasil ditambahkan'),
+              backgroundColor: Colors.green,
             ),
-            SizedBox(height: 16),
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    widget.args.page == 5 ? _buildAttachment() : _buildForm(),
-                  ],
+          );
+          context.pop();
+        } else if (state.status == ActivityStatus.error) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.errorMessage ?? 'Gagal menambahkan activity'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              customHeader(
+                context,
+                widget.args.page == 0
+                    ? "Call"
+                    : widget.args.page == 1
+                    ? "WhatsApp"
+                    : widget.args.page == 2
+                    ? "Meeting"
+                    : widget.args.page == 3
+                    ? "Task"
+                    : widget.args.page == 4
+                    ? "Visit"
+                    : "Attachment",
+                isBack: true,
+                colorBack: Color(primaryColor),
+              ),
+              SizedBox(height: 16),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      widget.args.page == 5 ? _buildAttachment() : _buildForm(),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -263,7 +330,17 @@ class _ContactAddPageState extends State<ContactAddPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Call",
+             widget.args.page == 0
+                    ? "Call"
+                    : widget.args.page == 1
+                    ? "WhatsApp"
+                    : widget.args.page == 2
+                    ? "Meeting"
+                    : widget.args.page == 3
+                    ? "Task"
+                    : widget.args.page == 4
+                    ? "Visit"
+                    : "Attachment",
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -279,7 +356,17 @@ class _ContactAddPageState extends State<ContactAddPage> {
             onTapOutside: (event) => descFN.unfocus(),
             textInputAction: TextInputAction.newline,
             decoration: InputDecoration(
-              hintText: "Describe the call...",
+              hintText: "Describe the ${ widget.args.page == 0
+                    ? "Call"
+                    : widget.args.page == 1
+                    ? "WhatsApp"
+                    : widget.args.page == 2
+                    ? "Meeting"
+                    : widget.args.page == 3
+                    ? "Task"
+                    : widget.args.page == 4
+                    ? "Visit"
+                    : "Attachment"}...",
               hintStyle: TextStyle(color: Color(grey2Color), fontSize: 14),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
@@ -394,9 +481,24 @@ class _ContactAddPageState extends State<ContactAddPage> {
                 ),
               ],
               SizedBox(height: 32),
-              customButton(() {
-                context.pop();
-              }, "Save"),
+              BlocBuilder<ActivityBloc, ActivityState>(
+                builder: (context, state) {
+                  final isLoading = state.status == ActivityStatus.creating;
+                  
+                  return customButton(
+                    isLoading ? null : () {
+                      _submitActivity(
+                        activityType: widget.args.namePage??'',
+                        activityDate: DateTime.now(),
+                        notesTC: descTC,
+                        isFollowUp: isFollowUp,
+                        followUpDate: selectedDate,
+                      );
+                    },
+                    isLoading ? 'Menyimpan...' : 'Save',
+                  );
+                },
+              ),
             ],
           ),
         ],

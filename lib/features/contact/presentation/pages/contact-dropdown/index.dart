@@ -44,7 +44,7 @@ class _DropdownListContactState extends State<DropdownListContact> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(grey11Color),
+      backgroundColor: Color(whiteColor),
       body: SafeArea(
         child: Column(
           children: [
@@ -91,31 +91,36 @@ class _DropdownListContactState extends State<DropdownListContact> {
             ),
 
             /// 🔍 SEARCH
-            Container(
-              color: Color(whiteColor),
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (val) => setState(() => _searchQuery = val),
-                decoration: InputDecoration(
-                  hintText: 'Search...',
-                  hintStyle: TextStyle(color: Color(grey7Color), fontSize: 14),
-                  prefixIcon: Icon(Icons.search, color: Color(grey7Color)),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? GestureDetector(
-                          onTap: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                          child: Icon(Icons.close, color: Color(grey7Color)),
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: Color(grey11Color),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Color(primaryColor)),
+                  borderRadius: BorderRadius.circular(10)
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (val) => setState(() => _searchQuery = val),
+                  decoration: InputDecoration(
+                    hintText: 'Search...',
+                    hintStyle: TextStyle(color: Color(grey7Color), fontSize: 14),
+                    prefixIcon: Icon(Icons.search, color: Color(grey7Color)),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? GestureDetector(
+                            onTap: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                            child: Icon(Icons.close, color: Color(grey7Color)),
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
@@ -167,23 +172,23 @@ class _DropdownListContactState extends State<DropdownListContact> {
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              color: isSelected ? Color(primaryColor).withOpacity(0.06) : Color(whiteColor),
+                              color: isSelected ? Color(grey1Color) : Color(whiteColor),
                               child: Row(
                                 children: [
-                                  CircleAvatar(
-                                    radius: 22,
-                                    backgroundColor: isSelected
-                                        ? Color(primaryColor)
-                                        : Color(primaryColor).withOpacity(0.12),
-                                    child: Text(
-                                      item.name.isNotEmpty ? item.name[0].toUpperCase() : '?',
-                                      style: TextStyle(
-                                        color: isSelected ? Colors.white : Color(primaryColor),
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
+                                  // CircleAvatar(
+                                  //   radius: 22,
+                                  //   backgroundColor: isSelected
+                                  //       ? Color(primaryColor)
+                                  //       : Color(primaryColor).withOpacity(0.12),
+                                  //   child: Text(
+                                  //     item.name.isNotEmpty ? item.name[0].toUpperCase() : '?',
+                                  //     style: TextStyle(
+                                  //       color: isSelected ? Colors.white : Color(primaryColor),
+                                  //       fontWeight: FontWeight.bold,
+                                  //       fontSize: 16,
+                                  //     ),
+                                  //   ),
+                                  // ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
