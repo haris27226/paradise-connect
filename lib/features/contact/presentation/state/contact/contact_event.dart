@@ -81,3 +81,12 @@ class FetchContactDetailEvent extends ContactEvent {
   @override
   List<Object?> get props => [contactId];
 }
+
+class DeleteContactEvent extends ContactEvent {
+  final int contactId;
+
+  const DeleteContactEvent(this.contactId);
+
+  @override
+  List<Object?> get props => [contactId];
+}

@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:progress_group/core/utils/helpers/date_helper.dart';
+import 'package:intl/intl.dart';
+import 'package:progress_group/features/contact/domain/entities/create_contact_params.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:progress_group/core/network/dio_client.dart';
 import 'package:progress_group/features/auth/data/datasources/auth_local_datasource.dart';
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as path;
 import 'package:go_router/go_router.dart';
-import 'package:progress_group/features/contact/domain/entities/create_contact_params.dart';
 import 'package:progress_group/features/contact/domain/entities/prospect_status.dart';
 import 'package:progress_group/features/contact/presentation/state/prospect_status/prospect_status_event.dart';
 
@@ -42,12 +45,32 @@ class _ContactFormPageState extends State<ContactFormPage> {
   TextEditingController emailTC = TextEditingController();
   TextEditingController phoneTC = TextEditingController();
   TextEditingController waTC = TextEditingController();
-  TextEditingController blockNoTC = TextEditingController();
+  TextEditingController fBlockNoTC = TextEditingController();
   TextEditingController FPProductTC = TextEditingController();
   TextEditingController FPCategoryTC = TextEditingController();
   TextEditingController salesExecutiveTC = TextEditingController();
   TextEditingController salesManagerTC = TextEditingController();
   TextEditingController generalNotesTC = TextEditingController();
+  TextEditingController fProjectTC = TextEditingController();
+  TextEditingController lProjectTC = TextEditingController();
+
+  TextEditingController LPProducttTC = TextEditingController();
+  TextEditingController LPCategorytTC = TextEditingController();
+  TextEditingController lBlockNoTC = TextEditingController();
+  TextEditingController noKTPTC = TextEditingController();
+  TextEditingController ktpAddressTC = TextEditingController();
+  TextEditingController sumberInfoTC = TextEditingController();
+  TextEditingController volumePlanTC = TextEditingController();
+  TextEditingController vCountTC = TextEditingController();
+  TextEditingController firstVisitorDateTC = TextEditingController();
+  TextEditingController lastVisitorDateTC = TextEditingController();
+  TextEditingController firstApptDateTC = TextEditingController();
+  TextEditingController lastApptDateTC = TextEditingController();
+  TextEditingController dealValueTC = TextEditingController();
+  TextEditingController reserveDateTC = TextEditingController();
+  TextEditingController lossReasonNoteTC = TextEditingController();
+  TextEditingController fspTC = TextEditingController();
+  TextEditingController lspTC = TextEditingController();
 
   String? selectedSalutation;
   int? selectedOwnerId;
@@ -70,19 +93,44 @@ class _ContactFormPageState extends State<ContactFormPage> {
   FocusNode emailFN = FocusNode();
   FocusNode phoneFN = FocusNode();
   FocusNode waFN = FocusNode();
-  FocusNode blockNoFN = FocusNode();
+  FocusNode fBlockNoFN = FocusNode();
   FocusNode FPProducttFN = FocusNode();
   FocusNode FPCategorytFN = FocusNode();
   FocusNode salesExecutiveFN = FocusNode();
   FocusNode salesManagerFN = FocusNode();
   FocusNode generalNotesFN = FocusNode();
 
+  FocusNode LPProducttFN = FocusNode();
+  FocusNode LPCategorytFN = FocusNode();
+  FocusNode lBlockNoFN = FocusNode();
+  FocusNode noKTPFN = FocusNode();
+  FocusNode ktpAddressFN = FocusNode();
+  FocusNode sumberInfoFN = FocusNode();
+  FocusNode volumePlanFN = FocusNode();
+  FocusNode vCountFN = FocusNode();
+  FocusNode firstVisitorDateFN = FocusNode();
+  FocusNode lastVisitorDateFN = FocusNode();
+  FocusNode firstApptDateFN = FocusNode();
+  FocusNode lastApptDateFN = FocusNode();
+  FocusNode dealValueFN = FocusNode();
+  FocusNode reserveDateFN = FocusNode();
+  FocusNode lossReasonNoteFN = FocusNode();
+  FocusNode fspFN = FocusNode();
+  FocusNode lspFN = FocusNode();
+  FocusNode fProjectFN = FocusNode();
+  FocusNode lProjectFN = FocusNode();
+  FocusNode sumberInformationFN = FocusNode();
+
   @override
   void initState() {
     super.initState();
+    _init();
+  }
+
+  void _init() async {
     if (widget.args.page == 1 && widget.args.data != null) {
       // Edit mode: fill with data from args
-      _fillForm(widget.args.data!);
+      await _fillForm(widget.args.data!);
     } else if (widget.args.page == 2 && widget.args.data != null) {
       // About mode: fetch latest data from API
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -92,10 +140,19 @@ class _ContactFormPageState extends State<ContactFormPage> {
       });
     }
 
-    // Always ensure master data is loaded for mapping IDs to names
-    // Always ensure master data is loaded for mapping IDs to names
     context.read<ProspectStatusBloc>().add(FetchProspectStatusesEvent());
     context.read<ContactPropertiesBloc>().add(FetchContactPropertiesEvent());
+
+    // If creating a new contact, prefill first-date fields so UI shows values
+    if (widget.args.page == 0 && widget.args.data == null) {
+      final today = DateHelper.formatNumericCompact(DateTime.now());
+
+      setState(() {
+        if (firstApptDateTC.text.isEmpty) firstApptDateTC.text = today;
+        if (firstVisitorDateTC.text.isEmpty) firstVisitorDateTC.text = today;
+        if (fspTC.text.isEmpty) fspTC.text = today;
+      });
+    }
   }
 
   Future<String?> _uploadFile(File file) async {
@@ -128,20 +185,48 @@ class _ContactFormPageState extends State<ContactFormPage> {
     }
   }
 
-  void _fillForm(dynamic contact) {
+  Future<void> _fillForm(dynamic contact) async {
     fullNameTC.text = contact.fullName ?? '';
     emailTC.text = contact.primaryEmail ?? '';
     phoneTC.text = contact.primaryPhone ?? '';
     waTC.text = contact.whatsappNumber ?? '';
-    blockNoTC.text = contact.firstBlokNo ?? '';
+    fBlockNoTC.text = contact.firstBlokNo ?? '';
     FPProductTC.text = contact.firstProduct ?? '';
     FPCategoryTC.text = contact.firstProjectCategory ?? '';
     generalNotesTC.text = contact.generalNotes ?? '';
+    LPProducttTC.text = contact.lastProduct ?? '';
+    LPCategorytTC.text = contact.lastProjectCategory ?? '';
+    lBlockNoTC.text = contact.lastBlokNo ?? '';
+    noKTPTC.text = contact.noKtp ?? '';
+    ktpAddressTC.text = contact.ktpAddress ?? '';
+    sumberInfoTC.text = contact.sumberInformasi2 ?? '';
+    volumePlanTC.text = contact.volumePlan?.toString() ?? '';
+    vCountTC.text = contact.visitCount?.toString() ?? '';
+    firstVisitorDateTC.text = _formatFromContact(contact.firstVisitDate);
+    lastVisitorDateTC.text = _formatFromContact(contact.lastVisitDate);
+    firstApptDateTC.text = _formatFromContact(contact.firstApptDate);
+    lastApptDateTC.text = _formatFromContact(contact.lastApptDate);
+    dealValueTC.text = contact.dealValue ?? '';
+    reserveDateTC.text = _formatFromContact(contact.apptDate);
+    lossReasonNoteTC.text = contact.dealNote ?? '';
+    fspTC.text = _formatFromContact(contact.firstSpDate);
+    lspTC.text = _formatFromContact(contact.lastSpDate);
+    fProjectTC.text = contact.firstProject ?? '';
+    lProjectTC.text = contact.lastProject ?? '';
+
+    if ((contact.projectName ?? '').isNotEmpty)
+      selectedProject = contact.projectName;
+    if ((contact.blokNo ?? '').isNotEmpty) fBlockNoTC.text = contact.blokNo!;
+
+    try {
+      print(
+        'DEBUG: _fillForm contact.ownerId=${contact.ownerId}, statusProspectId=${contact.statusProspectId}',
+      );
+    } catch (e) {}
 
     setState(() {
       selectedSalutation = contact.salutation;
-      selectedOwnerId =
-          contact.salesExecutiveId; // In list logic it's often salesExecutiveId
+      selectedOwnerId = contact.ownerId;
       selectedProject = contact.firstProject;
       selectedStatusId = contact.statusProspectId;
       selectedSalesExecutiveId = contact.salesExecutiveId;
@@ -201,6 +286,93 @@ class _ContactFormPageState extends State<ContactFormPage> {
               orElse: () => null,
             )
             ?.statusProspectName;
+      }
+      // Auto-fill property controllers from property_groups if provided in detail response
+      try {
+        final groups = contact.propertyGroupsJson as List<dynamic>?;
+        if (groups != null) {
+          for (final g in groups) {
+            final props = (g['contact_properties'] as List<dynamic>?) ?? [];
+            for (final p in props) {
+              final pid = p['property_id'];
+              final val = p['property_value'];
+              if (pid != null) {
+                _propertyControllers.putIfAbsent(
+                  pid,
+                  () => TextEditingController(),
+                );
+                if (val != null)
+                  _propertyControllers[pid]!.text = val.toString();
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // ignore parsing errors
+      }
+
+      // Fallback: some APIs return properties in `properties_json` instead of `property_groups`.
+      // Try parsing that and populate controllers as well.
+      try {
+        final pj = contact.propertiesJson;
+        if (pj != null) {
+          dynamic parsed;
+          if (pj is String) {
+            parsed = jsonDecode(pj);
+          } else {
+            parsed = pj;
+          }
+
+          if (parsed is List) {
+            for (final p in parsed) {
+              try {
+                final pid = p['property_id'] ?? p['id'];
+                final val =
+                    p['property_value'] ?? p['value'] ?? p['propertyValue'];
+                if (pid != null) {
+                  final id = int.tryParse(pid.toString()) ?? pid as int;
+                  _propertyControllers.putIfAbsent(
+                    id,
+                    () => TextEditingController(),
+                  );
+                  if (val != null)
+                    _propertyControllers[id]!.text = val.toString();
+                }
+              } catch (_) {}
+            }
+          } else if (parsed is Map) {
+            // map keyed by property id: {"23": "City"}
+            parsed.forEach((k, v) {
+              try {
+                final id = int.tryParse(k.toString());
+                if (id != null) {
+                  _propertyControllers.putIfAbsent(
+                    id,
+                    () => TextEditingController(),
+                  );
+                  if (v != null) _propertyControllers[id]!.text = v.toString();
+                }
+              } catch (_) {}
+            });
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      // Auto-fill sales information based on ownerId
+      if (selectedOwnerId != null) {
+        final profileState = context.read<ProfileBloc>().state;
+        if (profileState is ProfileLoaded) {
+          _updateSalesInformation(selectedOwnerId!, profileState.profile);
+        } else {
+          // If profile not loaded yet, schedule update after profile loads via listener
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final ps = context.read<ProfileBloc>().state;
+            if (ps is ProfileLoaded)
+              _updateSalesInformation(selectedOwnerId!, ps.profile);
+          });
+        }
       }
     });
   }
@@ -353,7 +525,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
     emailTC.dispose();
     phoneTC.dispose();
     waTC.dispose();
-    blockNoTC.dispose();
+    fBlockNoTC.dispose();
     FPProductTC.dispose();
     FPCategoryTC.dispose();
     salesExecutiveTC.dispose();
@@ -364,16 +536,144 @@ class _ContactFormPageState extends State<ContactFormPage> {
     emailFN.dispose();
     phoneFN.dispose();
     waFN.dispose();
-    blockNoFN.dispose();
+    fBlockNoFN.dispose();
     FPProducttFN.dispose();
     FPCategorytFN.dispose();
     salesExecutiveFN.dispose();
     salesManagerFN.dispose();
     generalNotesFN.dispose();
+    fProjectTC.dispose();
+    lProjectTC.dispose();
+    fspTC.dispose();
+    lspTC.dispose();
+    sumberInfoTC.dispose();
+
+    LPProducttFN.dispose();
+    LPCategorytFN.dispose();
+    lBlockNoFN.dispose();
+    noKTPFN.dispose();
+    ktpAddressFN.dispose();
+    sumberInfoFN.dispose();
+    volumePlanFN.dispose();
+    vCountFN.dispose();
+    firstVisitorDateFN.dispose();
+    lastVisitorDateFN.dispose();
+    firstApptDateFN.dispose();
+    lastApptDateFN.dispose();
+    dealValueFN.dispose();
+    reserveDateFN.dispose();
+    lossReasonNoteFN.dispose();
+    fspFN.dispose();
+    lspFN.dispose();
+    fProjectFN.dispose();
+    lProjectFN.dispose();
+    sumberInformationFN.dispose();
     for (final c in _propertyControllers.values) {
       c.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _handleSave() async {
+    final today = DateHelper.formatNumericCompact(DateTime.now());
+
+    // Auto-fill first-date fields for new contacts
+    if (widget.args.page == 0 || widget.args.data == null) {
+      if (firstApptDateTC.text.isEmpty) firstApptDateTC.text = today;
+      if (firstVisitorDateTC.text.isEmpty) firstVisitorDateTC.text = today;
+      if (fspTC.text.isEmpty) fspTC.text = today;
+    }
+
+    final List<Map<String, dynamic>> propertiesJson = [];
+    _propertyControllers.forEach((propertyId, controller) {
+      final val = controller.text;
+      if (val.isNotEmpty) {
+        propertiesJson.add({'property_id': propertyId, 'property_value': val});
+      }
+    });
+
+    final params = CreateContactParams(
+      salutation: selectedSalutation ?? '',
+      salesExecutiveId: selectedSalesExecutiveId,
+      salesManagerId: selectedSalesManagerId,
+      salesSupervisorId: selectedSupervisorId,
+      salesTeamId: selectedTeamId,
+      salesChannelId: selectedChannelId,
+      statusProspectId: selectedStatusId,
+      sumberInformasi2: selectedSumberInformasi,
+      generalNotes: generalNotesTC.text.isNotEmpty ? generalNotesTC.text : null,
+      propertiesJson: propertiesJson.isNotEmpty ? propertiesJson : null,
+
+      fullName: fullNameTC.text,
+      primaryEmail: emailTC.text,
+      primaryPhone: phoneTC.text,
+      whatsappNumber: waTC.text,
+      firstBlokNo: fBlockNoTC.text,
+      firstProduct: FPProductTC.text,
+      firstProjectCategory: FPCategoryTC.text,
+      firstProject: fProjectTC.text,
+      lastProject: lProjectTC.text,
+      lastProduct: LPProducttTC.text,
+      lastProjectCategory: LPCategorytTC.text,
+      lastBlokNo: lBlockNoTC.text,
+      noKtp: noKTPTC.text,
+      ktpAddress: ktpAddressTC.text,
+      volumePlan: volumePlanTC.text,
+      visitCount: vCountTC.text.isNotEmpty ? int.tryParse(vCountTC.text) : null,
+      firstVisitDate: firstVisitorDateTC.text,
+      lastVisitDate: lastVisitorDateTC.text,
+      firstApptDate: firstApptDateTC.text,
+      lastApptDate: lastApptDateTC.text,
+      dealValue: dealValueTC.text,
+      reserveDate: reserveDateTC.text,
+      lossReasonNote: lossReasonNoteTC.text,
+      firstSPDate: fspTC.text,
+      lastSPDate: lspTC.text,
+    );
+
+    if (widget.args.page == 1) {
+      context.read<ContactBloc>().add(
+        UpdateContactEvent(widget.args.data!.contactId, params),
+      );
+    } else {
+      context.read<ContactBloc>().add(CreateContactEvent(params));
+    }
+  }
+
+  DateTime _parseDateOrToday(String? value) {
+    if (value == null || value.isEmpty) return DateTime.now();
+    // Try ISO parse first
+    try {
+      return DateTime.parse(value);
+    } catch (_) {}
+    // Try dd/MM/yyyy
+    try {
+      return DateFormat('dd/MM/yyyy').parse(value);
+    } catch (_) {}
+    return DateTime.now();
+  }
+
+  String _formatFromContact(dynamic v) {
+    if (v == null) return '';
+    if (v is DateTime) return DateHelper.formatNumericCompact(v);
+    if (v is String) {
+      // try ISO
+      try {
+        final dt = DateTime.parse(v);
+        return DateHelper.formatNumericCompact(dt);
+      } catch (_) {}
+      // try dd/MM/yyyy
+      try {
+        final dt = DateFormat('dd/MM/yyyy').parse(v);
+        return DateHelper.formatNumericCompact(dt);
+      } catch (_) {}
+      return v;
+    }
+    try {
+      return DateHelper.formatNumericCompact(DateTime.parse(v.toString()));
+    } catch (_) {
+      return v.toString();
+    }
   }
 
   @override
@@ -485,67 +785,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
                   ],
                 ),
                 GestureDetector(
-                  onTap: () {
-                    // build properties_json from filled property controllers
-                    final List<Map<String, dynamic>> propertiesJson = [];
-                    _propertyControllers.forEach((propertyId, controller) {
-                      final val = controller.text;
-                      if (val.isNotEmpty) {
-                        propertiesJson.add({
-                          'property_id': propertyId,
-                          'property_value': val,
-                        });
-                      }
-                    });
-
-                    final params = CreateContactParams(
-                      fullName: fullNameTC.text,
-                      salutation:
-                          selectedSalutation ?? "Mr.", // Default or from state
-                      primaryPhone: phoneTC.text,
-                      primaryEmail: emailTC.text.isNotEmpty
-                          ? emailTC.text
-                          : null,
-                      whatsappNumber: waTC.text.isNotEmpty ? waTC.text : null,
-                      firstProject: selectedProject,
-                      firstProduct: FPProductTC.text.isNotEmpty
-                          ? FPProductTC.text
-                          : null,
-                      firstProjectCategory: FPCategoryTC.text.isNotEmpty
-                          ? FPCategoryTC.text
-                          : null,
-                      firstBlokNo: blockNoTC.text.isNotEmpty
-                          ? blockNoTC.text
-                          : null,
-                      salesExecutiveId: selectedSalesExecutiveId,
-                      salesManagerId:
-                          selectedSalesManagerId ??
-                          6, // Use selected or default
-                      salesSupervisorId: selectedSupervisorId ?? 73,
-                      salesTeamId: selectedTeamId ?? 1,
-                      salesChannelId: selectedChannelId ?? 1,
-                      statusProspectId: selectedStatusId ?? 1,
-                      sumberInformasi2:
-                          selectedSumberInformasi ?? "Instagram Ads",
-                      generalNotes: generalNotesTC.text.isNotEmpty
-                          ? generalNotesTC.text
-                          : null,
-                      properties: const {"23": "City"},
-                      propertiesJson: propertiesJson.isNotEmpty
-                          ? propertiesJson
-                          : null,
-                    );
-                    if (widget.args.page == 1 && widget.args.data != null) {
-                      // Edit mode: update
-                      context.read<ContactBloc>().add(
-                        UpdateContactEvent(widget.args.data!.contactId, params),
-                      );
-                    } else {
-                      context.read<ContactBloc>().add(
-                        CreateContactEvent(params),
-                      );
-                    }
-                  },
+                  onTap: () => _handleSave(),
                   child: Container(
                     height: 36,
                     width: 100,
@@ -577,6 +817,39 @@ class _ContactFormPageState extends State<ContactFormPage> {
                   hint: "Contact Information",
                   child: Column(
                     children: [
+                      _buildField(
+                        label: "Full Name",
+                        controller: fullNameTC,
+                        focusNode: fullNameFN,
+                      ),
+                      _buildFieldDown(
+                        label: "Salutation",
+                        value: selectedSalutation ?? "Select Salutation",
+                        onTap: () async {
+                          final items = [
+                            OwnerDropdownItem(id: 1, name: 'Mr.'),
+                            OwnerDropdownItem(id: 2, name: 'Mrs.'),
+                          ];
+                          final result = await context.pushNamed(
+                            'detailContactDropdown',
+                            extra: ContactDropdownArgs(
+                              title: 'Pilih Salutation',
+                              items: items,
+                              selectedId: selectedSalutation == 'Mrs.'
+                                  ? 2
+                                  : selectedSalutation == 'Mr.'
+                                  ? 1
+                                  : null,
+                            ),
+                          );
+                          if (result != null) {
+                            final sel = result as OwnerDropdownItem;
+                            setState(() {
+                              selectedSalutation = sel.name;
+                            });
+                          }
+                        },
+                      ),
                       _buildFieldDown(
                         label: "Owner",
                         value: selectedOwnerName,
@@ -640,6 +913,34 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         },
                       ),
 
+                      _buildField(
+                        label: "Email",
+                        controller: emailTC,
+                        focusNode: emailFN,
+                        fieldType: 'text',
+                      ),
+                      _buildField(
+                        label: "Phone",
+                        controller: phoneTC,
+                        focusNode: phoneFN,
+                        fieldType: 'int',
+                      ),
+                      _buildField(
+                        label: "Whatsapp",
+                        controller: waTC,
+                        focusNode: waFN,
+                        fieldType: 'int',
+                      ),
+                      _buildField(
+                        label: "First Project",
+                        controller: fProjectTC,
+                        focusNode: fProjectFN,
+                      ),
+                      _buildField(
+                        label: "Last Project",
+                        controller: lProjectTC,
+                        focusNode: lProjectFN,
+                      ),
                       _buildFieldDown(
                         label: "Status Prospect",
                         value: selectedStatusName,
@@ -696,142 +997,131 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         },
                       ),
 
-                      // Render properties from contact_information group (if any)
-                      BlocBuilder<
-                        ContactPropertiesBloc,
-                        ContactPropertiesState
-                      >(
-                        builder: (context, state) {
-                          if (state.status == ContactPropertiesStatus.loading) {
-                            return const SizedBox.shrink();
-                          }
-                          if (state.status == ContactPropertiesStatus.error) {
-                            return Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                'Failed to load properties: ${state.errorMessage}',
-                              ),
-                            );
-                          }
-
-                          final contactGroups = state.groups
-                              .where((g) => g.name == 'contact_information')
-                              .toList();
-                          if (contactGroups.isEmpty)
-                            return const SizedBox.shrink();
-                          final group = contactGroups.first;
-
-                          return Column(
-                            children: group.properties.map((prop) {
-                              _propertyControllers.putIfAbsent(
-                                prop.propertyId,
-                                () => TextEditingController(),
-                              );
-
-                              if (prop.fieldType == 'date') {
-                                return _buildField(
-                                  label: prop.label,
-                                  controller:
-                                      _propertyControllers[prop.propertyId]!,
-                                  focusNode: FocusNode(),
-                                  fieldType: 'date',
-                                );
-                              }
-
-                              if (prop.fieldType == 'number') {
-                                return _buildField(
-                                  label: prop.label,
-                                  controller:
-                                      _propertyControllers[prop.propertyId]!,
-                                  focusNode: FocusNode(),
-                                  fieldType: 'int',
-                                );
-                              }
-
-                              if (prop.fieldType == 'file') {
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8.0,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: _buildFieldDown(
-                                          label: prop.label,
-                                          value:
-                                              _propertyControllers[prop
-                                                      .propertyId]!
-                                                  .text
-                                                  .isEmpty
-                                              ? null
-                                              : _propertyControllers[prop
-                                                        .propertyId]!
-                                                    .text,
-                                          onTap: () {},
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      ElevatedButton(
-                                        onPressed: () async {
-                                          final picker = ImagePicker();
-                                          final XFile? file = await picker
-                                              .pickImage(
-                                                source: ImageSource.gallery,
-                                              );
-                                          if (file == null) return;
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('Uploading...'),
-                                            ),
-                                          );
-                                          final url = await _uploadFile(
-                                            File(file.path),
-                                          );
-                                          if (url != null) {
-                                            _propertyControllers[prop
-                                                        .propertyId]!
-                                                    .text =
-                                                url;
-                                            setState(() {});
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                  'Upload successful',
-                                                ),
-                                              ),
-                                            );
-                                          } else {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text('Upload failed'),
-                                              ),
-                                            );
-                                          }
-                                        },
-                                        child: const Text('Upload'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }
-
-                              return _buildField(
-                                label: prop.label,
-                                controller:
-                                    _propertyControllers[prop.propertyId]!,
-                                focusNode: FocusNode(),
-                              );
-                            }).toList(),
-                          );
-                        },
+                      _buildField(
+                        label: "First Project Product",
+                        controller: FPProductTC,
+                        focusNode: FPProducttFN,
                       ),
-                      // Dynamic property groups: render each group separately
+                      _buildField(
+                        label: "Las Project Product",
+                        controller: LPProducttTC,
+                        focusNode: LPProducttFN,
+                      ),
+                      _buildField(
+                        label: "First Project Category",
+                        controller: FPCategoryTC,
+                        focusNode: FPCategorytFN,
+                      ),
+                      _buildField(
+                        label: "Last Project Category",
+                        controller: LPCategorytTC,
+                        focusNode: LPCategorytFN,
+                      ),
+                      _buildField(
+                        label: "First Block No",
+                        controller: fBlockNoTC,
+                        focusNode: fBlockNoFN,
+                        fieldType: 'int',
+                      ),
+                      _buildField(
+                        label: "Last Block No",
+                        controller: lBlockNoTC,
+                        focusNode: lBlockNoFN,
+                        fieldType: 'int',
+                      ),
+                      _buildField(
+                        label: "General Notes",
+                        controller: generalNotesTC,
+                        focusNode: generalNotesFN,
+                      ),
+                      _buildField(
+                        label: "No KTP",
+                        controller: noKTPTC,
+                        focusNode: noKTPFN,
+                        fieldType: 'int',
+                      ),
+                      _buildField(
+                        label: "KTP Address",
+                        controller: ktpAddressTC,
+                        focusNode: ktpAddressFN,
+                      ),
+
+                      _buildField(
+                        label: "Sumber Informasi",
+                        controller: sumberInfoTC,
+                        focusNode: sumberInfoFN,
+                      ),
+
+                      _buildField(
+                        label: "Volume Plan",
+                        controller: volumePlanTC,
+                        focusNode: volumePlanFN,
+                        fieldType: 'int',
+                      ),
+                      _buildField(
+                        label: "First Appt Date",
+                        controller: firstApptDateTC,
+                        focusNode: firstApptDateFN,
+                        fieldType: 'date',
+                      ),
+                      _buildField(
+                        label: "Last Appt Date",
+                        controller: lastApptDateTC,
+                        focusNode: lastApptDateFN,
+                        fieldType: 'date',
+                      ),
+
+                      _buildField(
+                        label: "Visitor Count",
+                        controller: vCountTC,
+                        focusNode: vCountFN,
+                        fieldType: 'int',
+                      ),
+
+                      _buildField(
+                        label: "First Visitor Date",
+                        controller: firstVisitorDateTC,
+                        focusNode: firstVisitorDateFN,
+                        fieldType: 'date',
+                      ),
+                      _buildField(
+                        label: "Last Visitor Date",
+                        controller: lastVisitorDateTC,
+                        focusNode: lastVisitorDateFN,
+                        fieldType: 'date',
+                      ),
+                      _buildField(
+                        label: "First SP Date",
+                        controller: fspTC,
+                        focusNode: fspFN,
+                        fieldType: 'date',
+                      ),
+                      _buildField(
+                        label: "Last SP Date",
+                        controller: lspTC,
+                        focusNode: lspFN,
+                        fieldType: 'date',
+                      ),
+
+                      _buildField(
+                        label: "Deal Value",
+                        controller: dealValueTC,
+                        focusNode: dealValueFN,
+                        fieldType: 'int',
+                      ),
+                      _buildField(
+                        label: "Reserve Date",
+                        controller: reserveDateTC,
+                        focusNode: reserveDateFN,
+                        fieldType: 'date',
+                      ),
+                      _buildField(
+                        label: "Loss Reason Note",
+                        controller: lossReasonNoteTC,
+                        focusNode: lossReasonNoteFN,
+                      ),
+
+                      // // Dynamic property groups: render each group separately
                       BlocBuilder<
                         ContactPropertiesBloc,
                         ContactPropertiesState
@@ -1098,17 +1388,14 @@ class _ContactFormPageState extends State<ContactFormPage> {
                           focusNode.unfocus();
                           final DateTime? picked = await showDatePicker(
                             context: context,
-                            initialDate:
-                                DateTime.tryParse(controller.text) ??
-                                DateTime.now(),
+                            initialDate: _parseDateOrToday(controller.text),
                             firstDate: DateTime(1900),
                             lastDate: DateTime(2100),
                           );
                           if (picked != null) {
-                            controller.text = picked
-                                .toIso8601String()
-                                .split('T')
-                                .first;
+                            controller.text = DateHelper.formatNumericCompact(
+                              picked,
+                            );
                           }
                         },
                         child: AbsorbPointer(

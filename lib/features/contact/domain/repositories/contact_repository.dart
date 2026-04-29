@@ -25,6 +25,7 @@ abstract class ContactRepository {
     CreateContactParams params,
   );
   Future<Either<String, void>> createContact(CreateContactParams params);
+  Future<Either<String, void>> deleteContact(int id);
   Future<Either<String, List<Activity>>> getActivities({
     required int contactId,
     int? dealId,

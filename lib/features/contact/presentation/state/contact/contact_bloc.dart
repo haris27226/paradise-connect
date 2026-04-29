@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:progress_group/features/contact/domain/usecases/update_contact_usecase.dart';
+import 'package:progress_group/features/contact/domain/usecases/delete_contact_usecase.dart';
 
 import '../../../domain/usecases/get_contacts_usecase.dart';
 import '../../../domain/usecases/create_contact_usecase.dart';
@@ -11,18 +12,21 @@ class ContactBloc extends Bloc<ContactEvent, ContactState> {
   final GetContactsUseCase getContactsUseCase;
   final CreateContactUseCase createContactUseCase;
   final UpdateContactUseCase updateContactUseCase;
+  final DeleteContactUseCase deleteContactUseCase;
   final GetContactDetailUseCase getContactDetailUseCase;
 
   ContactBloc({
     required this.getContactsUseCase,
     required this.createContactUseCase,
     required this.updateContactUseCase,
+    required this.deleteContactUseCase,
     required this.getContactDetailUseCase,
   }) : super(const ContactState()) {
     on<FetchContactsEvent>(_onFetchContacts);
     on<CreateContactEvent>(_onCreateContact);
     on<FetchContactDetailEvent>(_onFetchContactDetail);
     on<UpdateContactEvent>(_onUpdateContact);
+    on<DeleteContactEvent>(_onDeleteContact);
   }
 
   Future<void> _onFetchContacts(
@@ -145,6 +149,22 @@ class ContactBloc extends Bloc<ContactEvent, ContactState> {
         state.copyWith(status: ContactStatus.error, errorMessage: failure),
       ),
       (_) => emit(state.copyWith(status: ContactStatus.createSuccess)),
+    );
+  }
+
+  Future<void> _onDeleteContact(
+    DeleteContactEvent event,
+    Emitter<ContactState> emit,
+  ) async {
+    emit(state.copyWith(status: ContactStatus.deleting));
+
+    final result = await deleteContactUseCase(event.contactId);
+
+    result.fold(
+      (failure) => emit(
+        state.copyWith(status: ContactStatus.error, errorMessage: failure),
+      ),
+      (_) => emit(state.copyWith(status: ContactStatus.deleteSuccess)),
     );
   }
 }

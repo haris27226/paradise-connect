@@ -24,6 +24,7 @@ abstract class ContactRemoteDataSource {
   Future<List<ContactPropertyGroupModel>> getContactProperties();
   Future<void> createContact(CreateContactParams params);
   Future<void> updateContact(int id, CreateContactParams params);
+  Future<void> deleteContact(int id);
   Future<ActivityResponseModel> getActivities({
     required int contactId,
     int? dealId,
@@ -79,7 +80,10 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
   @override
   Future<ContactModel> getContactDetail(int id) async {
     try {
-      final response = await dio.get('/contacts/$id');
+      final url = '/contacts/$id';
+      print('API GET: $url');
+      final response = await dio.get(url);
+      print('API RESPONSE for getContactDetail: ${response.data}');
       if (response.data['status'] == true) {
         return ContactModel.fromJson(response.data['data']);
       } else {
@@ -195,12 +199,27 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
   @override
   Future<void> updateContact(int id, CreateContactParams params) async {
     try {
-      final response = await dio.put('/contacts/$id', data: params.toJson());
+      final response = await dio.patch('/contacts/$id', data: params.toJson());
       if (response.data['status'] != true) {
         throw Exception(response.data['message'] ?? 'Failed to update contact');
       }
     } on DioException catch (e) {
       throw Exception(e.message ?? 'Failed to update contact');
+    }
+  }
+
+  @override
+  Future<void> deleteContact(int id) async {
+    try {
+      final url = '/contacts/delete/$id';
+      print('API DELETE: $url');
+      final response = await dio.delete(url);
+      print('API RESPONSE for deleteContact: ${response.data}');
+      if (response.data['status'] != true) {
+        throw Exception(response.data['message'] ?? 'Failed to delete contact');
+      }
+    } on DioException catch (e) {
+      throw Exception(e.message ?? 'Failed to delete contact');
     }
   }
 }

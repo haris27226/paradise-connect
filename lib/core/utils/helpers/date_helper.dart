@@ -1,7 +1,6 @@
 import 'package:intl/intl.dart';
 
 class DateHelper {
-
   /// 🔥 FULL (April 13, 2026 08:30 AM)
   static String formatFull(DateTime date) {
     return DateFormat('MMMM d, yyyy hh:mm a', 'en_US').format(date);
@@ -41,6 +40,10 @@ class DateHelper {
   /// 🔥 HARI SAJA (Monday)
   static String formatDay(DateTime date) {
     return DateFormat('EEEE', 'en_US').format(date);
+  }
+
+  static String formatNumericCompact(DateTime date) {
+    return DateFormat('yyyy-MM-dd').format(date);
   }
 
   static String nowDay() {

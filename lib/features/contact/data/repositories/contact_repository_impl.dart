@@ -95,6 +95,16 @@ class ContactRepositoryImpl implements ContactRepository {
   }
 
   @override
+  Future<Either<String, void>> deleteContact(int id) async {
+    try {
+      await remoteDataSource.deleteContact(id);
+      return const Right(null);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
   Future<Either<String, List<Activity>>> getActivities({
     required int contactId,
     int? dealId,

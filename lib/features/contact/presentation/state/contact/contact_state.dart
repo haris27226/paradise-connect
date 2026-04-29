@@ -1,8 +1,18 @@
 import 'package:equatable/equatable.dart';
 import 'package:progress_group/features/contact/domain/entities/contact.dart';
 
-
-enum ContactStatus { initial, loading, loaded, error, creating, createSuccess, loadingDetail, detailLoaded }
+enum ContactStatus {
+  initial,
+  loading,
+  loaded,
+  error,
+  creating,
+  createSuccess,
+  loadingDetail,
+  detailLoaded,
+  deleting,
+  deleteSuccess,
+}
 
 class ContactState extends Equatable {
   final ContactStatus status;
@@ -58,23 +68,25 @@ class ContactState extends Equatable {
       startDate: clearDates ? null : (startDate ?? this.startDate),
       endDate: clearDates ? null : (endDate ?? this.endDate),
       ownerIds: clearOwner ? null : (ownerIds ?? this.ownerIds),
-      statusProspectIds: clearStatus ? null : (statusProspectIds ?? this.statusProspectIds),
+      statusProspectIds: clearStatus
+          ? null
+          : (statusProspectIds ?? this.statusProspectIds),
       contactDetail: contactDetail ?? this.contactDetail,
     );
   }
 
   @override
   List<Object?> get props => [
-        status,
-        contacts,
-        errorMessage,
-        currentPage,
-        hasReachedMax,
-        search,
-        startDate,
-        endDate,
-        ownerIds,
-        statusProspectIds,
-        contactDetail,
-      ];
+    status,
+    contacts,
+    errorMessage,
+    currentPage,
+    hasReachedMax,
+    search,
+    startDate,
+    endDate,
+    ownerIds,
+    statusProspectIds,
+    contactDetail,
+  ];
 }

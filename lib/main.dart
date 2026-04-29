@@ -13,6 +13,7 @@ import 'package:progress_group/features/auth/domain/usecase/get_profile_usecase.
 import 'package:progress_group/features/auth/domain/usecase/reset_password_usecase.dart';
 import 'package:progress_group/features/auth/presentation/state/auth/auth_bloc.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
+import 'package:progress_group/features/contact/domain/usecases/delete_contact_usecase.dart';
 import 'package:progress_group/features/contact/domain/usecases/update_contact_usecase.dart';
 import 'package:progress_group/features/home/domain/usecases/get_report_whatsapp_usecase.dart';
 import 'package:progress_group/features/home/presentation/state/report-whatsapp/report_bloc.dart';
@@ -110,6 +111,7 @@ class MyApp extends StatelessWidget {
     final createActivityUseCase = CreateActivityUseCase(contactRepository);
     final createContactUseCase = CreateContactUseCase(contactRepository);
     final updateContactUseCase = UpdateContactUseCase(contactRepository);
+    final deleteContactUseCase = DeleteContactUseCase(contactRepository);
     final getContactPropertiesUseCase = GetContactPropertiesUseCase(
       contactRepository,
     );
@@ -139,6 +141,7 @@ class MyApp extends StatelessWidget {
             getContactsUseCase: getContactsUseCase,
             createContactUseCase: createContactUseCase,
             updateContactUseCase: updateContactUseCase,
+            deleteContactUseCase: deleteContactUseCase,
             getContactDetailUseCase: getContactDetailUseCase,
           ),
         ),

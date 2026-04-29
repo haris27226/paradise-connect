@@ -549,7 +549,28 @@ Widget _buildContactOptions(BuildContext context, Contact contact) {
           );
         }),
         _buildIconLink(context, icDelete, "Delete Contact", () {
-          // TODO: Implement delete
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: Text('Confirm'),
+              content: Text('Delete this contact?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    context.read<ContactBloc>().add(
+                      DeleteContactEvent(contact.contactId),
+                    );
+                  },
+                  child: Text('Delete'),
+                ),
+              ],
+            ),
+          );
         }),
         _buildIconLink(context, icShare, "Share Contact", () {
           // TODO: Implement share
