@@ -4,19 +4,24 @@ import 'package:progress_group/core/constants/assets.dart';
 import 'package:progress_group/core/constants/colors.dart';
 import 'package:progress_group/core/utils/widget/custom_search_field.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_detail_args.dart';
-import 'package:progress_group/features/contact/domain/entities/activity.dart';
+import 'package:progress_group/features/contact/domain/entities/activity/activity.dart';
 import 'package:progress_group/features/contact/presentation/pages/contact-form/index.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:progress_group/features/contact/presentation/state/activity/activity_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/activity/activity_event.dart';
 import 'package:progress_group/features/contact/presentation/state/activity/activity_state.dart';
+import 'package:progress_group/features/contact/presentation/state/attachment/attachment_cubit.dart';
+import 'package:progress_group/features/contact/presentation/state/attachment/attachment_state.dart';
+import 'package:progress_group/features/contact/presentation/state/attachment/upload_attachment_bloc.dart';
+import 'package:progress_group/features/contact/presentation/state/attachment/upload_attachment_state.dart';
 import 'package:progress_group/features/contact/presentation/state/contact/contact_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/contact/contact_event.dart';
 
 import '../../../../../core/utils/widget/custom_bg_icon.dart';
 import '../../../../../core/utils/widget/custom_buttomsheet.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 
 class ContactDetailPage extends StatefulWidget {
   final ContactDetailArgs args;
@@ -27,42 +32,60 @@ class ContactDetailPage extends StatefulWidget {
   State<ContactDetailPage> createState() => _ContactDetailPageState();
 }
 
-class _ContactDetailPageState extends State<ContactDetailPage> {
+class _ContactDetailPageState extends State<ContactDetailPage>   with TickerProviderStateMixin  {
   TextEditingController searchTC = TextEditingController();
 
   FocusNode searchFN = FocusNode();
 
   int selectedIndex = 0;
-
+  
   final tabs = ["Activity", "About", "Attachment"];
+  late TabController _tabController;
+int currentTab = 0;
 
-  Future<void> _onRefresh() async {
-    final contactId = widget.args.data?.contactId;
-    if (contactId != null) {
-      context.read<ActivityBloc>().add(
-        FetchActivitiesEvent(contactId: contactId, isRefresh: true),
-      );
-    }
-  }
 
-  late PageController _pageController;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: selectedIndex);
+      _tabController = TabController(length: tabs.length, vsync: this);
+      _tabController.addListener(() {
+    if (_tabController.index != currentTab) {
+      setState(() {
+        currentTab = _tabController.index;
+      });
+    }
+  });
+    _init();
+  }
 
-    final contactId = widget.args.data?.contactId;
+  void _init()async{
+    await _getActivity();
+    await _getAttachment();
+  }
+
+  Future<void> _getActivity() async {
+    final contactId = widget.args.dataContact?.contactId;
     if (contactId != null) {
-      context.read<ActivityBloc>().add(
-        FetchActivitiesEvent(contactId: contactId),
-      );
+      context.read<ActivityBloc>().add(FetchActivitiesEvent(contactId: contactId, isRefresh: true),);
     }
   }
 
+  Future<void> _getAttachment() async {
+    final contactId = widget.args.dataContact?.contactId;
+    if (contactId != null) {
+      context.read<AttachmentCubit>().fetch(contactId, null);
+    }
+  }
+
+  Future<void> _deleteAttachment({required int contactId, required int attachmentId}) async {
+    context.read<AttachmentCubit>().delete(contactId: contactId, attachmentId: attachmentId);
+  }
+
+
   @override
   void dispose() {
-    _pageController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -131,7 +154,7 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
                                       ),
                                     ),
                                     Text(
-                                      widget.args.data?.fullName ?? '-',
+                                      widget.args.dataContact?.fullName ?? '-',
                                       style: const TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.w700,
@@ -148,7 +171,7 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
                                   asset: icContactDetailPhone,
                                   onTap: () async {
                                     final phone =
-                                        widget.args.data?.primaryPhone;
+                                        widget.args.dataContact?.primaryPhone;
                                     if (phone != null && phone.isNotEmpty) {
                                       final Uri launchUri = Uri(
                                         scheme: 'tel',
@@ -162,8 +185,8 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
                                   asset: icContactDetailWA,
                                   onTap: () async {
                                     var phone =
-                                        widget.args.data?.whatsappNumber ??
-                                        widget.args.data?.primaryPhone;
+                                        widget.args.dataContact?.whatsappNumber ??
+                                        widget.args.dataContact?.primaryPhone;
                                     if (phone != null && phone.isNotEmpty) {
                                       phone = phone.replaceAll(
                                         RegExp(r'[^0-9]'),
@@ -214,16 +237,15 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
               ),
 
               Expanded(
-                child: TabBarView(
+                child: IndexedStack(
+                  index: currentTab,
                   children: [
                     _buildActivityContent(),
-                    ContactFormPage(
-                      args: ContactDetailArgs(data: widget.args.data, page: 2),
-                    ),
+                    currentTab == 1? ContactFormPage(args: ContactDetailArgs(dataContact: widget.args.dataContact,page: 2,),): const CircularProgressIndicator(),
                     _buildAttachmentContent(),
                   ],
                 ),
-              ),
+              )
             ],
           ),
         ),
@@ -249,30 +271,23 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
           ),
           SizedBox(height: 5),
           _buildIconLink(icContactDetailPhone, "Phone", () {
-            context.pushNamed('addContact', extra: ContactDetailArgs(data: widget.args.data, page: 0, namePage: "Call"));
+            context.pushNamed('addContact', extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 0, namePage: "Call"));
           }),
           _buildIconLink(icContactDetailWA, "WhatsApp", () {
-            context.pushNamed('addContact', extra: ContactDetailArgs(data: widget.args.data, page: 1, namePage: "WhatsApp"));
+            context.pushNamed('addContact', extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 1, namePage: "WhatsApp"));
           }),
           _buildIconLink(icContactDetailMeeting, "Meeting", () {
-            context.pushNamed('addContact', extra: ContactDetailArgs(data: widget.args.data, page: 2,namePage: "Meeting"));
+            context.pushNamed('addContact', extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 2,namePage: "Meeting"));
           }),
           _buildIconLink(icContactDetailReminder, "Task", () {
-            context.pushNamed('addContact', extra: ContactDetailArgs(data: widget.args.data, page: 3,namePage: "Task"));
+            context.pushNamed('addContact', extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 3,namePage: "Task"));
           }),
           _buildIconLink(icContactDetailVisit, "Visit", () {
-            context.pushNamed('addContact', extra: ContactDetailArgs(data: widget.args.data, page: 4,namePage: "Visit"));
+            context.pushNamed('addContact', extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 4,namePage: "Visit"));
           }),
-          _buildIconLink(
-            icSidebarSalesKit,
-            color: Color(primaryColor),
-            "Attachment",
-            () {
-              context.pushNamed(
-                'addContact',
-                extra: ContactDetailArgs(data: widget.args.data, page: 5,namePage: "Attachment"),
-              );
-            },
+          _buildIconLink(icSidebarSalesKit,color: Color(primaryColor),"Attachment",() {
+            context.pushNamed('addContact',extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 5,namePage: "Attachment"),);
+          },
           ),
         ],
       ),
@@ -289,20 +304,32 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
         borderRadius: BorderRadius.circular(24),
       ),
       child: TabBar(
-        dividerColor: Colors.transparent,
-        labelColor: Color(whiteColor),
-        unselectedLabelColor: Color(blue2Color),
+        onTap: (index) {
+          setState(() {
+            currentTab = index;
+          });
+        },
         indicator: BoxDecoration(
           color: Color(primaryColor),
           borderRadius: BorderRadius.circular(24),
         ),
         indicatorSize: TabBarIndicatorSize.tab,
+        labelColor: Color(whiteColor),
+        unselectedLabelColor: Color(blue2Color),
         labelStyle: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+
+        // 🔥 INI KUNCINYA
         tabs: tabs.map((e) => Tab(text: e)).toList(),
+        dividerColor: Colors.transparent,
+        indicatorColor: Colors.transparent,
+        controller: TabController(
+          length: tabs.length,
+          vsync: this,
+          initialIndex: currentTab,
+        ),
       ),
     );
   }
-
   Widget _buildActivityContent() {
     return BlocBuilder<ActivityBloc, ActivityState>(
       builder: (context, state) {
@@ -339,7 +366,7 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
         }
 
         return RefreshIndicator(
-          onRefresh: _onRefresh,
+          onRefresh: _getActivity,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
@@ -436,111 +463,217 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
   }
 
   Widget _buildAttachmentContent() {
-    return Column(
-      children: [
-        customSearchField(controller: searchTC, focusNode: searchFN),
-        SizedBox(height: 9),
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 9),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Color(whiteColor),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12),
-            ],
-          ),
-          child: Row(
-            children: [
-              BgIcon(
-                asset: icUpload,
-                onTap: () {
-                  context.pushNamed(
-                    'addContact',
-                    extra: ContactDetailArgs(page: 5),
-                  );
-                },
-                color: Color(primaryColor),
-              ),
-              SizedBox(width: 10),
-              Column(
-                children: [
-                  Text(
-                    "Add New File",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Color(primaryColor),
-                    ),
-                  ),
-                  Text(
-                    "upload new file",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      color: Color(grey7Color),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _onRefresh,
-            child: ListView.builder(
-              physics: const AlwaysScrollableScrollPhysics(),
-              itemCount: 10,
-              itemBuilder: (context, index) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Color(whiteColor),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 12,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        children: [
+          customSearchField(controller: searchTC, focusNode: searchFN),
+          SizedBox(height: 9),
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 9),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Color(whiteColor),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12),
+              ],
+            ),
+            child: Row(
+              children: [
+                BgIcon(
+                  asset: icUpload,
+                  onTap: () {
+                    context.pushNamed('addContact',extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 5,namePage: "Attachment"),);
+                  },
+                  color: Color(primaryColor),
+                ),
+                SizedBox(width: 10),
+                Column(
+                  children: [
+                    Text(
+                      "Add New File",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(primaryColor),
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      BgIcon(asset: icAttacment, onTap: () {}),
-                      SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Attachment",
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          Text(
-                            "Attachment",
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ],
+                    ),
+                    Text(
+                      "upload new file",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: Color(grey7Color),
                       ),
-                      Spacer(),
-                      BgIcon(asset: null, onTap: () {}),
-                    ],
-                  ),
-                );
-              },
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ),
-      ],
+          Expanded(
+            child:BlocListener<UploadAttachmentBloc, UploadAttachmentState>(
+              listener: (context, state) {
+                if (state is UploadAttachmentSuccess) {
+                  context.read<AttachmentCubit>().fetch( widget.args.dataContact!.contactId, widget.args.dataContact!.dealId );
+                }
+
+                if (state is UploadAttachmentError) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(state.message)),
+                  );
+                }
+              },
+              child: RefreshIndicator(
+                onRefresh: _getAttachment,
+                child: BlocBuilder<AttachmentCubit, AttachmentState>(
+                  builder: (context, state) {
+                    
+                    if (state is AttachmentLoading) {
+                      return Center(child: CircularProgressIndicator());
+                    }
+                    
+                    if (state is AttachmentLoaded) {
+                      final list = state.data;
+                    
+                      if (list.isEmpty) {
+                        return Center(child: Text("No attachment"));
+                      }
+                    
+                      return ListView.builder(
+                        itemCount: list.length,
+                        itemBuilder: (context, index) {
+                          final item = list[index];
+                          final isPdf = item.attachmentUrl.toLowerCase().endsWith('.pdf');
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Color(whiteColor),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 12,
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                   decoration: BoxDecoration(
+                                    color: Colors.grey[300],
+                                    borderRadius: BorderRadius.circular(12),
+                                   
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: 
+                                       Image.network(
+                                            convertDriveUrl(item.attachmentUrl),
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Container(
+                                                width: 58,
+                                                height: 44,
+                                                decoration: BoxDecoration(
+                                                  color: Color(whiteColor),
+                                                  borderRadius: BorderRadius.circular(14),
+                                                  border: Border.all(color: Color(primaryColor)),
+                                                ),
+                                                child: Icon(Icons.picture_as_pdf, color: Color(primaryColor),),
+                                              );
+                                            },
+                                          ),
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      item.attachmentTypeName,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    Text(
+                                      item.createDatetime.toString(),
+                                      style: TextStyle(fontSize: 10),
+                                    ),
+                                    Text(
+                                      item.attachmentNote,
+                                      style: TextStyle(fontSize: 10),
+                                    ),
+                                  ],
+                                ),
+                    
+                                Spacer(),
+                                PopupMenuButton<String>(
+                                icon: Container(
+                                    height: 44,
+                                    width: 44,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: Color(grey8Color),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                child: Icon(Icons.more_vert, size: 30,)),
+                                
+                                onSelected: (value) {
+                                  if (value == 'edit') {
+                                    context.pushNamed('addContact',extra: ContactDetailArgs(dataContact: widget.args.dataContact, dataAttachment: item, page: 6,namePage: "Attachment"),);
+                                  } else if (value == 'delete') {
+                                    _showDeleteDialog(context, item);
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  PopupMenuItem(
+                                    value: 'edit',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.edit, size: 18),
+                                        SizedBox(width: 8),
+                                        Text('Edit'),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'delete',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.delete, size: 18, color: Colors.red),
+                                        SizedBox(width: 8),
+                                        Text('Delete'),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              )
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    }
+                    if (state is AttachmentError) {
+                      return Center(child: Text(state.message));
+                    }
+                    return SizedBox();
+                  },
+                ),
+              ),
+            ),
+          )
+        ],
+      ),
     );
   }
 
@@ -554,10 +687,7 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
             context.pushNamed('formContact', extra: ContactDetailArgs(page: 1));
           }),
           _buildIconLink(icCalendar, "Add Activity", () {
-            context.pushNamed(
-              'addActivity',
-              extra: {'contactId': widget.args.data?.contactId, 'dealId': null},
-            );
+          context.pushNamed('addContact',extra: ContactDetailArgs(dataContact: widget.args.dataContact,  page: 5,namePage: "Attachment"),);
           }),
           _buildIconLink(icDelete, "Delete Contact", () {
             showDialog(
@@ -573,9 +703,9 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
                   TextButton(
                     onPressed: () {
                       Navigator.pop(ctx);
-                      if (widget.args.data?.contactId != null) {
+                      if (widget.args.dataContact?.contactId != null) {
                         context.read<ContactBloc>().add(
-                          DeleteContactEvent(widget.args.data!.contactId),
+                          DeleteContactEvent(widget.args.dataContact!.contactId),
                         );
                       }
                     },
@@ -621,4 +751,34 @@ class _ContactDetailPageState extends State<ContactDetailPage> {
       ),
     );
   }
+
+
+  void _showDeleteDialog(BuildContext context, item) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text("Delete Attachment"),
+        content: Text("Are you sure want to delete this file?"),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(),
+            child: Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              context.pop();
+              _deleteAttachment(contactId: item.contactId, attachmentId: item.contactAttachmentId);
+            },
+            child: Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String convertDriveUrl(String url) {
+  final uri = Uri.parse(url);
+  final id = uri.pathSegments[2];
+  return 'https://drive.google.com/uc?export=view&id=$id';
 }

@@ -10,8 +10,7 @@ import 'package:progress_group/core/utils/widget/custom_header.dart';
 import 'package:progress_group/core/utils/widget/custom_search_field.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_detail_args.dart';
-import 'package:progress_group/features/contact/data/models/selectbox_model.dart';
-import 'package:progress_group/features/contact/domain/entities/contact.dart';
+import 'package:progress_group/features/contact/domain/entities/contact/contact.dart';
 import 'package:progress_group/features/auth/domain/entities/user_profile.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_state.dart';
@@ -24,7 +23,7 @@ import '../../state/prospect_status/prospect_status_bloc.dart';
 import '../../state/prospect_status/prospect_status_event.dart';
 import '../../state/prospect_status/prospect_status_state.dart';
 import '../../../../../core/utils/widget/custom_filter_button.dart';
-import '../../../domain/entities/prospect_status.dart';
+import '../../../domain/entities/prospect/prospect_status.dart';
 
 class ContactPage extends StatefulWidget {
   const ContactPage({super.key});
@@ -38,12 +37,6 @@ class _ContactPageState extends State<ContactPage> {
   final FocusNode _searchFocus = FocusNode();
   late ScrollController _scrollController;
   Timer? _debounce;
-
-  final List<SelectBoxModel> selectBoxes = [
-    SelectBoxModel(items: ['Owner', 'B', 'C'], hint: "Owner"),
-    SelectBoxModel(items: ['1', '2', '3'], hint: "Create Date"),
-    SelectBoxModel(items: ['X', 'Y', 'Z'], hint: "Status"),
-  ];
 
   @override
   void initState() {
@@ -101,16 +94,15 @@ class _ContactPageState extends State<ContactPage> {
                     height: 50,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      itemCount: selectBoxes.length,
+                      itemCount: 3,
                       separatorBuilder: (_, __) => const SizedBox(width: 10),
                       itemBuilder: (context, index) {
-                        final item = selectBoxes[index];
-                        if (item.hint == "Owner") {
+                        if (index == 0) {
                           return BlocBuilder<ProfileBloc, ProfileState>(
                             builder: (context, profileState) {
                               return BlocBuilder<ContactBloc, ContactState>(
                                 builder: (context, contactState) {
-                                  String label = item.hint;
+                                  String label = 'Owner';
                                   bool isSelected =
                                       contactState.ownerIds != null &&
                                       contactState.ownerIds!.isNotEmpty;
@@ -218,10 +210,10 @@ class _ContactPageState extends State<ContactPage> {
                             },
                           );
                         }
-                        if (item.hint == "Status") {
+                        if (index == 2) {
                           return BlocBuilder<ContactBloc, ContactState>(
                             builder: (context, contactState) {
-                              String label = item.hint;
+                              String label = 'Status';
                               bool isSelected =
                                   contactState.statusProspectIds != null &&
                                   contactState.statusProspectIds!.isNotEmpty;
@@ -303,10 +295,10 @@ class _ContactPageState extends State<ContactPage> {
                             },
                           );
                         }
-                        if (item.hint == "Create Date") {
+                        if (index == 1) {
                           return BlocBuilder<ContactBloc, ContactState>(
                             builder: (context, contactState) {
-                              String label = item.hint;
+                              String label = 'Create Date';
                               bool isSelected =
                                   contactState.startDate != null &&
                                   contactState.endDate != null;
@@ -370,7 +362,7 @@ class _ContactPageState extends State<ContactPage> {
                           );
                         }
                         return CustomFilterButton(
-                          label: item.hint,
+                          label: 'Create Date',
                           onTap: () {
                             // TODO: Implement other filters
                           },
@@ -452,7 +444,7 @@ Widget _buildListContacts(BuildContext context, Contact contact) {
     onTap: () {
       context.pushNamed(
         'detailContact',
-        extra: ContactDetailArgs(data: contact, page: 2),
+        extra: ContactDetailArgs(dataContact: contact, page: 2),
       );
     },
     child: Container(
@@ -539,14 +531,11 @@ Widget _buildContactOptions(BuildContext context, Contact contact) {
         _buildIconLink(context, icEdit, "Edit Contact", () {
           context.pushNamed(
             'formContact',
-            extra: ContactDetailArgs(data: contact, page: 1),
+            extra: ContactDetailArgs(dataContact: contact, page: 1),
           );
         }),
         _buildIconLink(context, icCalendar, "Add Activity", () {
-          context.pushNamed(
-            'addActivity',
-            extra: {'contactId': contact.contactId, 'dealId': null},
-          );
+          context.pushNamed('addContact',extra: ContactDetailArgs(dataContact:contact,  page: 5,namePage: "Attachment"),);
         }),
         _buildIconLink(context, icDelete, "Delete Contact", () {
           showDialog(

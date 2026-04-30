@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../domain/usecases/create_activity_usecase.dart';
-import '../../../domain/usecases/get_activities_usecase.dart';
+import '../../../domain/usecases/activity/create_activity_usecase.dart';
+import '../../../domain/usecases/activity/get_activities_usecase.dart';
 import 'activity_event.dart';
 import 'activity_state.dart';
 

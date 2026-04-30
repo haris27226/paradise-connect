@@ -1,38 +1,32 @@
+
+
 import 'package:dio/dio.dart';
-import 'package:progress_group/features/contact/data/models/contact_model.dart';
-import '../models/contact_response_model.dart';
-import '../models/activity_api_model.dart';
-import '../models/prospect_status_model.dart';
-import '../models/contact_property_model.dart';
-import '../../domain/entities/create_activity_params.dart';
-import '../../domain/entities/create_contact_params.dart';
+import 'package:progress_group/features/contact/data/models/activity/activity_api_model.dart';
+import 'package:progress_group/features/contact/data/models/activity/attachment_type_model.dart';
+import 'package:progress_group/features/contact/data/models/attachment/attachment_model.dart';
+import 'package:progress_group/features/contact/data/models/contact/contact_model.dart';
+import 'package:progress_group/features/contact/data/models/contact/contact_property_model.dart';
+import 'package:progress_group/features/contact/data/models/contact/contact_response_model.dart';
+import 'package:progress_group/features/contact/data/models/dropdown/prospect_status_model.dart';
+import 'package:progress_group/features/contact/domain/entities/activity/create_activity_params.dart';
+import 'package:progress_group/features/contact/domain/entities/contact/create_contact_params.dart';
+import 'package:progress_group/features/contact/domain/entities/attachment/upload_attachment_params.dart';
 
 abstract class ContactRemoteDataSource {
-  Future<ContactResponseModel> getContacts({
-    int page = 1,
-    int perPage = 10,
-    String? search,
-    String? startDate,
-    String? endDate,
-    List<int>? ownerIds,
-    List<int>? statusProspectIds,
-  });
-
+  Future<ContactResponseModel> getContacts({int page = 1,int perPage = 10,String? search,String? startDate,String? endDate,List<int>? ownerIds,List<int>? statusProspectIds,});
   Future<ContactModel> getContactDetail(int id);
-
   Future<List<ProspectStatusModel>> getProspectStatuses();
   Future<List<ContactPropertyGroupModel>> getContactProperties();
   Future<void> createContact(CreateContactParams params);
   Future<void> updateContact(int id, CreateContactParams params);
   Future<void> deleteContact(int id);
-  Future<ActivityResponseModel> getActivities({
-    required int contactId,
-    int? dealId,
-    String? activityType,
-    int page = 1,
-    int perPage = 15,
-  });
+  Future<ActivityResponseModel> getActivities({  required int contactId,  int? dealId,  String? activityType,  int page = 1,  int perPage = 15,});
   Future<void> createActivity(CreateActivityParams params);
+  Future<List<AttachmentTypeModel>> getAttachmentTypes();
+  Future<void> uploadAttachment(UploadAttachmentParams params);
+  Future<List<ContactAttachmentModel>> getAttachments({required int contactId,int? dealId});
+  Future<void> deleteAttachment({required int contactId,required int attachmentId}); 
+  Future<void> updateAttachment({ required int contactId, required int attachmentId, required UploadAttachmentParams params});
 }
 
 class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
@@ -41,15 +35,7 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
   ContactRemoteDataSourceImpl(this.dio);
 
   @override
-  Future<ContactResponseModel> getContacts({
-    int page = 1,
-    int perPage = 10,
-    String? search,
-    String? startDate,
-    String? endDate,
-    List<int>? ownerIds,
-    List<int>? statusProspectIds,
-  }) async {
+  Future<ContactResponseModel> getContacts({int page = 1,int perPage = 10,String? search,String? startDate,String? endDate,List<int>? ownerIds,List<int>? statusProspectIds,}) async {
     try {
       final response = await dio.get(
         '/contacts',
@@ -97,13 +83,7 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
   }
 
   @override
-  Future<ActivityResponseModel> getActivities({
-    required int contactId,
-    int? dealId,
-    String? activityType,
-    int page = 1,
-    int perPage = 15,
-  }) async {
+  Future<ActivityResponseModel> getActivities({required int contactId,int? dealId,String? activityType,int page = 1,int perPage = 15,}) async {
     try {
       final response = await dio.get(
         '/activities',
@@ -220,6 +200,109 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
       }
     } on DioException catch (e) {
       throw Exception(e.message ?? 'Failed to delete contact');
+    }
+  }
+
+  @override
+  Future<List<AttachmentTypeModel>> getAttachmentTypes() async {
+    try {
+      final response = await dio.get('/contacts/attachment-types');
+      if (response.data['status'] == true) {
+        final List<dynamic> data = response.data['data'];
+        return data.map((json) => AttachmentTypeModel.fromJson(json)).toList();
+      } else {
+        throw Exception(
+          response.data['message'] ?? 'Failed to load attachment types',
+        );
+      }
+    } on DioException catch (e) {
+      throw Exception(e.message ?? 'Failed to load attachment types');
+    }
+  }
+
+  @override
+  Future<void> uploadAttachment(UploadAttachmentParams params) async {
+    try {
+      final formData = FormData.fromMap({
+        if (params.dealId != null) 'deal_id': params.dealId,
+        if (params.activityId != null) 'activity_id': params.activityId,
+        'attachment_type_id': params.attachmentTypeId,
+        if (params.attachmentNote != null) 'attachment_note': params.attachmentNote,
+        if (params.file != null && params.file!.path.isNotEmpty) 'file': await MultipartFile.fromFile(params.file!.path),
+      });
+
+      final response = await dio.post(
+        '/contacts/${params.contactId}/attachments/upload',
+        data: formData,
+      );
+
+      if (response.data['status'] != true) {
+        throw Exception(
+          response.data['message'] ?? 'Failed to upload attachment',
+        );
+      }
+    } on DioException catch (e) {
+      throw Exception(e.message ?? 'Failed to upload attachment');
+    }
+  }
+  
+  @override
+  Future<List<ContactAttachmentModel>> getAttachments({required int contactId,int? dealId,}) async {
+    try {
+      final response = await dio.get(
+      '/contacts/$contactId/attachments',
+      queryParameters: {
+        if (dealId != null) 'deal_id': dealId,
+      },
+    );
+    if (response.data['status'] == true) {
+      final List<dynamic> data = response.data['data'];
+      return data.map((json) => ContactAttachmentModel.fromJson(json)).toList();
+    } else {
+      throw Exception(
+        response.data['message'] ?? 'Failed to load attachments',
+      );
+    }
+    } on DioException catch (e) {
+      throw Exception(e.message ?? 'Failed to load attachments');
+    }
+  }
+
+  @override
+  Future<void> deleteAttachment({required int contactId,required int attachmentId}) async {
+    try {
+      final url = '/contacts/$contactId/attachments/$attachmentId/deleted';
+      print('API DELETE: $url');
+      final response = await dio.delete(url);
+      if (response.data['status'] != true) {
+        throw Exception(response.data['message'] ?? 'Failed to delete attachment');
+      }
+    } on DioException catch (e) {
+      throw Exception(e.message ?? 'Failed to delete attachment');
+    }
+  }
+
+  @override
+  Future<void> updateAttachment({  required int contactId,  required int attachmentId,  required UploadAttachmentParams params,}) async {
+    final formData = FormData.fromMap({
+      if (params.dealId != null) 'deal_id': params.dealId,
+      if (params.activityId != null) 'activity_id': params.activityId,
+      'attachment_type_id': params.attachmentTypeId,
+      if (params.attachmentNote != null)
+        'attachment_note': params.attachmentNote,
+
+      // 🔥 OPTIONAL FILE
+      if (params.file != null && params.file!.path.isNotEmpty)
+        'file': await MultipartFile.fromFile(params.file!.path),
+    });
+
+    final response = await dio.patch(
+      '/contacts/$contactId/attachments/$attachmentId/update',
+      data: formData,
+    );
+
+    if (response.data['status'] != true) {
+      throw Exception(response.data['message']);
     }
   }
 }

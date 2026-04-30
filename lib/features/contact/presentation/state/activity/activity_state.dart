@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../domain/entities/activity.dart';
+import '../../../domain/entities/activity/activity.dart';
 
 enum ActivityStatus { initial, loading, loaded, error, creating, createSuccess }
 

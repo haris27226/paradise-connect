@@ -1,0 +1,180 @@
+import 'package:dartz/dartz.dart';
+import 'package:progress_group/features/contact/domain/entities/attachment/attachment_entity.dart';
+import 'package:progress_group/features/contact/domain/entities/attachment/attachment_type.dart';
+import '../entities/activity/activity.dart';
+import '../entities/contact/contact.dart';
+import '../entities/contact/contact_response.dart';
+import '../entities/activity/create_activity_params.dart';
+import '../entities/prospect/prospect_status.dart';
+import '../entities/contact/create_contact_params.dart';
+import '../entities/contact/contact_property.dart';
+import 'contact_repository.dart';
+import '../../data/datasources/contact_remote_datasource.dart';
+import '../entities/attachment/upload_attachment_params.dart';
+
+class ContactRepositoryImpl implements ContactRepository {
+  final ContactRemoteDataSource remoteDataSource;
+
+  ContactRepositoryImpl(this.remoteDataSource);
+
+  @override
+  Future<Either<String, ContactResponse>> getContacts({  int page = 1,  int perPage = 10,  String? search,  String? startDate,  String? endDate,  List<int>? ownerIds,  List<int>? statusProspectIds,}) async {
+    try {
+      final result = await remoteDataSource.getContacts(
+        page: page,
+        perPage: perPage,
+        search: search,
+        startDate: startDate,
+        endDate: endDate,
+        ownerIds: ownerIds,
+        statusProspectIds: statusProspectIds,
+      );
+      return Right(result);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, Contact>> getContactDetail(int id) async {
+    try {
+      final result = await remoteDataSource.getContactDetail(id);
+      return Right(result);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, List<ProspectStatus>>> getProspectStatuses() async {
+    try {
+      final result = await remoteDataSource.getProspectStatuses();
+      return Right(result);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, List<ContactPropertyGroup>>> getContactProperties() async {
+    try {
+      final result = await remoteDataSource.getContactProperties();
+      return Right(result);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, void>> createContact(CreateContactParams params) async {
+    try {
+      await remoteDataSource.createContact(params);
+      return const Right(null);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, void>> updateContact(  int id,  CreateContactParams params,) async {
+    try {
+      await remoteDataSource.updateContact(id, params);
+      return const Right(null);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, void>> deleteContact(int id) async {
+    try {
+      await remoteDataSource.deleteContact(id);
+      return const Right(null);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, List<Activity>>> getActivities({  required int contactId,  int? dealId,  String? activityType,  int page = 1,}) async {
+    try {
+      final result = await remoteDataSource.getActivities(
+        contactId: contactId,
+        dealId: dealId,
+        activityType: activityType,
+        page: page,
+      );
+      return Right(result.activities);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, void>> createActivity(  CreateActivityParams params) async {
+    try {
+      await remoteDataSource.createActivity(params);
+      return const Right(null);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, List<AttachmentType>>> getAttachmentTypes() async {
+    try {
+      final result = await remoteDataSource.getAttachmentTypes();
+      return Right(result);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, void>> uploadAttachment(UploadAttachmentParams params) async {
+    try {
+      await remoteDataSource.uploadAttachment(params);
+      return const Right(null);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, List<ContactAttachment>>> getAttachments({required int contactId,int? dealId,}) async {
+    try {
+      final result = await remoteDataSource.getAttachments(contactId: contactId,dealId: dealId);
+      return Right(result);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, void>> deleteAttachment({required int contactId,required int attachmentId,}) async {
+    try {
+      await remoteDataSource.deleteAttachment(
+        contactId: contactId,
+        attachmentId: attachmentId,
+      );
+      return const Right(null);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+
+  @override
+  Future<Either<String, void>> updateAttachment({  required int contactId,  required int attachmentId,  required UploadAttachmentParams params,}) async {
+    try {
+      await remoteDataSource.updateAttachment(
+        contactId: contactId,
+        attachmentId: attachmentId,
+        params: params,
+      );
+      return const Right(null);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+}

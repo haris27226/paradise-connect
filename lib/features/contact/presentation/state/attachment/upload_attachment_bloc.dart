@@ -1,0 +1,46 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:progress_group/features/contact/domain/usecases/attachment/update_attachment_usecase.dart';
+import '../../../domain/usecases/attachment/upload_attachment_usecase.dart';
+import 'upload_attachment_event.dart';
+import 'upload_attachment_state.dart';
+
+// class UploadAttachmentBloc extends Bloc<UploadAttachmentEvent, UploadAttachmentState> {
+//   final UploadAttachmentUseCase uploadAttachmentUseCase;
+
+//   UploadAttachmentBloc(this.uploadAttachmentUseCase) : super(UploadAttachmentInitial()) {
+//     on<SubmitUploadAttachmentEvent>((event, emit) async {
+//       emit(UploadAttachmentLoading());
+//       final result = await uploadAttachmentUseCase(event.params);
+//       result.fold(
+//         (failure) => emit(UploadAttachmentError(failure)),
+//         (success) => emit(UploadAttachmentSuccess()),
+//       );
+//     });
+//   }
+
+  
+// }
+
+class UploadAttachmentBloc extends Bloc<UploadAttachmentEvent, UploadAttachmentState> {
+  final UploadAttachmentUseCase uploadUseCase;
+  final UpdateAttachmentUseCase updateUseCase;
+
+  UploadAttachmentBloc(this.uploadUseCase, this.updateUseCase)
+      : super(UploadAttachmentInitial()) {
+    on<SubmitAttachmentEvent>(_onSubmit);
+  }
+
+  Future<void> _onSubmit(
+    SubmitAttachmentEvent event,
+    Emitter<UploadAttachmentState> emit,
+  ) async {
+    emit(UploadAttachmentLoading());
+
+    final result = event.attachmentId == null ? await uploadUseCase(event.params): await updateUseCase(contactId: event.params.contactId,attachmentId: event.attachmentId!,params: event.params);
+
+    result.fold(
+      (error) => emit(UploadAttachmentError(error)),
+      (_) => emit(UploadAttachmentSuccess()),
+    );
+  }
+}

@@ -1,36 +1,28 @@
 import 'package:dartz/dartz.dart';
-import '../entities/activity.dart';
-import '../entities/contact.dart';
-import '../entities/contact_response.dart';
-import '../entities/create_activity_params.dart';
-import '../entities/prospect_status.dart';
-import '../entities/create_contact_params.dart';
-import '../entities/contact_property.dart';
+import 'package:progress_group/features/contact/domain/entities/attachment/attachment_entity.dart';
+import 'package:progress_group/features/contact/domain/entities/attachment/upload_attachment_params.dart';
+import '../entities/activity/activity.dart';
+import '../entities/contact/contact.dart';
+import '../entities/contact/contact_response.dart';
+import '../entities/activity/create_activity_params.dart';
+import '../entities/prospect/prospect_status.dart';
+import '../entities/contact/create_contact_params.dart';
+import '../entities/contact/contact_property.dart';
+import '../entities/attachment/attachment_type.dart';
 
 abstract class ContactRepository {
-  Future<Either<String, ContactResponse>> getContacts({
-    int page = 1,
-    int perPage = 10,
-    String? search,
-    String? startDate,
-    String? endDate,
-    List<int>? ownerIds,
-    List<int>? statusProspectIds,
-  });
+  Future<Either<String, List<AttachmentType>>> getAttachmentTypes();
+  Future<Either<String, ContactResponse>> getContacts({  int page = 1,  int perPage = 10,  String? search,  String? startDate,  String? endDate,  List<int>? ownerIds,  List<int>? statusProspectIds,});
   Future<Either<String, Contact>> getContactDetail(int id);
   Future<Either<String, List<ProspectStatus>>> getProspectStatuses();
   Future<Either<String, List<ContactPropertyGroup>>> getContactProperties();
-  Future<Either<String, void>> updateContact(
-    int id,
-    CreateContactParams params,
-  );
+  Future<Either<String, void>> updateContact(int id, CreateContactParams params);
   Future<Either<String, void>> createContact(CreateContactParams params);
   Future<Either<String, void>> deleteContact(int id);
-  Future<Either<String, List<Activity>>> getActivities({
-    required int contactId,
-    int? dealId,
-    String? activityType,
-    int page = 1,
-  });
+  Future<Either<String, List<Activity>>> getActivities({required int contactId,int? dealId,String? activityType,int page = 1,});
   Future<Either<String, void>> createActivity(CreateActivityParams params);
+  Future<Either<String, void>> uploadAttachment(UploadAttachmentParams params);
+  Future<Either<String, List<ContactAttachment>>> getAttachments({  required int contactId,  int? dealId,});
+  Future<Either<String, void>> deleteAttachment({required int contactId,required int attachmentId,});
+  Future<Either<String, void>> updateAttachment({  required int contactId,  required int attachmentId,  required UploadAttachmentParams params,});
 }

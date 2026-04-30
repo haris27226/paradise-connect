@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../domain/entities/contact_property.dart';
+import '../../../domain/entities/contact/contact_property.dart';
 
 enum ContactPropertiesStatus { initial, loading, loaded, error }
 

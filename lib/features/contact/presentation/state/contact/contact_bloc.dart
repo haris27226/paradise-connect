@@ -1,10 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:progress_group/features/contact/domain/usecases/update_contact_usecase.dart';
-import 'package:progress_group/features/contact/domain/usecases/delete_contact_usecase.dart';
+import 'package:progress_group/features/contact/domain/usecases/contact/update_contact_usecase.dart';
+import 'package:progress_group/features/contact/domain/usecases/contact/delete_contact_usecase.dart';
 
-import '../../../domain/usecases/get_contacts_usecase.dart';
-import '../../../domain/usecases/create_contact_usecase.dart';
-import '../../../domain/usecases/get_contact_detail_usecase.dart';
+import '../../../domain/usecases/contact/get_contacts_usecase.dart';
+import '../../../domain/usecases/contact/create_contact_usecase.dart';
+import '../../../domain/usecases/contact/get_contact_detail_usecase.dart';
 import 'contact_event.dart';
 import 'contact_state.dart';
 

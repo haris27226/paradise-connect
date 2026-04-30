@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../domain/entities/create_contact_params.dart';
+import '../../../domain/entities/contact/create_contact_params.dart';
 
 abstract class ContactEvent extends Equatable {
   const ContactEvent();

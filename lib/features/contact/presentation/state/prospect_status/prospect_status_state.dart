@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../domain/entities/prospect_status.dart';
+import '../../../domain/entities/prospect/prospect_status.dart';
 
 enum ProspectStatusEnum { initial, loading, loaded, error }
 

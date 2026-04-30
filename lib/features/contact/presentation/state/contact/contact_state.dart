@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:progress_group/features/contact/domain/entities/contact.dart';
+import 'package:progress_group/features/contact/domain/entities/contact/contact.dart';
 
 enum ContactStatus {
   initial,

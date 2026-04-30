@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../domain/usecases/get_contact_properties_usecase.dart';
+import '../../../domain/usecases/contact/get_contact_properties_usecase.dart';
 import 'contact_properties_event.dart';
 import 'contact_properties_state.dart';
 

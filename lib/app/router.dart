@@ -17,7 +17,6 @@ import '../features/contact/presentation/pages/contact-add/index.dart';
 import '../features/contact/presentation/pages/contact-detail/index.dart';
 import '../features/contact/presentation/pages/contact-form/index.dart';
 import '../features/contact/presentation/pages/contact-page/index.dart';
-import '../features/contact/presentation/pages/contact-form/activity_form.dart';
 import '../features/home/presentation/pages/index.dart';
 import '../features/inbox/data/arguments/inbox_detail_args.dart';
 import '../features/inbox/presentation/pages/inbox-detail/index.dart';
@@ -98,17 +97,7 @@ class AppRouter {
                   return ContactAddPage(args: args);
                 },
               ),
-              GoRoute(
-                name: 'addActivity',
-                path: 'add-activity',
-                builder: (context, state) {
-                  final args = state.extra as Map<String, dynamic>;
-                  return ActivityFormPage(
-                    contactId: args['contactId'],
-                    dealId: args['dealId'],
-                  );
-                },
-              ),
+             
             ],
           ),
           GoRoute(

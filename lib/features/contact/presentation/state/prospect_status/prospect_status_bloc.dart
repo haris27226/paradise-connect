@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../domain/usecases/get_prospect_statuses_usecase.dart';
+import '../../../domain/usecases/prospect/get_prospect_statuses_usecase.dart';
 import 'prospect_status_event.dart';
 import 'prospect_status_state.dart';
 
