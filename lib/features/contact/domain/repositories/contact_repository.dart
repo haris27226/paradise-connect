@@ -1,4 +1,6 @@
 import 'package:dartz/dartz.dart';
+import 'package:progress_group/features/contact/domain/entities/activity/activity_prospect_status.dart';
+import 'package:progress_group/features/contact/domain/entities/activity/create_activity_visit_params.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/attachment_entity.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/upload_attachment_params.dart';
 import '../entities/activity/activity.dart';
@@ -20,7 +22,9 @@ abstract class ContactRepository {
   Future<Either<String, void>> createContact(CreateContactParams params);
   Future<Either<String, void>> deleteContact(int id);
   Future<Either<String, List<Activity>>> getActivities({required int contactId,int? dealId,String? activityType,int page = 1,});
+  Future<Either<String, void>> createActivityVisit(CreateVisitParams params);
   Future<Either<String, void>> createActivity(CreateActivityParams params);
+  Future<Either<String, List<ActivityProspectStatusEntity>>> getActivityProspectStatus(int contactId);
   Future<Either<String, void>> uploadAttachment(UploadAttachmentParams params);
   Future<Either<String, List<ContactAttachment>>> getAttachments({  required int contactId,  int? dealId,});
   Future<Either<String, void>> deleteAttachment({required int contactId,required int attachmentId,});

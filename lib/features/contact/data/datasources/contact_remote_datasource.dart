@@ -1,14 +1,16 @@
 
 
 import 'package:dio/dio.dart';
+import 'package:progress_group/features/contact/data/models/activity/activitty_prospect_status._model.dart';
 import 'package:progress_group/features/contact/data/models/activity/activity_api_model.dart';
-import 'package:progress_group/features/contact/data/models/activity/attachment_type_model.dart';
+import 'package:progress_group/features/contact/data/models/attachment/attachment_type_model.dart';
 import 'package:progress_group/features/contact/data/models/attachment/attachment_model.dart';
 import 'package:progress_group/features/contact/data/models/contact/contact_model.dart';
 import 'package:progress_group/features/contact/data/models/contact/contact_property_model.dart';
 import 'package:progress_group/features/contact/data/models/contact/contact_response_model.dart';
 import 'package:progress_group/features/contact/data/models/dropdown/prospect_status_model.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_params.dart';
+import 'package:progress_group/features/contact/domain/entities/activity/create_activity_visit_params.dart';
 import 'package:progress_group/features/contact/domain/entities/contact/create_contact_params.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/upload_attachment_params.dart';
 
@@ -21,7 +23,9 @@ abstract class ContactRemoteDataSource {
   Future<void> updateContact(int id, CreateContactParams params);
   Future<void> deleteContact(int id);
   Future<ActivityResponseModel> getActivities({  required int contactId,  int? dealId,  String? activityType,  int page = 1,  int perPage = 15,});
+  Future<void> createActivityVisit(CreateVisitParams params);
   Future<void> createActivity(CreateActivityParams params);
+  Future<List<ActivityProspectStatusModel>> getActivityProspectStatus(int contactId);
   Future<List<AttachmentTypeModel>> getAttachmentTypes();
   Future<void> uploadAttachment(UploadAttachmentParams params);
   Future<List<ContactAttachmentModel>> getAttachments({required int contactId,int? dealId});
@@ -109,6 +113,32 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
   }
 
   @override
+  Future<void> createActivityVisit(CreateVisitParams params) async {
+    try {
+      final formData = FormData.fromMap({
+        'contact_id': params.contactId,
+        'status_prospect_id': params.statusProspectId,
+        'visit_count': params.visitCount,
+        'activity_date': params.activityDate,
+        'notes': params.notes,
+        if (params.file != null)
+          'file': await MultipartFile.fromFile(params.file!.path),
+      });
+
+      final response = await dio.post(
+        '/activities/visit',
+        data: formData,
+      );
+
+      if (response.data['status'] != true) {
+        throw Exception(response.data['message'] ?? 'Failed create visit');
+      }
+    } on DioException catch (e) {
+      throw Exception(e.message ?? 'Failed create visit');
+    }
+  }
+
+  @override
   Future<void> createActivity(CreateActivityParams params) async {
     try {
       final response = await dio.post(
@@ -122,6 +152,26 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
       }
     } on DioException catch (e) {
       throw Exception(e.message ?? 'Failed to create activity');
+    }
+  }
+
+  @override
+  Future<List<ActivityProspectStatusModel>> getActivityProspectStatus(int contactId) async {
+    try {
+      final response = await dio.get(
+        '/activities/$contactId/status-prospect',
+      );
+
+      if (response.data['status'] == true) {
+        final List data = response.data['data'];
+        return data
+            .map((e) => ActivityProspectStatusModel.fromJson(e))
+            .toList();
+      } else {
+        throw Exception(response.data['message']);
+      }
+    } on DioException catch (e) {
+      throw Exception(e.message);
     }
   }
 

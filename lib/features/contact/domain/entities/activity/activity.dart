@@ -10,6 +10,7 @@ class Activity extends Equatable {
   final String? nextFollowUpDate;
   final int createdBy;
   final String createdAt;
+  final String? imagePath;
 
   const Activity({
     required this.activityId,
@@ -21,6 +22,7 @@ class Activity extends Equatable {
     this.nextFollowUpDate,
     required this.createdBy,
     required this.createdAt,
+    this.imagePath,
   });
 
   @override
@@ -34,5 +36,6 @@ class Activity extends Equatable {
         nextFollowUpDate,
         createdBy,
         createdAt,
+        imagePath,
       ];
 }

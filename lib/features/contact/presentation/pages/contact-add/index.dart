@@ -1,5 +1,6 @@
 import 'dart:io';
-
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import 'package:progress_group/core/constants/assets.dart';
 import 'package:progress_group/core/utils/widget/custom_button.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_dropdown_args.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_params.dart';
+import 'package:progress_group/features/contact/domain/entities/activity/create_activity_visit_params.dart';
 import 'package:progress_group/features/contact/domain/entities/prospect/prospect_status.dart';
 import 'package:progress_group/features/contact/presentation/pages/contact-detail/index.dart';
 import 'package:progress_group/features/contact/presentation/state/activity/activity_bloc.dart';
@@ -31,7 +33,6 @@ import '../../../../../core/constants/colors.dart';
 import '../../../../../core/utils/helpers/date_helper.dart';
 import '../../../../../core/utils/widget/custom_header.dart';
 import '../../../data/arguments/contact_detail_args.dart';
-
 
 class ContactAddPage extends StatefulWidget {
   final ContactDetailArgs args;
@@ -57,11 +58,20 @@ class _ContactAddPageState extends State<ContactAddPage> {
 
   int? selectedTypeId;
   int? selectedStatusId;
-  int jmlDatang = 1;
+  String jmlDatang = "1";
 
   File? selectedFile;
   String? selectedFileName;
   bool isPdf = false;
+  // dynamic selectedFile;
+
+  List<OwnerDropdownItem> itemsJmlDatang = [
+    OwnerDropdownItem(name: "1"),
+    OwnerDropdownItem(name: "2"),
+    OwnerDropdownItem(name: "3"),
+    OwnerDropdownItem(name: "4"),
+    OwnerDropdownItem(name: ">5"),
+  ];
 
   @override
   void initState() {
@@ -69,15 +79,15 @@ class _ContactAddPageState extends State<ContactAddPage> {
     _init();
   }
 
- void _init() async {
+  void _init() async {
     if (widget.args.page == 6 && widget.args.dataAttachment != null) {
       final data = widget.args.dataAttachment!;
 
       setState(() {
         selectedTypeId = data.attachmentTypeId;
-        selectedTypeName = data.attachmentTypeName; 
-        descTC.text = data.attachmentNote; 
-        existingImageUrl = data.attachmentUrl; 
+        selectedTypeName = data.attachmentTypeName;
+        descTC.text = data.attachmentNote;
+        existingImageUrl = data.attachmentUrl;
       });
     }
 
@@ -100,6 +110,29 @@ class _ContactAddPageState extends State<ContactAddPage> {
       });
     }
   }
+
+  // Future<void> pickFile() async {
+  //   final result = await FilePicker.platform.pickFiles(
+  //     type: FileType.custom,
+  //     allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+  //     withData: true, // WAJIB: Agar isi file tersedia di Web sebagai bytes
+  //   );
+
+  //   if (result != null && result.files.single.bytes != null) {
+  //     setState(() {
+  //       selectedFileName = result.files.single.name;
+  //       isPdf = selectedFileName!.toLowerCase().endsWith('.pdf');
+
+  //       if (kIsWeb) {
+  //         // Untuk Web: Simpan dalam bentuk bytes
+  //         selectedFile = result.files.single.bytes;
+  //       } else {
+  //         // Untuk Mobile: Simpan dalam bentuk File objek
+  //         selectedFile = File(result.files.single.path!);
+  //       }
+  //     });
+  //   }
+  // }
 
   Future<void> pickDateTime(BuildContext context) async {
     final now = DateTime.now();
@@ -143,9 +176,15 @@ class _ContactAddPageState extends State<ContactAddPage> {
 
     String mappedType = activityType;
     String finalNotes = notesTC.text.trim();
-    
+
     // Map unsupported types to 'Other' to avoid DB truncation error
-    if (!['Call', 'Meeting', 'Visit', 'Email', 'Other'].contains(activityType)) {
+    if (![
+      'Call',
+      'Meeting',
+      'Visit',
+      'Email',
+      'Other',
+    ].contains(activityType)) {
       mappedType = 'Other';
       finalNotes = '[$activityType] $finalNotes'.trim();
     }
@@ -171,16 +210,16 @@ class _ContactAddPageState extends State<ContactAddPage> {
     final isEdit = widget.args.page == 6;
 
     if (selectedTypeId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih tipe attachment')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Pilih tipe attachment')));
       return;
     }
 
     if (!isEdit && selectedImage == null && selectedFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih file')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Pilih file')));
       return;
     }
     final fileToUpload = selectedFile ?? selectedImage;
@@ -188,17 +227,38 @@ class _ContactAddPageState extends State<ContactAddPage> {
       contactId: contactId,
       attachmentTypeId: selectedTypeId!,
       attachmentNote: descTC.text.isEmpty ? null : descTC.text,
-      file: fileToUpload, 
+      file: fileToUpload,
     );
 
     context.read<UploadAttachmentBloc>().add(
       SubmitAttachmentEvent(
         params: params,
-        attachmentId: isEdit? widget.args.dataAttachment?.contactAttachmentId: null,
+        attachmentId: isEdit
+            ? widget.args.dataAttachment?.contactAttachmentId
+            : null,
       ),
     );
   }
 
+  void _submitVisit(BuildContext context) {
+    if (selectedStatusId == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Status wajib dipilih')));
+      return;
+    }
+
+    final params = CreateVisitParams(
+      contactId: widget.args.dataContact!.contactId,
+      statusProspectId: selectedStatusId!,
+      visitCount: int.parse(jmlDatang),
+      activityDate: DateFormat('yyyy-MM-dd HH:mm:ss').format(selectedDate!),
+      notes: descTC.text,
+      file: selectedFile,
+    );
+
+    context.read<ActivityVisitBloc>().add(CreateVisitEvent(params));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -223,7 +283,9 @@ class _ContactAddPageState extends State<ContactAddPage> {
             } else if (state.status == ActivityStatus.error) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.errorMessage ?? 'Gagal menambahkan activity'),
+                  content: Text(
+                    state.errorMessage ?? 'Gagal menambahkan activity',
+                  ),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -253,7 +315,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
       ],
       child: Scaffold(
         body: SafeArea(
-          child:BlocBuilder<UploadAttachmentBloc, UploadAttachmentState>(
+          child: BlocBuilder<UploadAttachmentBloc, UploadAttachmentState>(
             builder: (context, state) {
               final isLoading = state is UploadAttachmentLoading;
               return Stack(
@@ -280,322 +342,383 @@ class _ContactAddPageState extends State<ContactAddPage> {
                       Expanded(
                         child: Padding(
                           padding: EdgeInsets.all(16.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              widget.args.page == 5 || widget.args.page == 6 ? _buildAttachment() :widget.args.page == 4 ? _buildVisit(): _buildForm(),
-                            ],
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: [
+                                widget.args.page == 5 || widget.args.page == 6
+                                    ? _buildAttachment()
+                                    : widget.args.page == 4
+                                    ? _buildVisit()
+                                    : _buildForm(),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
                   if (isLoading)
-                  Positioned.fill(
-                    child: Container(
-                      color: Colors.black.withOpacity(0.4),
-                      child: Center(
-                        child: CircularProgressIndicator(),
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black.withOpacity(0.4),
+                        child: Center(child: CircularProgressIndicator()),
                       ),
                     ),
-                  ),
                 ],
               );
-            }
+            },
           ),
         ),
       ),
     );
   }
 
-  Widget _buildVisit(){
+  Widget _buildVisit() {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
         color: Color(whiteColor),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(
-            onTap: pickFile,
-            child: Container(
-              width: double.infinity,
-              height: 130,
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: Color(grey10Color),
-                border: Border.all(color: Color(grey11Color)),
+      child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // GestureDetector(
+            //   onTap: pickFile,
+            //   child: Container(
+            //     width: double.infinity,
+            //     height: 130,
+            //     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            //     decoration: BoxDecoration(
+            //       borderRadius: BorderRadius.circular(8),
+            //       color: Color(grey10Color),
+            //       border: Border.all(color: Color(grey11Color)),
+            //     ),
+            //     child:
+            //         (selectedFile != null ||
+            //             selectedImage != null ||
+            //             existingImageUrl != null)
+            //         ? ClipRRect(
+            //             borderRadius: BorderRadius.circular(8),
+            //             child: (selectedFile != null && isPdf)
+            //                 ? Column(
+            //                     mainAxisAlignment: MainAxisAlignment.center,
+            //                     children: [
+            //                       Icon(
+            //                         Icons.picture_as_pdf,
+            //                         size: 60,
+            //                         color: Colors.red,
+            //                       ),
+            //                       SizedBox(height: 8),
+            //                       Text(
+            //                         selectedFileName ?? "PDF File",
+            //                         textAlign: TextAlign.center,
+            //                       ),
+            //                     ],
+            //                   )
+            //                 : (selectedFile != null || selectedImage != null) ? _buildPreviewWidget(selectedFile ?? selectedImage!)
+            //                 ? Image.file(
+            //                     selectedFile ?? selectedImage!,
+            //                     width: double.infinity,
+            //                     fit: BoxFit.cover,
+            //                   )
+            //                 : Image.network(
+            //                     convertDriveUrl(existingImageUrl!),
+            //                     width: double.infinity,
+            //                     fit: BoxFit.cover,
+            //                     errorBuilder: (context, error, stackTrace) {
+            //                       return Center(
+            //                         child: Icon(Icons.broken_image),
+            //                       );
+            //                     },
+            //                   ),
+            //           )
+            //         : Column(
+            //             mainAxisAlignment: MainAxisAlignment.center,
+            //             children: [
+            //               Container(
+            //                 width: 58,
+            //                 height: 44,
+            //                 decoration: BoxDecoration(
+            //                   color: Color(whiteColor),
+            //                   borderRadius: BorderRadius.circular(14),
+            //                   border: Border.all(color: Color(primaryColor)),
+            //                 ),
+            //                 child: Image.asset(icUpload, height: 24, width: 24),
+            //               ),
+            //               SizedBox(height: 8),
+            //               Text(
+            //                 "Upload Files",
+            //                 style: TextStyle(
+            //                   fontSize: 14,
+            //                   fontWeight: FontWeight.bold,
+            //                   color: Color(blue2Color),
+            //                 ),
+            //               ),
+            //             ],
+            //           ),
+            //   ),
+            // ),
+            GestureDetector(onTap: pickFile, child: _buildUploadFile()),
+            SizedBox(height: 12),
+            Text(
+              "Status Prospect",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(grey2Color),
               ),
-              child:
-              selectedFile != null
-              ? ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: isPdf
-                    ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.picture_as_pdf, size: 60, color: Colors.red),
-                          SizedBox(height: 8),
-                          Text(
-                            selectedFileName ?? "PDF File",
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+            ),
+            SizedBox(height: 6),
+            GestureDetector(
+              onTap: () async {
+                final statusState = context.read<ProspectStatusBloc>().state;
+                if (statusState.status == ProspectStatusEnum.loaded) {
+                  final statusItems = statusState.statuses
+                      .map(
+                        (e) => OwnerDropdownItem(
+                          id: e.statusProspectId,
+                          name: e.statusProspectName,
+                        ),
                       )
-                      : selectedImage != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            selectedImage!,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                        )
+                      .toList();
 
-                        // 🔥 PRIORITAS 2: IMAGE DARI API
-                        : existingImageUrl != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  convertDriveUrl(existingImageUrl!),
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Center(child: Icon(Icons.broken_image));
-                                  },
-                                ),
-                              )
-
-                    // 🔥 DEFAULT (UPLOAD)
-          : Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 58,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Color(whiteColor),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Color(primaryColor)),
-                  ),
-                  child: Image.asset(icUpload, height: 24, width: 24),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  "Upload Files",
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(blue2Color),
-                  ),
-                ),
-              ],
-            ),
-            ): Container())
-          ),
-          SizedBox(height: 12),
-          Text(
-            "Status Prospect",
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Color(grey2Color),
-            ),
-          ),
-          SizedBox(height: 6),
-          GestureDetector(
-            onTap: ()async {
-              final statusState = context.read<ProspectStatusBloc>().state;
-              if (statusState.status == ProspectStatusEnum.loaded) {
-                final statusItems = statusState.statuses .map((e) => OwnerDropdownItem(id: e.statusProspectId,name: e.statusProspectName)).toList();
-
-                final result = await context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Pilih Status',items: statusItems,selectedId: selectedStatusId,),);
-
-                if (result != null) {
-                  final selected = result as OwnerDropdownItem;
-                  final picked = statusState.statuses.cast<ProspectStatus?>().firstWhere((e) => e?.statusProspectId == selected.id,orElse: () => null,);
-                  if (picked != null) {
-                    setState(() {
-                      selectedStatusId = picked.statusProspectId;
-                      selectedStatusName = picked.statusProspectName;
-                    });
-                  }
-                }
-              } else {
-                context.read<ProspectStatusBloc>().add(
-                  FetchProspectStatusesEvent(),
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Memuat daftar status...'),
-                  ),
-                );
-              }
-            },
-            child: Container(
-              width: double.infinity,
-              height: 40,
-              decoration: BoxDecoration(
-                border: Border.all(color: Color(grey4Color)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              alignment: Alignment.centerLeft,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    selectedStatusName,
-                    style: TextStyle(
-                      fontSize: 14, 
-                      color: selectedStatusName == "Select status" 
-                          ? Color(grey2Color) 
-                          : Colors.black
+                  final result = await context.pushNamed(
+                    'detailContactDropdown',
+                    extra: ContactDropdownArgs(
+                      title: 'Pilih Status',
+                      items: statusItems,
+                      selectedId: selectedStatusId,
                     ),
-                  ),
+                  );
+
+                  if (result != null) {
+                    final selected = result as OwnerDropdownItem;
+                    final picked = statusState.statuses
+                        .cast<ProspectStatus?>()
+                        .firstWhere(
+                          (e) => e?.statusProspectId == selected.id,
+                          orElse: () => null,
+                        );
+                    if (picked != null) {
+                      setState(() {
+                        selectedStatusId = picked.statusProspectId;
+                        selectedStatusName = picked.statusProspectName;
+                      });
+                    }
+                  }
+                } else {
+                  context.read<ProspectStatusBloc>().add(
+                    FetchProspectStatusesEvent(),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Memuat daftar status...')),
+                  );
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                height: 40,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Color(grey4Color)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      selectedStatusName,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: selectedStatusName == "Select status"
+                            ? Color(grey2Color)
+                            : Colors.black,
+                      ),
+                    ),
                     Icon(
                       Icons.keyboard_arrow_down_rounded,
                       color: Color(grey2Color),
                       size: 30,
                     ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: 12),
-          Text(
-            "Tanggal Visit",
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Color(grey2Color),
-            ),
-          ),
-          SizedBox(height: 6),
-          GestureDetector(
-            onTap: () => pickDateTime(context),
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Color(grey11Color)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    selectedDate != null
-                        ? DateHelper.formatFull(selectedDate!)
-                        : DateHelper.nowFull(),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Color(blackColor),
-                    ),
-                  ),
-                  Icon(
-                    Icons.calendar_today,
-                    color: Color(primaryColor),
-                    size: 16,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: 12),
-          Text(
-            "Jumlah Kedatangan",
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Color(grey2Color),
-            ),
-          ),
-          SizedBox(height: 6),
-          Container(
-            width: double.infinity,
-            height: 40,
-            decoration: BoxDecoration(
-              border: Border.all(color: Color(grey4Color)),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            alignment: Alignment.centerLeft,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "${jmlDatang}",
-                  style: TextStyle(
-                    fontSize: 14, 
-                    color:  Colors.black
-                  ),
+                  ],
                 ),
-                  Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: Color(grey2Color),
-                    size: 30,
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              "Tanggal Visit",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(grey2Color),
+              ),
+            ),
+            SizedBox(height: 6),
+            GestureDetector(
+              onTap: () => pickDateTime(context),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Color(grey11Color)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      selectedDate != null
+                          ? DateHelper.formatFull(selectedDate!)
+                          : DateHelper.nowFull(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(blackColor),
+                      ),
+                    ),
+                    Icon(
+                      Icons.calendar_today,
+                      color: Color(primaryColor),
+                      size: 16,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              "Jumlah Kedatangan",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(grey2Color),
+              ),
+            ),
+            SizedBox(height: 6),
+            GestureDetector(
+              onTap: () async {
+                final result = await context.pushNamed(
+                  'detailContactDropdown',
+                  extra: ContactDropdownArgs(
+                    title: 'Project',
+                    items: itemsJmlDatang,
+                    selectedId: selectedStatusId,
                   ),
-              ],
-            ),
-          ),
-          SizedBox(height: 12),
-          Text(
-            "Note",
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Color(grey2Color),
-            ),
-          ),
-          SizedBox(height: 6),
-          TextField(
-            maxLines: 4,
-            minLines: 3,
-            controller: descTC,
-            focusNode: descFN,
-            onTapOutside: (event) => descFN.unfocus(),
-            textInputAction: TextInputAction.newline,
-            decoration: InputDecoration(
-              hintText: "Note the attachment...",
-              hintStyle: TextStyle(color: Color(grey2Color).withOpacity(0.0), fontSize: 14),
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(grey11Color)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(grey11Color)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(primaryColor)),
+                );
+                if (result != null) {
+                  final selected = result as OwnerDropdownItem;
+                  setState(() {
+                    jmlDatang = selected.name;
+                  });
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                height: 40,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Color(grey4Color)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "${jmlDatang}",
+                      style: TextStyle(fontSize: 14, color: Colors.black),
+                    ),
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Color(grey2Color),
+                      size: 30,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          SizedBox(height: 20),
-          BlocBuilder<UploadAttachmentBloc, UploadAttachmentState>(
-            builder: (context, state) {
-              final isLoading = state is UploadAttachmentLoading;
-              return customButton(isLoading ? null : () {
-                _submitAttachment();
-              }, isLoading ? 'Uploading...' : 'Save');
-            },
-          ),
-        ],
+            SizedBox(height: 12),
+            Text(
+              "Note",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(grey2Color),
+              ),
+            ),
+            SizedBox(height: 6),
+            TextField(
+              maxLines: 4,
+              minLines: 3,
+              controller: descTC,
+              focusNode: descFN,
+              onTapOutside: (event) => descFN.unfocus(),
+              textInputAction: TextInputAction.newline,
+              decoration: InputDecoration(
+                hintText: "Note the attachment...",
+                hintStyle: TextStyle(
+                  color: Color(grey2Color).withOpacity(0.0),
+                  fontSize: 14,
+                ),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Color(grey11Color)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Color(grey11Color)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Color(primaryColor)),
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            BlocConsumer<ActivityVisitBloc, VisitState>(
+              listener: (context, state) {
+                if (state is VisitSuccess) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Visit berhasil dibuat')),
+                  );
+                  Navigator.pop(context);
+                }
+
+                if (state is VisitError) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(state.message)));
+                }
+              },
+              builder: (context, state) {
+                final isLoading = state is VisitLoading;
+
+                return customButton(
+                  isLoading
+                      ? null
+                      : () {
+                          print(
+                            "Submit Visit with statusId: $selectedStatusId, visitCount: $jmlDatang, date: $selectedDate, notes: ${descTC.text}",
+                          );
+                          _submitVisit(context);
+                        },
+                  isLoading ? 'Saving...' : 'Save',
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
-
-
 
   Widget _buildAttachment() {
     return Container(
@@ -604,243 +727,227 @@ class _ContactAddPageState extends State<ContactAddPage> {
         color: Color(whiteColor),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(
-            onTap: pickFile,
-            child: Container(
-              width: double.infinity,
-              height: 130,
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: Color(grey10Color),
-                border: Border.all(color: Color(grey11Color)),
-              ),
-              child:
-              selectedFile != null
-              ? ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: isPdf
-                    ? Column(
+      child: Container(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: pickFile,
+              child: Container(
+                width: double.infinity,
+                height: 130,
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Color(grey10Color),
+                  border: Border.all(color: Color(grey11Color)),
+                ),
+                child:
+                    (selectedFile != null ||
+                        selectedImage != null ||
+                        existingImageUrl != null)
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: (selectedFile != null && isPdf)
+                            ? Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.picture_as_pdf,
+                                    size: 60,
+                                    color: Colors.red,
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    selectedFileName ?? "PDF File",
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              )
+                            : (selectedFile != null || selectedImage != null)
+                            ? Image.file(
+                                selectedFile ?? selectedImage!,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              )
+                            : Image.network(
+                                convertDriveUrl(existingImageUrl!),
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Center(
+                                    child: Icon(Icons.broken_image),
+                                  );
+                                },
+                              ),
+                      )
+                    : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.picture_as_pdf, size: 60, color: Colors.red),
+                          Container(
+                            width: 58,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: Color(whiteColor),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: Color(primaryColor)),
+                            ),
+                            child: Image.asset(icUpload, height: 24, width: 24),
+                          ),
                           SizedBox(height: 8),
                           Text(
-                            selectedFileName ?? "PDF File",
-                            textAlign: TextAlign.center,
+                            "Upload Files",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Color(blue2Color),
+                            ),
                           ),
                         ],
-                      )
-                      : selectedImage != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            selectedImage!,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-
-                        // 🔥 PRIORITAS 2: IMAGE DARI API
-                        : existingImageUrl != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  convertDriveUrl(existingImageUrl!),
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Center(child: Icon(Icons.broken_image));
-                                  },
-                                ),
-                              )
-
-                    // 🔥 DEFAULT (UPLOAD)
-          : Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 58,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Color(whiteColor),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Color(primaryColor)),
-                  ),
-                  child: Image.asset(icUpload, height: 24, width: 24),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  "Upload Files",
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(blue2Color),
-                  ),
-                ),
-              ],
-            ),
-            ):Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 58,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Color(whiteColor),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Color(primaryColor)),
-                  ),
-                  child: Image.asset(icUpload, height: 24, width: 24),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  "Upload Files",
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(blue2Color),
-                  ),
-                ),
-              ],
-            ),
-            )
-          ),
-          
-          SizedBox(height: 12),
-          Text(
-            "Attachment Type",
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Color(grey2Color),
-            ),
-          ),
-          SizedBox(height: 6),
-          BlocBuilder<AttachmentTypeBloc, AttachmentTypeState>(
-            builder: (context, state) {
-              return GestureDetector(
-                onTap: () async {
-                  if (state is AttachmentTypeLoaded) {
-                    final items = state.data.map((e) => OwnerDropdownItem(
-                      id: e.id,
-                      name: e.name,
-                    )).toList();
-
-                    final result = await context.pushNamed(
-                      'detailContactDropdown', 
-                      extra: ContactDropdownArgs(
-                        title: 'Attachment Type',
-                        items: items,
-                        selectedId: selectedTypeId,
                       ),
-                    );
+              ),
+            ),
 
-                    if (result != null) {
-                      final sel = result as OwnerDropdownItem;
-                      setState(() {
-                        selectedTypeId = sel.id;
-                        selectedTypeName = sel.name;
-                      });
+            SizedBox(height: 12),
+            Text(
+              "Attachment Type",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(grey2Color),
+              ),
+            ),
+            SizedBox(height: 6),
+            BlocBuilder<AttachmentTypeBloc, AttachmentTypeState>(
+              builder: (context, state) {
+                return GestureDetector(
+                  onTap: () async {
+                    if (state is AttachmentTypeLoaded) {
+                      final items = state.data
+                          .map((e) => OwnerDropdownItem(id: e.id, name: e.name))
+                          .toList();
+
+                      final result = await context.pushNamed(
+                        'detailContactDropdown',
+                        extra: ContactDropdownArgs(
+                          title: 'Attachment Type',
+                          items: items,
+                          selectedId: selectedTypeId,
+                        ),
+                      );
+
+                      if (result != null) {
+                        final sel = result as OwnerDropdownItem;
+                        setState(() {
+                          selectedTypeId = sel.id;
+                          selectedTypeName = sel.name;
+                        });
+                      }
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Memuat attachment types...'),
+                        ),
+                      );
+                      context.read<AttachmentTypeBloc>().add(
+                        FetchAttachmentTypesEvent(),
+                      );
                     }
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Memuat attachment types...')),
-                    );
-                    context.read<AttachmentTypeBloc>().add(FetchAttachmentTypesEvent());
-                  }
-                },
-                child: Container(
-                  width: double.infinity,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Color(grey4Color)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  alignment: Alignment.centerLeft,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        selectedTypeName,
-                        style: TextStyle(
-                          fontSize: 14, 
-                          color: selectedTypeName == "Select type" 
-                              ? Color(grey2Color) 
-                              : Colors.black
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Color(grey4Color)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          selectedTypeName,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: selectedTypeName == "Select type"
+                                ? Color(grey2Color)
+                                : Colors.black,
+                          ),
                         ),
-                      ),
-                      if (state is AttachmentTypeLoading)
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      else
-                        Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          color: Color(grey2Color),
-                          size: 30,
-                        ),
-                    ],
+                        if (state is AttachmentTypeLoading)
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        else
+                          Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: Color(grey2Color),
+                            size: 30,
+                          ),
+                      ],
+                    ),
                   ),
+                );
+              },
+            ),
+            SizedBox(height: 12),
+            Text(
+              "Description",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(grey2Color),
+              ),
+            ),
+            SizedBox(height: 6),
+            TextField(
+              maxLines: 4,
+              minLines: 3,
+              controller: descTC,
+              focusNode: descFN,
+              onTapOutside: (event) => descFN.unfocus(),
+              textInputAction: TextInputAction.newline,
+              decoration: InputDecoration(
+                hintText: "Describe the attachment...",
+                hintStyle: TextStyle(color: Color(grey2Color), fontSize: 14),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
-              );
-            },
-          ),
-          SizedBox(height: 12),
-          Text(
-            "Description",
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Color(grey2Color),
-            ),
-          ),
-          SizedBox(height: 6),
-          TextField(
-            maxLines: 4,
-            minLines: 3,
-            controller: descTC,
-            focusNode: descFN,
-            onTapOutside: (event) => descFN.unfocus(),
-            textInputAction: TextInputAction.newline,
-            decoration: InputDecoration(
-              hintText: "Describe the attachment...",
-              hintStyle: TextStyle(color: Color(grey2Color), fontSize: 14),
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(grey11Color)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(grey11Color)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(primaryColor)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Color(grey11Color)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Color(grey11Color)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Color(primaryColor)),
+                ),
               ),
             ),
-          ),
-          SizedBox(height: 20),
-          BlocBuilder<UploadAttachmentBloc, UploadAttachmentState>(
-            builder: (context, state) {
-              final isLoading = state is UploadAttachmentLoading;
-              return customButton(isLoading ? null : () {
-                _submitAttachment();
-              }, isLoading ? 'Uploading...' : 'Save');
-            },
-          ),
-        ],
+            SizedBox(height: 20),
+            BlocBuilder<UploadAttachmentBloc, UploadAttachmentState>(
+              builder: (context, state) {
+                final isLoading = state is UploadAttachmentLoading;
+                return customButton(
+                  isLoading
+                      ? null
+                      : () {
+                          _submitAttachment();
+                        },
+                  isLoading ? 'Uploading...' : 'Save',
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -857,17 +964,17 @@ class _ContactAddPageState extends State<ContactAddPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-             widget.args.page == 0
-                    ? "Call"
-                    : widget.args.page == 1
-                    ? "WhatsApp"
-                    : widget.args.page == 2
-                    ? "Meeting"
-                    : widget.args.page == 3
-                    ? "Task"
-                    : widget.args.page == 4
-                    ? "Visit"
-                    : "Attachment",
+            widget.args.page == 0
+                ? "Call"
+                : widget.args.page == 1
+                ? "WhatsApp"
+                : widget.args.page == 2
+                ? "Meeting"
+                : widget.args.page == 3
+                ? "Task"
+                : widget.args.page == 4
+                ? "Visit"
+                : "Attachment",
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -883,17 +990,18 @@ class _ContactAddPageState extends State<ContactAddPage> {
             onTapOutside: (event) => descFN.unfocus(),
             textInputAction: TextInputAction.newline,
             decoration: InputDecoration(
-              hintText: "Describe the ${ widget.args.page == 0
-                    ? "Call"
-                    : widget.args.page == 1
-                    ? "WhatsApp"
-                    : widget.args.page == 2
-                    ? "Meeting"
-                    : widget.args.page == 3
-                    ? "Task"
-                    : widget.args.page == 4
-                    ? "Visit"
-                    : "Attachment"}...",
+              hintText:
+                  "Describe the ${widget.args.page == 0
+                      ? "Call"
+                      : widget.args.page == 1
+                      ? "WhatsApp"
+                      : widget.args.page == 2
+                      ? "Meeting"
+                      : widget.args.page == 3
+                      ? "Task"
+                      : widget.args.page == 4
+                      ? "Visit"
+                      : "Attachment"}...",
               hintStyle: TextStyle(color: Color(grey2Color), fontSize: 14),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
@@ -1011,17 +1119,19 @@ class _ContactAddPageState extends State<ContactAddPage> {
               BlocBuilder<ActivityBloc, ActivityState>(
                 builder: (context, state) {
                   final isLoading = state.status == ActivityStatus.creating;
-                  
+
                   return customButton(
-                    isLoading ? null : () {
-                      _submitActivity(
-                        activityType: widget.args.namePage??'',
-                        activityDate: DateTime.now(),
-                        notesTC: descTC,
-                        isFollowUp: isFollowUp,
-                        followUpDate: selectedDate,
-                      );
-                    },
+                    isLoading
+                        ? null
+                        : () {
+                            _submitActivity(
+                              activityType: widget.args.namePage ?? '',
+                              activityDate: DateTime.now(),
+                              notesTC: descTC,
+                              isFollowUp: isFollowUp,
+                              followUpDate: selectedDate,
+                            );
+                          },
                     isLoading ? 'Menyimpan...' : 'Save',
                   );
                 },
@@ -1031,5 +1141,98 @@ class _ContactAddPageState extends State<ContactAddPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildUploadFile() {
+    // 1. Kondisi ketika SEMUA kosong (Tampilkan tombol upload)
+    if (selectedFile == null &&
+        selectedImage == null &&
+        existingImageUrl == null) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 58,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Color(whiteColor),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Color(primaryColor)),
+                ),
+                child: Image.asset(icUpload, height: 24, width: 24),
+              ),
+              SizedBox(height: 8),
+              Text(
+                "Upload Files",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(blue2Color),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    // 2. Jika ada file/gambar yang dipilih, tampilkan konten
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: _buildInsideContent(),
+    );
+  }
+
+  Widget _buildInsideContent() {
+    // PDF Logic
+    if (selectedFile != null && isPdf) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.picture_as_pdf, size: 60, color: Colors.red),
+          SizedBox(height: 8),
+          Text(selectedFileName ?? "PDF File", textAlign: TextAlign.center),
+        ],
+      );
+    }
+
+    // Local Image Logic (Mobile/Web)
+    if (selectedFile != null || selectedImage != null) {
+      return Center(
+        child: SizedBox(
+          height: 120,
+          child: _buildPreviewWidget(selectedFile ?? selectedImage!),
+        ),
+      );
+    }
+
+    // Network Image Logic
+    return Image.network(
+      convertDriveUrl(existingImageUrl!),
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Center(child: Icon(Icons.broken_image));
+      },
+    );
+  }
+
+  Widget _buildPreviewWidget(dynamic file) {
+    // Jika file adalah bytes (Web), gunakan Image.memory
+    if (kIsWeb && file is Uint8List) {
+      return Image.memory(file, fit: BoxFit.contain, width: 200, height: 200);
+    }
+
+    // Jika file adalah File (Mobile), gunakan Image.file
+    if (file is File) {
+      return Image.file(file, fit: BoxFit.contain, width: 200, height: 200);
+    }
+
+    // Fallback (jika file kosong atau tipe lain)
+    return Container();
   }
 }

@@ -4,6 +4,7 @@ import 'package:progress_group/core/constants/assets.dart';
 import 'package:progress_group/core/constants/colors.dart';
 import 'package:progress_group/core/utils/widget/custom_search_field.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_detail_args.dart';
+import 'package:progress_group/features/contact/data/models/activity/activity_dashboard.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/activity.dart';
 import 'package:progress_group/features/contact/presentation/pages/contact-form/index.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,7 +23,6 @@ import '../../../../../core/utils/widget/custom_bg_icon.dart';
 import '../../../../../core/utils/widget/custom_buttomsheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-
 class ContactDetailPage extends StatefulWidget {
   final ContactDetailArgs args;
 
@@ -32,34 +32,33 @@ class ContactDetailPage extends StatefulWidget {
   State<ContactDetailPage> createState() => _ContactDetailPageState();
 }
 
-class _ContactDetailPageState extends State<ContactDetailPage>   with TickerProviderStateMixin  {
+class _ContactDetailPageState extends State<ContactDetailPage>
+    with TickerProviderStateMixin {
   TextEditingController searchTC = TextEditingController();
 
   FocusNode searchFN = FocusNode();
 
   int selectedIndex = 0;
-  
+
   final tabs = ["Activity", "About", "Attachment"];
   late TabController _tabController;
-int currentTab = 0;
-
-
+  int currentTab = 0;
 
   @override
   void initState() {
     super.initState();
-      _tabController = TabController(length: tabs.length, vsync: this);
-      _tabController.addListener(() {
-    if (_tabController.index != currentTab) {
-      setState(() {
-        currentTab = _tabController.index;
-      });
-    }
-  });
+    _tabController = TabController(length: tabs.length, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.index != currentTab) {
+        setState(() {
+          currentTab = _tabController.index;
+        });
+      }
+    });
     _init();
   }
 
-  void _init()async{
+  void _init() async {
     await _getActivity();
     await _getAttachment();
   }
@@ -67,8 +66,13 @@ int currentTab = 0;
   Future<void> _getActivity() async {
     final contactId = widget.args.dataContact?.contactId;
     if (contactId != null) {
-      context.read<ActivityBloc>().add(FetchActivitiesEvent(contactId: contactId, isRefresh: true),);
+      context.read<ActivityBloc>().add(
+        FetchActivitiesEvent(contactId: contactId, isRefresh: true),
+      );
     }
+    context.read<ActivityProspectStatusBloc>().add(
+      FetchActivityProspectStatusEvent(contactId!),
+    );
   }
 
   Future<void> _getAttachment() async {
@@ -78,10 +82,15 @@ int currentTab = 0;
     }
   }
 
-  Future<void> _deleteAttachment({required int contactId, required int attachmentId}) async {
-    context.read<AttachmentCubit>().delete(contactId: contactId, attachmentId: attachmentId);
+  Future<void> _deleteAttachment({
+    required int contactId,
+    required int attachmentId,
+  }) async {
+    context.read<AttachmentCubit>().delete(
+      contactId: contactId,
+      attachmentId: attachmentId,
+    );
   }
-
 
   @override
   void dispose() {
@@ -185,7 +194,10 @@ int currentTab = 0;
                                   asset: icContactDetailWA,
                                   onTap: () async {
                                     var phone =
-                                        widget.args.dataContact?.whatsappNumber ??
+                                        widget
+                                            .args
+                                            .dataContact
+                                            ?.whatsappNumber ??
                                         widget.args.dataContact?.primaryPhone;
                                     if (phone != null && phone.isNotEmpty) {
                                       phone = phone.replaceAll(
@@ -241,11 +253,20 @@ int currentTab = 0;
                   index: currentTab,
                   children: [
                     _buildActivityContent(),
-                    currentTab == 1? ContactFormPage(args: ContactDetailArgs(dataContact: widget.args.dataContact,page: 2,),): const CircularProgressIndicator(),
+                        // _buildActivityStatusProspect(),
+
+                    currentTab == 1
+                        ? ContactFormPage(
+                            args: ContactDetailArgs(
+                              dataContact: widget.args.dataContact,
+                              page: 2,
+                            ),
+                          )
+                        : const CircularProgressIndicator(),
                     _buildAttachmentContent(),
                   ],
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -271,23 +292,69 @@ int currentTab = 0;
           ),
           SizedBox(height: 5),
           _buildIconLink(icContactDetailPhone, "Phone", () {
-            context.pushNamed('addContact', extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 0, namePage: "Call"));
+            context.pushNamed(
+              'addContact',
+              extra: ContactDetailArgs(
+                dataContact: widget.args.dataContact,
+                page: 0,
+                namePage: "Call",
+              ),
+            );
           }),
           _buildIconLink(icContactDetailWA, "WhatsApp", () {
-            context.pushNamed('addContact', extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 1, namePage: "WhatsApp"));
+            context.pushNamed(
+              'addContact',
+              extra: ContactDetailArgs(
+                dataContact: widget.args.dataContact,
+                page: 1,
+                namePage: "WhatsApp",
+              ),
+            );
           }),
           _buildIconLink(icContactDetailMeeting, "Meeting", () {
-            context.pushNamed('addContact', extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 2,namePage: "Meeting"));
+            context.pushNamed(
+              'addContact',
+              extra: ContactDetailArgs(
+                dataContact: widget.args.dataContact,
+                page: 2,
+                namePage: "Meeting",
+              ),
+            );
           }),
           _buildIconLink(icContactDetailReminder, "Task", () {
-            context.pushNamed('addContact', extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 3,namePage: "Task"));
+            context.pushNamed(
+              'addContact',
+              extra: ContactDetailArgs(
+                dataContact: widget.args.dataContact,
+                page: 3,
+                namePage: "Task",
+              ),
+            );
           }),
           _buildIconLink(icContactDetailVisit, "Visit", () {
-            context.pushNamed('addContact', extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 4,namePage: "Visit"));
+            context.pushNamed(
+              'addContact',
+              extra: ContactDetailArgs(
+                dataContact: widget.args.dataContact,
+                page: 4,
+                namePage: "Visit",
+              ),
+            );
           }),
-          _buildIconLink(icSidebarSalesKit,color: Color(primaryColor),"Attachment",() {
-            context.pushNamed('addContact',extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 5,namePage: "Attachment"),);
-          },
+          _buildIconLink(
+            icSidebarSalesKit,
+            color: Color(primaryColor),
+            "Attachment",
+            () {
+              context.pushNamed(
+                'addContact',
+                extra: ContactDetailArgs(
+                  dataContact: widget.args.dataContact,
+                  page: 5,
+                  namePage: "Attachment",
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -330,137 +397,201 @@ int currentTab = 0;
       ),
     );
   }
-  Widget _buildActivityContent() {
-    return BlocBuilder<ActivityBloc, ActivityState>(
-      builder: (context, state) {
-        if (state.status == ActivityStatus.loading &&
-            state.activities.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (state.status == ActivityStatus.error && state.activities.isEmpty) {
-          return Center(
-            child: Text(state.errorMessage ?? 'Error loading activities'),
-          );
-        }
-
-        if (state.activities.isEmpty) {
-          return const Center(child: Text('No activities found'));
-        }
-
-        // Group activities by month
-        final Map<String, List<Activity>> grouped = {};
-        for (var activity in state.activities) {
-          try {
-            final date = DateTime.parse(activity.activityDate);
-            final monthYear = DateFormat('MMM yyyy').format(date).toUpperCase();
-            if (!grouped.containsKey(monthYear)) {
-              grouped[monthYear] = [];
-            }
-            grouped[monthYear]!.add(activity);
-          } catch (e) {
-            const monthYear = "UNKNOWN";
-            if (!grouped.containsKey(monthYear)) grouped[monthYear] = [];
-            grouped[monthYear]!.add(activity);
+Widget _buildActivityContent() {
+  return BlocBuilder<ActivityBloc, ActivityState>(
+    builder: (context, activityState) {
+      return BlocBuilder<ActivityProspectStatusBloc,
+          ActivityProspectStatusState>(
+        builder: (context, prospectState) {
+          // 🔥 LOADING
+          if (activityState.status == ActivityStatus.loading &&
+              activityState.activities.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
           }
-        }
 
-        return RefreshIndicator(
-          onRefresh: _getActivity,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
+          // 🔥 MERGE DATA
+          List<ActivityTimelineItem> timeline = [];
+
+          // activity
+          for (var item in activityState.activities) {
+            final date = DateTime.tryParse(item.activityDate);
+            if (date != null) {
+              timeline.add(ActivityTimelineItem(
+                date: date,
+                type: 'activity',
+                data: item,
+              ));
+            }
+          }
+
+          // prospect
+          for (var item in prospectState.data) {
+            final date = DateTime.tryParse(item.createdAt);
+            if (date != null) {
+              timeline.add(ActivityTimelineItem(
+                date: date,
+                type: 'prospect',
+                data: item,
+              ));
+            }
+          }
+
+          // 🔥 SORT
+          timeline.sort((a, b) => b.date.compareTo(a.date));
+
+          // 🔥 GROUP BY TANGGAL
+          final Map<String, List<ActivityTimelineItem>> grouped = {};
+
+          for (var item in timeline) {
+            final key = DateFormat('dd MMM yyyy').format(item.date);
+            grouped.putIfAbsent(key, () => []);
+            grouped[key]!.add(item);
+          }
+
+          return ListView(
             padding: const EdgeInsets.all(16),
             children: grouped.entries.map((entry) {
-              final month = entry.key;
-              final activities = entry.value;
+              final date = entry.key;
+              final items = entry.value;
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    month,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Color(blackColor),
-                    ),
+                    date,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
-                  Column(
-                    children: activities.map((item) {
-                      Color activityColor = Colors.blue;
-                      if (item.activityType == 'Call')
-                        activityColor = Colors.green;
-                      if (item.activityType == 'Meeting')
-                        activityColor = Colors.purple;
-                      if (item.activityType == 'Visit')
-                        activityColor = Colors.orange;
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Color(whiteColor),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              height: 50,
-                              width: 5,
-                              decoration: BoxDecoration(
-                                color: activityColor,
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item.activityType,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(blackColor),
-                                    ),
-                                  ),
-                                  Text(
-                                    DateFormat(
-                                      'dd MMM yyyy HH:mm',
-                                    ).format(DateTime.parse(item.activityDate)),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Color(grey7Color),
-                                    ),
-                                  ),
-                                  if (item.notes != null)
-                                    Text(
-                                      item.notes!,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Color(blackColor),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
+                  Column(
+                    children: items.map((item) {
+                      if (item.type == 'activity') {
+                        return _activityItem(item.data, Color(purpleColor));
+                      } else {
+                        return _prospectItem(item.data);
+                      }
                     }).toList(),
                   ),
+
                   const SizedBox(height: 16),
                 ],
               );
             }).toList(),
+          );
+        },
+      );
+    },
+  );
+}
+
+Widget _activityItem(Activity item, Color activityColor) {
+  return Container(
+    margin: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Color(whiteColor),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 50,
+          width: 5,
+          decoration: BoxDecoration(
+            color: activityColor,
+            borderRadius: BorderRadius.circular(16),
           ),
-        );
-      },
+        ),
+        const SizedBox(width: 10),
+
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(item.activityType,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+
+              Text(DateFormat('HH:mm').format(
+                DateTime.parse(item.activityDate),
+              )),
+
+              if (item.notes != null) Text(item.notes!),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+Widget _prospectItem(dynamic item) {
+  if (item.previousStatusName != null) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Color(whiteColor),
+      borderRadius: BorderRadius.circular(12),
+    ),
+      child: Row(
+        children: [
+          RichText(
+            text: TextSpan(
+              style: const TextStyle(color: Colors.black, fontSize: 13),
+              children: [
+                TextSpan(text: "${item.projectName} — Status berubah dari "),
+                TextSpan(
+                  text: item.previousStatusName,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const TextSpan(text: " ke "),
+                TextSpan(
+                  text: item.statusName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                ),
+                const TextSpan(text: "."),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  } else {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Color(whiteColor),
+      borderRadius: BorderRadius.circular(12),
+    ),
+      child: Row(
+        children: [
+          RichText(
+            text: TextSpan(
+              style: const TextStyle(color: Colors.black, fontSize: 13),
+              children: [
+                TextSpan(text: "${item.projectName} — Status awal "),
+                TextSpan(
+                  text: item.statusName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                ),
+                const TextSpan(text: "."),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
+}
 
   Widget _buildAttachmentContent() {
     return Padding(
@@ -477,7 +608,10 @@ int currentTab = 0;
               color: Color(whiteColor),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 12,
+                ),
               ],
             ),
             child: Row(
@@ -485,7 +619,14 @@ int currentTab = 0;
                 BgIcon(
                   asset: icUpload,
                   onTap: () {
-                    context.pushNamed('addContact',extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 5,namePage: "Attachment"),);
+                    context.pushNamed(
+                      'addContact',
+                      extra: ContactDetailArgs(
+                        dataContact: widget.args.dataContact,
+                        page: 5,
+                        namePage: "Attachment",
+                      ),
+                    );
                   },
                   color: Color(primaryColor),
                 ),
@@ -513,43 +654,49 @@ int currentTab = 0;
               ],
             ),
           ),
+          Text("{item.attachmentUrl}"),
+
           Expanded(
-            child:BlocListener<UploadAttachmentBloc, UploadAttachmentState>(
+            child: BlocListener<UploadAttachmentBloc, UploadAttachmentState>(
               listener: (context, state) {
                 if (state is UploadAttachmentSuccess) {
-                  context.read<AttachmentCubit>().fetch( widget.args.dataContact!.contactId, widget.args.dataContact!.dealId );
+                  context.read<AttachmentCubit>().fetch(
+                    widget.args.dataContact!.contactId,
+                    widget.args.dataContact!.dealId,
+                  );
                 }
 
                 if (state is UploadAttachmentError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(state.message)),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(state.message)));
                 }
               },
               child: RefreshIndicator(
                 onRefresh: _getAttachment,
                 child: BlocBuilder<AttachmentCubit, AttachmentState>(
                   builder: (context, state) {
-                    
                     if (state is AttachmentLoading) {
                       return Center(child: CircularProgressIndicator());
                     }
-                    
+
                     if (state is AttachmentLoaded) {
                       final list = state.data;
-                    
+
                       if (list.isEmpty) {
                         return Center(child: Text("No attachment"));
                       }
-                    
+
                       return ListView.builder(
                         itemCount: list.length,
                         itemBuilder: (context, index) {
                           final item = list[index];
-                          final isPdf = item.attachmentUrl.toLowerCase().endsWith('.pdf');
                           return Container(
                             margin: const EdgeInsets.only(bottom: 8),
-                            padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 15,
+                              vertical: 10,
+                            ),
                             decoration: BoxDecoration(
                               color: Color(whiteColor),
                               borderRadius: BorderRadius.circular(16),
@@ -566,36 +713,42 @@ int currentTab = 0;
                                 Container(
                                   width: 44,
                                   height: 44,
-                                   decoration: BoxDecoration(
+                                  decoration: BoxDecoration(
                                     color: Colors.grey[300],
                                     borderRadius: BorderRadius.circular(12),
-                                   
                                   ),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(12),
-                                    child: 
-                                       Image.network(
-                                            convertDriveUrl(item.attachmentUrl),
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) {
-                                              return Container(
-                                                width: 58,
-                                                height: 44,
-                                                decoration: BoxDecoration(
-                                                  color: Color(whiteColor),
-                                                  borderRadius: BorderRadius.circular(14),
-                                                  border: Border.all(color: Color(primaryColor)),
+                                    child: Image.network(
+                                      convertDriveUrl(item.attachmentUrl),
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return Container(
+                                              width: 58,
+                                              height: 44,
+                                              decoration: BoxDecoration(
+                                                color: Color(whiteColor),
+                                                borderRadius:
+                                                    BorderRadius.circular(14),
+                                                border: Border.all(
+                                                  color: Color(primaryColor),
                                                 ),
-                                                child: Icon(Icons.picture_as_pdf, color: Color(primaryColor),),
-                                              );
-                                            },
-                                          ),
+                                              ),
+                                              child: Icon(
+                                                Icons.picture_as_pdf,
+                                                color: Color(primaryColor),
+                                              ),
+                                            );
+                                          },
+                                    ),
                                   ),
                                 ),
                                 SizedBox(width: 10),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       item.attachmentTypeName,
@@ -614,10 +767,10 @@ int currentTab = 0;
                                     ),
                                   ],
                                 ),
-                    
+
                                 Spacer(),
                                 PopupMenuButton<String>(
-                                icon: Container(
+                                  icon: Container(
                                     height: 44,
                                     width: 44,
                                     alignment: Alignment.center,
@@ -625,38 +778,51 @@ int currentTab = 0;
                                       color: Color(grey8Color),
                                       borderRadius: BorderRadius.circular(14),
                                     ),
-                                child: Icon(Icons.more_vert, size: 30,)),
-                                
-                                onSelected: (value) {
-                                  if (value == 'edit') {
-                                    context.pushNamed('addContact',extra: ContactDetailArgs(dataContact: widget.args.dataContact, dataAttachment: item, page: 6,namePage: "Attachment"),);
-                                  } else if (value == 'delete') {
-                                    _showDeleteDialog(context, item);
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  PopupMenuItem(
-                                    value: 'edit',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.edit, size: 18),
-                                        SizedBox(width: 8),
-                                        Text('Edit'),
-                                      ],
-                                    ),
+                                    child: Icon(Icons.more_vert, size: 30),
                                   ),
-                                  PopupMenuItem(
-                                    value: 'delete',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.delete, size: 18, color: Colors.red),
-                                        SizedBox(width: 8),
-                                        Text('Delete'),
-                                      ],
+
+                                  onSelected: (value) {
+                                    if (value == 'edit') {
+                                      context.pushNamed(
+                                        'addContact',
+                                        extra: ContactDetailArgs(
+                                          dataContact: widget.args.dataContact,
+                                          dataAttachment: item,
+                                          page: 6,
+                                          namePage: "Attachment",
+                                        ),
+                                      );
+                                    } else if (value == 'delete') {
+                                      _showDeleteDialog(context, item);
+                                    }
+                                  },
+                                  itemBuilder: (context) => [
+                                    PopupMenuItem(
+                                      value: 'edit',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.edit, size: 18),
+                                          SizedBox(width: 8),
+                                          Text('Edit'),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              )
+                                    PopupMenuItem(
+                                      value: 'delete',
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.delete,
+                                            size: 18,
+                                            color: Colors.red,
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text('Delete'),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
                           );
@@ -671,7 +837,7 @@ int currentTab = 0;
                 ),
               ),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -687,7 +853,14 @@ int currentTab = 0;
             context.pushNamed('formContact', extra: ContactDetailArgs(page: 1));
           }),
           _buildIconLink(icCalendar, "Add Activity", () {
-          context.pushNamed('addContact',extra: ContactDetailArgs(dataContact: widget.args.dataContact,  page: 5,namePage: "Attachment"),);
+            context.pushNamed(
+              'addContact',
+              extra: ContactDetailArgs(
+                dataContact: widget.args.dataContact,
+                page: 5,
+                namePage: "Attachment",
+              ),
+            );
           }),
           _buildIconLink(icDelete, "Delete Contact", () {
             showDialog(
@@ -705,7 +878,9 @@ int currentTab = 0;
                       Navigator.pop(ctx);
                       if (widget.args.dataContact?.contactId != null) {
                         context.read<ContactBloc>().add(
-                          DeleteContactEvent(widget.args.dataContact!.contactId),
+                          DeleteContactEvent(
+                            widget.args.dataContact!.contactId,
+                          ),
                         );
                       }
                     },
@@ -752,7 +927,6 @@ int currentTab = 0;
     );
   }
 
-
   void _showDeleteDialog(BuildContext context, item) {
     showDialog(
       context: context,
@@ -760,14 +934,14 @@ int currentTab = 0;
         title: Text("Delete Attachment"),
         content: Text("Are you sure want to delete this file?"),
         actions: [
-          TextButton(
-            onPressed: () => context.pop(),
-            child: Text("Cancel"),
-          ),
+          TextButton(onPressed: () => context.pop(), child: Text("Cancel")),
           TextButton(
             onPressed: () {
               context.pop();
-              _deleteAttachment(contactId: item.contactId, attachmentId: item.contactAttachmentId);
+              _deleteAttachment(
+                contactId: item.contactId,
+                attachmentId: item.contactAttachmentId,
+              );
             },
             child: Text("Delete", style: TextStyle(color: Colors.red)),
           ),
@@ -776,6 +950,25 @@ int currentTab = 0;
     );
   }
 }
+
+// String convertDriveUrl(String url) {
+//   try {
+//     final uri = Uri.parse(url);
+//     if (uri.host.contains('drive.google.com')) {
+//       int idIndex = uri.pathSegments.indexOf('d');
+//       if (idIndex != -1 && uri.pathSegments.length > idIndex + 1) {
+//         final id = uri.pathSegments[idIndex + 1];
+//         return 'https://drive.google.com/uc?export=view&id=$id';
+//       }
+//       if (uri.queryParameters.containsKey('id')) {
+//         return 'https://drive.google.com/uc?export=view&id=${uri.queryParameters['id']}';
+//       }
+//     }
+//     return url;
+//   } catch (e) {
+//     return url;
+//   }
+// }
 
 String convertDriveUrl(String url) {
   final uri = Uri.parse(url);

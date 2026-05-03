@@ -113,11 +113,34 @@ class _ContactFormPageState extends State<ContactFormPage> {
 
   List<OwnerDropdownItem> itemsProject = [OwnerDropdownItem(name: "Paradise Serpong City 1"), OwnerDropdownItem(name:"Paradise Serpong City 2" ), OwnerDropdownItem(name: "Paradise Resort City")];
   List<OwnerDropdownItem> itemsProjectCategory = [OwnerDropdownItem(name: "Residential"), OwnerDropdownItem(name:"Commercial" )];
+  final Map<String, Map<String, List<String>>> projectData = {
+    "Paradise Serpong City 2": {"Residential": ["Hampton","Lilac","Woodle","Sandwood","Ariawood | Ecoardence",],},
+    "Paradise Serpong City 1": {"Residential": ["Envato",    "Omnia",    "Grayson",    "Solavita",    "Everest",    "Clivia",    "Florida",    "Solavista",  ],"Commercial": ["Terrace Corner A",    "Terrace Corner B",    "Standard",    "Terrace",    "Standard Corner A",    "Standard Corner B",  ],},
+    "Paradise Resort City": {  "Residential": [    "Arabelle",    "Bella",    "Calan",    "Elowyn",    "Bryn",    "Calaya",    "Cayenne",    "Cove",    "Cavara",    "Coral",  ],},
+  };
+
+  List<OwnerDropdownItem> itemsLastProject = [OwnerDropdownItem(name: "Paradise Serpong City 1"), OwnerDropdownItem(name:"Paradise Serpong City 2" ), OwnerDropdownItem(name: "Paradise Resort City")];
+  List<OwnerDropdownItem> itemsLastProjectCategory = [OwnerDropdownItem(name: "Residential"), OwnerDropdownItem(name:"Commercial" )];
+  final Map<String, Map<String, List<String>>> projecLasttData = {
+    "Paradise Serpong City 2": {"Residential": ["Hampton","Lilac","Woodle","Sandwood","Ariawood | Ecoardence",],},
+    "Paradise Serpong City 1": {"Residential": ["Envato",    "Omnia",    "Grayson",    "Solavita",    "Everest",    "Clivia",    "Florida",    "Solavista",  ],"Commercial": ["Terrace Corner A",    "Terrace Corner B",    "Standard",    "Terrace",    "Standard Corner A",    "Standard Corner B",  ],},
+    "Paradise Resort City": {  "Residential": [    "Arabelle",    "Bella",    "Calan",    "Elowyn",    "Bryn",    "Calaya",    "Cayenne",    "Cove",    "Cavara",    "Coral",  ],},
+  };
 
   @override
   void initState() {
     super.initState();
     _init();
+  }
+
+  List<OwnerDropdownItem> getProductList() {
+    if (selectFirstProject == null || selectFirstProjectCategory == null) {
+      return [];
+    }
+
+    final products = projectData[selectFirstProject]?[selectFirstProjectCategory] ?? [];
+
+    return products.map((e) => OwnerDropdownItem(name: e)).toList();
   }
 
   void _init() async {
@@ -921,6 +944,8 @@ class _ContactFormPageState extends State<ContactFormPage> {
 
                             setState(() {
                               selectFirstProject = selected.name;
+                              selectFirstProjectCategory = null;
+                              selectFirstProjectProduct = null;
                             });
                           }
                         },
@@ -936,6 +961,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
 
                             setState(() {
                               selectFirstProjectCategory = selected.name;
+                              selectFirstProjectProduct = null;
                             });
                           }
                         },
@@ -943,6 +969,31 @@ class _ContactFormPageState extends State<ContactFormPage> {
                       _buildFieldDown(
                         label: "First Project Product",
                         value: selectFirstProjectProduct,
+                        onTap: () async {
+                          final items = getProductList();
+
+                          if (items.isEmpty) {
+                            // optional: kasih warning
+                            return;
+                          }
+
+                          final result = await context.pushNamed(
+                            'detailContactDropdown',
+                            extra: ContactDropdownArgs(
+                              title: 'Project Product',
+                              items: items,
+                              selectedId: selectedStatusId,
+                            ),
+                          );
+
+                          if (result != null) {
+                            final selected = result as OwnerDropdownItem;
+
+                            setState(() {
+                              selectFirstProjectProduct = selected.name;
+                            });
+                          }
+                        },
                       ),
                       
                        _buildField(
@@ -1046,17 +1097,52 @@ class _ContactFormPageState extends State<ContactFormPage> {
                       _buildFieldDown(
                         label: "Last Project",
                         value: selectLastProject,
+                        onTap: () async{ 
+                          
+                         final result =await  context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Project',items:itemsLastProject,selectedId: selectedStatusId,));
+                          if (result != null) {
+                            final selected = result as OwnerDropdownItem;
+
+                            setState(() {
+                              selectLastProject = selected.name;
+                              selectLastProjectCategory = null;
+                              selectLastProjectProduct = null;
+                            });
+                          }
+                        },
                       ),
 
                       
                       _buildFieldDown(
                         label: "Las Project Product",
                         value: selectLastProjectProduct,
+                         onTap: () async{ 
+                          
+                         final result =await  context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Project',items:itemsLastProject,selectedId: selectedStatusId,));
+                          if (result != null) {
+                            final selected = result as OwnerDropdownItem;
+
+                            setState(() {
+                              selectLastProjectProduct = selected.name;
+                            });
+                          }
+                        },
                       ),
                       
                       _buildFieldDown(
                         label: "Last Project Category",
                         value: selectLastProjectCategory,
+                        onTap: () async{ 
+                          
+                         final result =await  context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Project',items:itemsLastProject,selectedId: selectedStatusId,));
+                          if (result != null) {
+                            final selected = result as OwnerDropdownItem;
+
+                            setState(() {
+                              selectLastProjectCategory = selected.name;
+                            });
+                          }
+                        },
                       ),
                      
                       _buildField(

@@ -1,4 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:progress_group/features/contact/domain/usecases/activity/create_activity_visit_usecase.dart';
+import 'package:progress_group/features/contact/domain/usecases/activity/get_activity_prospect_status_usecase.dart';
 import '../../../domain/usecases/activity/create_activity_usecase.dart';
 import '../../../domain/usecases/activity/get_activities_usecase.dart';
 import 'activity_event.dart';
@@ -78,6 +80,54 @@ class ActivityBloc extends Bloc<ActivityEvent, ActivityState> {
         errorMessage: failure,
       )),
       (_) => emit(state.copyWith(status: ActivityStatus.createSuccess)),
+    );
+  }
+}
+
+
+class ActivityVisitBloc extends Bloc<CreateVisitEvent, VisitState> {
+  final CreateActivityVisitUseCase createVisit;
+
+  ActivityVisitBloc(this.createVisit) : super(VisitInitial()) {
+    on<CreateVisitEvent>((event, emit) async {
+      emit(VisitLoading());
+
+      final result = await createVisit(event.params);
+
+      result.fold(
+        (l) => emit(VisitError(l)),
+        (_) => emit(VisitSuccess()),
+      );
+    });
+  }
+}
+
+
+class ActivityProspectStatusBloc extends Bloc<ActivityProspectStatusEvent, ActivityProspectStatusState> {
+  final GetActivityProspectStatusUseCase useCase;
+
+  ActivityProspectStatusBloc(this.useCase)
+      : super(const ActivityProspectStatusState()) {
+    on<FetchActivityProspectStatusEvent>(_onFetch);
+  }
+
+  Future<void> _onFetch(
+    FetchActivityProspectStatusEvent event,
+    Emitter<ActivityProspectStatusState> emit,
+  ) async {
+    emit(state.copyWith(status: ActivityProspectStatusStatus.loading));
+
+    final result = await useCase(event.contactId);
+
+    result.fold(
+      (failure) => emit(state.copyWith(
+        status: ActivityProspectStatusStatus.error,
+        errorMessage: failure,
+      )),
+      (data) => emit(state.copyWith(
+        status: ActivityProspectStatusStatus.loaded,
+        data: data,
+      )),
     );
   }
 }

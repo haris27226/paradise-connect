@@ -13,6 +13,8 @@ import 'package:progress_group/features/auth/domain/usecase/get_profile_usecase.
 import 'package:progress_group/features/auth/domain/usecase/reset_password_usecase.dart';
 import 'package:progress_group/features/auth/presentation/state/auth/auth_bloc.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
+import 'package:progress_group/features/contact/domain/usecases/activity/create_activity_visit_usecase.dart';
+import 'package:progress_group/features/contact/domain/usecases/activity/get_activity_prospect_status_usecase.dart';
 import 'package:progress_group/features/contact/domain/usecases/attachment/delete_attachment_usecase.dart';
 import 'package:progress_group/features/contact/domain/usecases/attachment/get_attachments.dart';
 import 'package:progress_group/features/contact/domain/usecases/attachment/update_attachment_usecase.dart';
@@ -121,7 +123,8 @@ class MyApp extends StatelessWidget {
     final getAttachmentsUseCase = GetAttachments(contactRepository);
     final deleteAttachmentUseCase = DeleteAttachmentUseCase(contactRepository);
     final updateAttachmentUseCase = UpdateAttachmentUseCase(contactRepository);
-
+    final createActivityVisitUseCase = CreateActivityVisitUseCase(contactRepository);
+    final getActivityProspectStatusUseCase = GetActivityProspectStatusUseCase(contactRepository);
 
     return MultiBlocProvider(
       providers: [
@@ -136,9 +139,11 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => ProspectStatusBloc(getProspectStatusesUseCase: getProspectStatusesUseCase)),
         BlocProvider(create: (_) => ContactPropertiesBloc(getContactPropertiesUseCase: getContactPropertiesUseCase)),
         BlocProvider(create: (_) => ActivityBloc(getActivitiesUseCase: getActivitiesUseCase,createActivityUseCase: createActivityUseCase)),
+        BlocProvider(create: (_) => ActivityVisitBloc(createActivityVisitUseCase)),
         BlocProvider(create: (_) => AttachmentTypeBloc(getAttachmentTypesUseCase)),
         BlocProvider(create: (_) => UploadAttachmentBloc(uploadAttachmentUseCase,updateAttachmentUseCase )),
         BlocProvider(create: (_) => AttachmentCubit(getAttachmentsUseCase, deleteAttachmentUseCase)),
+        BlocProvider(create: (_) => ActivityProspectStatusBloc(getActivityProspectStatusUseCase)),
       ],
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,

@@ -1,4 +1,6 @@
 import 'package:dartz/dartz.dart';
+import 'package:progress_group/features/contact/domain/entities/activity/activity_prospect_status.dart';
+import 'package:progress_group/features/contact/domain/entities/activity/create_activity_visit_params.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/attachment_entity.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/attachment_type.dart';
 import '../entities/activity/activity.dart';
@@ -111,10 +113,31 @@ class ContactRepositoryImpl implements ContactRepository {
   }
 
   @override
+  Future<Either<String, void>> createActivityVisit(CreateVisitParams params) async {
+    try {
+      await remoteDataSource.createActivityVisit(params);
+      return const Right(null);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
   Future<Either<String, void>> createActivity(  CreateActivityParams params) async {
     try {
       await remoteDataSource.createActivity(params);
       return const Right(null);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, List<ActivityProspectStatusEntity>>> getActivityProspectStatus(int contactId) async {
+    try {
+      final result = await remoteDataSource.getActivityProspectStatus(contactId);
+
+      return Right(result.map((e) => e.toEntity()).toList());
     } catch (e) {
       return Left(e.toString());
     }

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:progress_group/features/contact/domain/entities/activity/create_activity_visit_params.dart';
 import '../../../domain/entities/activity/create_activity_params.dart';
 
 abstract class ActivityEvent extends Equatable {
@@ -32,4 +33,18 @@ class CreateActivityEvent extends ActivityEvent {
 
   @override
   List<Object?> get props => [params];
+}
+
+class CreateVisitEvent {
+  final CreateVisitParams params;
+
+  CreateVisitEvent(this.params);
+}
+
+abstract class ActivityProspectStatusEvent {}
+
+class FetchActivityProspectStatusEvent extends ActivityProspectStatusEvent {
+  final int contactId;
+
+  FetchActivityProspectStatusEvent(this.contactId);
 }

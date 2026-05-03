@@ -1,7 +1,8 @@
 import '../../../domain/entities/activity/activity.dart';
 
 class ActivityApiModel extends Activity {
-  const ActivityApiModel({
+
+   ActivityApiModel({
     required super.activityId,
     required super.contactId,
     super.dealId,
@@ -11,6 +12,7 @@ class ActivityApiModel extends Activity {
     super.nextFollowUpDate,
     required super.createdBy,
     required super.createdAt,
+   super.imagePath,
   });
 
   factory ActivityApiModel.fromJson(Map<String, dynamic> json) {
@@ -24,6 +26,7 @@ class ActivityApiModel extends Activity {
       nextFollowUpDate: json['next_follow_up_date'],
       createdBy: json['created_by'],
       createdAt: json['created_at'] ?? '',
+      imagePath: json['image_path'],
     );
   }
 }
