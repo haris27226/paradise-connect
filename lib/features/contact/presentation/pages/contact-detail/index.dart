@@ -253,15 +253,7 @@ class _ContactDetailPageState extends State<ContactDetailPage>
                   index: currentTab,
                   children: [
                     _buildActivityContent(),
-
-                    currentTab == 1
-                        ? ContactFormPage(
-                            args: ContactDetailArgs(
-                              dataContact: widget.args.dataContact,
-                              page: 2,
-                            ),
-                          )
-                        : const CircularProgressIndicator(),
+                    currentTab == 1? ContactFormPage(args: ContactDetailArgs(dataContact: widget.args.dataContact,page: 2),): const CircularProgressIndicator(),
                     _buildAttachmentContent(),
                   ],
                 ),
@@ -343,14 +335,14 @@ class _ContactDetailPageState extends State<ContactDetailPage>
           _buildIconLink(
             icSidebarSalesKit,
             color: Color(primaryColor),
-            "Attachment",
+            "Update Status Prospect",
             () {
               context.pushNamed(
                 'addContact',
                 extra: ContactDetailArgs(
                   dataContact: widget.args.dataContact,
-                  page: 5,
-                  namePage: "Attachment",
+                  page: 6,
+                  namePage: "Update Status Prospect",
                 ),
               );
             },
@@ -450,7 +442,7 @@ Widget _buildActivityContent() {
           }
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal:  16),
             children: grouped.entries.map((entry) {
               final date = entry.key;
               final items = entry.value;
@@ -468,7 +460,7 @@ Widget _buildActivityContent() {
                     children: items.map((item) {
 
                       if (item.type == 'activity') {
-                        return _activityItem(item.data,  Color(purpleColor));
+                        return ActivityItem(item: item.data,  activityColor: Color(purpleColor));
                       } else {
                         return _prospectItem(item.data);
                       }
@@ -486,83 +478,6 @@ Widget _buildActivityContent() {
   );
 }
 
-Widget _activityItem(Activity item, Color activityColor) {
-  return Container(
-    margin: const EdgeInsets.only(bottom: 10),
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: Color(whiteColor),
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              height: 50,
-              width: 5,
-              decoration: BoxDecoration(
-                color: activityColor,
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            const SizedBox(width: 10),
-        
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.activityType,style: const TextStyle(fontWeight: FontWeight.bold)),
-        
-                  Text(DateFormat('HH:mm').format(
-                    DateTime.parse(item.activityDate),
-                  )),
-        
-                  if (item.notes != null) Text(item.notes!),
-                ],
-              ),
-            ),
-          ],
-        ),
-        if (item.imagePath != null)
-        Container(
-          width: double.infinity,
-          height: 200,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              convertDriveUrl(item.imagePath??''),
-              fit: BoxFit.contain,
-              errorBuilder:
-                  (context, error, stackTrace) {
-                    return Container(
-                      width: 58,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: Color(whiteColor),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: Color(primaryColor),
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.picture_as_pdf,
-                        color: Color(primaryColor),
-                      ),
-                    );
-                  },
-            ),
-          ),
-        ),
-        ]
-    ),
-  );
-}
 
 Widget _prospectItem(dynamic item) {
   if (item.previousStatusName != null) {
@@ -997,27 +912,137 @@ Widget _prospectItem(dynamic item) {
   }
 }
 
-// String convertDriveUrl(String url) {
-//   try {
-//     final uri = Uri.parse(url);
-//     if (uri.host.contains('drive.google.com')) {
-//       int idIndex = uri.pathSegments.indexOf('d');
-//       if (idIndex != -1 && uri.pathSegments.length > idIndex + 1) {
-//         final id = uri.pathSegments[idIndex + 1];
-//         return 'https://drive.google.com/uc?export=view&id=$id';
-//       }
-//       if (uri.queryParameters.containsKey('id')) {
-//         return 'https://drive.google.com/uc?export=view&id=${uri.queryParameters['id']}';
-//       }
-//     }
-//     return url;
-//   } catch (e) {
-//     return url;
-//   }
-// }
 
 String convertDriveUrl(String url) {
   final uri = Uri.parse(url);
   final id = uri.pathSegments[2];
   return 'https://drive.google.com/uc?export=view&id=$id';
+}
+
+class ActivityItem extends StatefulWidget {
+  final Activity item;
+  final Color activityColor;
+
+  const ActivityItem({
+    super.key,
+    required this.item,
+    required this.activityColor,
+  });
+
+  @override
+  State<ActivityItem> createState() => _ActivityItemState();
+}
+
+class _ActivityItemState extends State<ActivityItem> {
+  bool imageError = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(whiteColor),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ================= HEADER =================
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                height: 50,
+                width: 5,
+                decoration: BoxDecoration(
+                  color: widget.activityColor,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              const SizedBox(width: 10),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.activityType,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+
+                    Text(
+                      DateFormat('HH:mm').format(
+                        DateTime.parse(item.activityDate),
+                      ),
+                    ),
+
+                    if (item.notes != null) Text(item.notes!),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // ================= IMAGE =================
+          if (item.imagePath != null)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: double.infinity,
+              height: imageError ? 60 : 200,
+              margin: const EdgeInsets.only(top: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  convertDriveUrl(item.imagePath ?? ''),
+                  fit: BoxFit.cover,
+
+                  // optional loading indicator (biar smooth)
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+
+                    return Container(
+                      color: Colors.grey.shade200,
+                      alignment: Alignment.center,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    );
+                  },
+
+                  // ERROR HANDLING
+                  errorBuilder: (context, error, stackTrace) {
+                    // avoid infinite setState loop
+                    if (!imageError) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          setState(() {
+                            imageError = true;
+                          });
+                        }
+                      });
+                    }
+
+                    return Container(
+                      height: 60,
+                      width: double.infinity,
+                      color: Colors.grey.shade200,
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.broken_image,
+                        size: 30,
+                        color: Colors.grey,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }

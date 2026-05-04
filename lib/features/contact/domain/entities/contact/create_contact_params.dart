@@ -92,9 +92,9 @@ import 'package:equatable/equatable.dart';
 // }
 
 class CreateContactParams extends Equatable {
-  final String fullName;
-  final String salutation;
-  final String primaryPhone;
+  final String? fullName;
+  final String? salutation;
+  final String? primaryPhone;
   final String? primaryEmail;
   final String? whatsappNumber;
   final String? noKtp;
@@ -131,9 +131,9 @@ class CreateContactParams extends Equatable {
   final List<Map<String, dynamic>>? propertiesJson;
 
   const CreateContactParams({
-    required this.fullName,
-    required this.salutation,
-    required this.primaryPhone,
+    this.fullName,
+    this.salutation,
+    this.primaryPhone,
     this.primaryEmail,
     this.whatsappNumber,
     this.noKtp,
@@ -172,9 +172,9 @@ class CreateContactParams extends Equatable {
 
   Map<String, dynamic> toJson() {
     return {
-      'full_name': fullName,
-      'salutation': salutation,
-      'primary_phone': primaryPhone,
+      if (fullName != null) 'full_name': fullName,
+      if (salutation != null) 'salutation': salutation,
+      if (primaryPhone != null) 'primary_phone': primaryPhone,
       if (primaryEmail != null) 'primary_email': primaryEmail,
       if (whatsappNumber != null) 'whatsapp_number': whatsappNumber,
       if (noKtp != null) 'no_ktp': noKtp,

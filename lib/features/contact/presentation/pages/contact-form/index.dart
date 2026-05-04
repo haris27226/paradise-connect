@@ -383,7 +383,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
   void _updateSalesInformation(int ownerId, UserProfileEntity user) {
     List<HierarchyNodeEntity> chain = [];
 
-    // 1. Helper to find path in subordinates
     List<HierarchyNodeEntity>? findPath(
       List<HierarchyNodeEntity> nodes,
       int id,
@@ -714,9 +713,13 @@ class _ContactFormPageState extends State<ContactFormPage> {
             return BlocBuilder<ContactBloc, ContactState>(
               builder: (context, contactState) {
 
-                // 🔥 LOADING DETAIL
-                if (widget.args.page == 1 && 
-                    contactState.status == ContactStatus.loadingDetail) {
+                // 🔥 LOADING (Wait for Detail + Status + Properties)
+                final statusLoading = context.watch<ProspectStatusBloc>().state.status != ProspectStatusEnum.loaded;
+                final propertiesLoading = context.watch<ContactPropertiesBloc>().state.status != ContactPropertiesStatus.loaded;
+                final detailLoading = contactState.status == ContactStatus.loadingDetail || contactState.status == ContactStatus.initial;
+
+                if ((widget.args.page == 1 || widget.args.page == 2) && 
+                    (detailLoading || statusLoading || propertiesLoading)) {
                   return const Scaffold(
                     body: Center(child: CircularProgressIndicator()),
                   );
@@ -732,7 +735,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
                 }
 
                 return Scaffold(
-                  body: SafeArea(child: _createContact(profileState)),
+                  body:(detailLoading || statusLoading || propertiesLoading)?CircularProgressIndicator(): SafeArea(child: _createContact(profileState)),
                 );
               },
             );
@@ -1293,9 +1296,10 @@ class _ContactFormPageState extends State<ContactFormPage> {
     VoidCallback? onTap,
   }) {
     final isEmpty = value == null || value.isEmpty;
+    final bool isReadOnly = widget.args.page == 2;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: isReadOnly ? _goToEdit : onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         height: 50,
@@ -1331,87 +1335,127 @@ class _ContactFormPageState extends State<ContactFormPage> {
                 ],
               ),
             ),
-            const Icon(Icons.arrow_drop_down, size: 28),
+            if (!isReadOnly) const Icon(Icons.arrow_drop_down, size: 28),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildField({
-    required String label,
-    required TextEditingController controller,
-    required FocusNode focusNode,
-    String fieldType = 'text',
-  }) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 5, horizontal: 16),
-      height: 50,
-      decoration: BoxDecoration(
-        color: Color(whiteColor),
-        border: Border(bottom: BorderSide(width: 1, color: Color(grey10Color))),
+  void _goToEdit() {
+    context.pushNamed(
+      'formContact',
+      extra: ContactDetailArgs(
+        page: 1,
+        dataContact: widget.args.dataContact,
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Builder(
-                  builder: (context) {
-                    // Date field: open date picker and fill controller
-                    if (fieldType == 'date') {
-                      return GestureDetector(
-                        onTap: () async {
-                          focusNode.unfocus();
-                          final DateTime? picked = await showDatePicker(
-                            context: context,
-                            initialDate: _parseDateOrToday(controller.text),
-                            firstDate: DateTime(1900),
-                            lastDate: DateTime(2100),
-                          );
-                          if (picked != null) {
-                            controller.text = DateHelper.formatNumericCompact(
-                              picked,
+    );
+  }
+
+  Widget _buildField({  required String label,  required TextEditingController controller,  required FocusNode focusNode,  String fieldType = 'text',}) {
+    final bool isReadOnly = widget.args.page == 2;
+
+    return GestureDetector(
+      onTap: isReadOnly ? _goToEdit : null,
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 5, horizontal: 16),
+        height: 50,
+        decoration: BoxDecoration(
+          color: Color(whiteColor),
+          border:
+              Border(bottom: BorderSide(width: 1, color: Color(grey10Color))),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Builder(
+                    builder: (context) {
+                      // Date field: open date picker and fill controller
+                      if (fieldType == 'date') {
+                        return GestureDetector(
+                          onTap: isReadOnly
+                              ? null
+                              : () async {
+                            focusNode.unfocus();
+                            final DateTime? picked = await showDatePicker(
+                              context: context,
+                              initialDate: _parseDateOrToday(controller.text),
+                              firstDate: DateTime(1900),
+                              lastDate: DateTime(2100),
                             );
-                          }
-                        },
-                        child: AbsorbPointer(
-                          child: TextFormField(
-                            controller: controller,
-                            focusNode: focusNode,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(blackColor),
-                              fontWeight: FontWeight.w700,
-                            ),
-                            decoration: InputDecoration(
-                              isDense: true,
-                              label: Text(
-                                label,
-                                style: TextStyle(fontSize: 12),
+                            if (picked != null) {
+                              controller.text =
+                                  DateHelper.formatNumericCompact(
+                                picked,
+                              );
+                            }
+                          },
+                          child: AbsorbPointer(
+                            child: TextFormField(
+                              controller: controller,
+                              focusNode: focusNode,
+                              readOnly: isReadOnly,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(blackColor),
+                                fontWeight: FontWeight.w700,
                               ),
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              errorBorder: InputBorder.none,
-                              disabledBorder: InputBorder.none,
-                              contentPadding: EdgeInsets.zero,
+                              decoration: InputDecoration(
+                                isDense: true,
+                                label: Text(
+                                  label,
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                contentPadding: EdgeInsets.zero,
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    }
+                        );
+                      }
 
-                    // Integer field: restrict to digits
-                    if (fieldType == 'int') {
+                      // Integer field: restrict to digits
+                      if (fieldType == 'int') {
+                        return TextFormField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          readOnly: isReadOnly,
+                          enabled: !isReadOnly,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          keyboardType: TextInputType.number,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(blackColor),
+                            fontWeight: FontWeight.w700,
+                          ),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            label: Text(label, style: TextStyle(fontSize: 12)),
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            errorBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        );
+                      }
+
+                      // Default: text input
                       return TextFormField(
                         controller: controller,
                         focusNode: focusNode,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        keyboardType: TextInputType.number,
+                        readOnly: isReadOnly,
+                        enabled: !isReadOnly,
                         style: TextStyle(
                           fontSize: 12,
                           color: Color(blackColor),
@@ -1428,34 +1472,13 @@ class _ContactFormPageState extends State<ContactFormPage> {
                           contentPadding: EdgeInsets.zero,
                         ),
                       );
-                    }
-
-                    // Default: text input
-                    return TextFormField(
-                      controller: controller,
-                      focusNode: focusNode,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(blackColor),
-                        fontWeight: FontWeight.w700,
-                      ),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        label: Text(label, style: TextStyle(fontSize: 12)),
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        errorBorder: InputBorder.none,
-                        disabledBorder: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    );
-                  },
-                ),
-              ],
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

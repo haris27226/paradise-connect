@@ -13,6 +13,7 @@ import 'package:progress_group/core/utils/widget/custom_button.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_dropdown_args.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_params.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_visit_params.dart';
+import 'package:progress_group/features/contact/domain/entities/contact/create_contact_params.dart';
 import 'package:progress_group/features/contact/domain/entities/prospect/prospect_status.dart';
 import 'package:progress_group/features/contact/presentation/pages/contact-detail/index.dart';
 import 'package:progress_group/features/contact/presentation/state/activity/activity_bloc.dart';
@@ -25,6 +26,7 @@ import 'package:progress_group/features/contact/presentation/state/attachment/up
 import 'package:progress_group/features/contact/presentation/state/attachment/upload_attachment_event.dart';
 import 'package:progress_group/features/contact/presentation/state/attachment/upload_attachment_state.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/upload_attachment_params.dart';
+import 'package:progress_group/features/contact/presentation/state/contact/contact_state.dart';
 import 'package:progress_group/features/contact/presentation/state/prospect_status/prospect_status_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/prospect_status/prospect_status_event.dart';
 import 'package:progress_group/features/contact/presentation/state/prospect_status/prospect_status_state.dart';
@@ -60,6 +62,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
 
   int? selectedTypeId;
   int? selectedStatusId;
+  String? selectedProject;
   String jmlDatang = "1";
 
   File? selectedFile;
@@ -74,6 +77,10 @@ class _ContactAddPageState extends State<ContactAddPage> {
     OwnerDropdownItem(name: "4"),
     OwnerDropdownItem(name: ">5"),
   ];
+
+
+  List<OwnerDropdownItem> itemsProject = [OwnerDropdownItem(name: "Paradise Serpong City 1"), OwnerDropdownItem(name:"Paradise Serpong City 2" ), OwnerDropdownItem(name: "Paradise Resort City")];
+
   final ImagePicker _picker = ImagePicker();
 
 
@@ -85,7 +92,29 @@ class _ContactAddPageState extends State<ContactAddPage> {
   }
 
   void _init() async {
-    if (widget.args.page == 6 && widget.args.dataAttachment != null) {
+    if (widget.args.page == 6 && widget.args.dataContact != null) {
+      final data = widget.args.dataContact!;
+
+      setState(() {
+        selectedProject = data.projectName ?? data.firstProject;
+        selectedStatusId = data.statusProspectId;
+        selectedStatusName = "Current status";
+        jmlDatang = data.visitCount?.toString() ?? "1";
+        descTC.text = data.generalNotes ?? "";
+        if (data.lastApptDate != null) {
+          try {
+            selectedDate = DateTime.parse(data.lastApptDate!);
+          } catch (_) {}
+        }
+      });
+
+      // Fetch latest detail to ensure data is fresh
+      context.read<ContactBloc>().add(
+            FetchContactDetailEvent(data.contactId),
+          );
+    }
+
+    if (widget.args.page == 5 && widget.args.dataAttachment != null) {
       final data = widget.args.dataAttachment!;
 
       setState(() {
@@ -158,27 +187,14 @@ class _ContactAddPageState extends State<ContactAddPage> {
     });
   }
 
-  void _submitActivity({
-    required String activityType,
-    required DateTime activityDate,
-    required TextEditingController notesTC,
-    required bool isFollowUp,
-    required DateTime? followUpDate,
-  }) {
+  void _submitActivity({  required String activityType,  required DateTime activityDate,  required TextEditingController notesTC,  required bool isFollowUp,  required DateTime? followUpDate,}) {
     final contactId = widget.args.dataContact?.contactId;
     if (contactId == null) return;
 
     String mappedType = activityType;
     String finalNotes = notesTC.text.trim();
 
-    // Map unsupported types to 'Other' to avoid DB truncation error
-    if (![
-      'Call',
-      'Meeting',
-      'Visit',
-      'Email',
-      'Other',
-    ].contains(activityType)) {
+    if (!['Call','Meeting','Visit','Email','Other',].contains(activityType)) {
       mappedType = 'Other';
       finalNotes = '[$activityType] $finalNotes'.trim();
     }
@@ -189,9 +205,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
       activityType: mappedType,
       activityDate: DateFormat('yyyy-MM-dd HH:mm:ss').format(activityDate),
       notes: finalNotes.isEmpty ? null : finalNotes,
-      nextFollowUpDate: isFollowUp && followUpDate != null
-          ? DateFormat('yyyy-MM-dd HH:mm:ss').format(followUpDate)
-          : null,
+      nextFollowUpDate: isFollowUp && followUpDate != null? DateFormat('yyyy-MM-dd HH:mm:ss').format(followUpDate): null,
     );
 
     context.read<ActivityBloc>().add(CreateActivityEvent(params));
@@ -234,6 +248,23 @@ class _ContactAddPageState extends State<ContactAddPage> {
     );
   }
 
+  void _submitUpdateStatus(BuildContext context) {
+    final contact = widget.args.dataContact;
+    if (contact == null) return;
+
+    final params = CreateContactParams(
+      firstProject: selectedProject,
+      statusProspectId: selectedStatusId,
+      visitCount: int.tryParse(jmlDatang),
+      lastApptDate: selectedDate != null ? DateFormat('yyyy-MM-dd').format(selectedDate!) : null,
+      generalNotes: descTC.text,
+    );
+
+    print("data update: ${params.toString()}");
+
+    context.read<ContactBloc>().add(UpdateContactEvent(contact.contactId, params));
+  }
+
   void _submitVisit(BuildContext context) {
     if (selectedStatusId == null) {
       ScaffoldMessenger.of(
@@ -263,15 +294,9 @@ class _ContactAddPageState extends State<ContactAddPage> {
             if (state.status == ActivityStatus.createSuccess) {
               final contactId = widget.args.dataContact?.contactId;
               if (contactId != null) {
-                context.read<ActivityBloc>().add(
-                      FetchActivitiesEvent(contactId: contactId, isRefresh: true),
-                    );
-                context.read<ActivityProspectStatusBloc>().add(
-                      FetchActivityProspectStatusEvent(contactId),
-                    );
-                context.read<ContactBloc>().add(
-                      FetchContactDetailEvent(contactId),
-                    );
+                context.read<ActivityBloc>().add(FetchActivitiesEvent(contactId: contactId, isRefresh: true));
+                context.read<ActivityProspectStatusBloc>().add(FetchActivityProspectStatusEvent(contactId));
+                context.read<ContactBloc>().add(FetchContactDetailEvent(contactId));
               }
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -312,6 +337,57 @@ class _ContactAddPageState extends State<ContactAddPage> {
             }
           },
         ),
+        BlocListener<ContactBloc, ContactState>(
+          listener: (context, state) {
+            if (state.status == ContactStatus.createSuccess) {
+              final contactId = widget.args.dataContact?.contactId;
+              if (contactId != null) {
+                context.read<ActivityBloc>().add(FetchActivitiesEvent(contactId: contactId, isRefresh: true));
+                context.read<ActivityProspectStatusBloc>().add(FetchActivityProspectStatusEvent(contactId));
+                context.read<ContactBloc>().add(FetchContactDetailEvent(contactId));
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Status Prospect berhasil diperbarui'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+              context.pop();
+            } else if (state.status == ContactStatus.detailLoaded && state.contactDetail != null) {
+              final data = state.contactDetail!;
+              setState(() {
+                selectedProject = data.projectName ?? data.firstProject;
+                selectedStatusId = data.statusProspectId;
+                // Try to find the status name from current ProspectStatusBloc state if possible
+                final statusState = context.read<ProspectStatusBloc>().state;
+                if (statusState.status == ProspectStatusEnum.loaded) {
+                  final matched = statusState.statuses.cast<ProspectStatus?>().firstWhere(
+                    (e) => e?.statusProspectId == data.statusProspectId,
+                    orElse: () => null,
+                  );
+                  if (matched != null) {
+                    selectedStatusName = matched.statusProspectName;
+                  }
+                }
+                
+                jmlDatang = data.visitCount?.toString() ?? "1";
+                descTC.text = data.generalNotes ?? "";
+                if (data.lastApptDate != null) {
+                  try {
+                    selectedDate = DateTime.parse(data.lastApptDate!);
+                  } catch (_) {}
+                }
+              });
+            } else if (state.status == ContactStatus.error) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.errorMessage ?? 'An error occurred'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+        ),
       ],
       child: Scaffold(
         body: SafeArea(
@@ -334,7 +410,9 @@ class _ContactAddPageState extends State<ContactAddPage> {
                             ? "Task"
                             : widget.args.page == 4
                             ? "Visit"
-                            : "Attachment",
+                            : widget.args.page == 5
+                            ? "Attachment"
+                            : "Update Status Prospect",
                         isBack: true,
                         colorBack: Color(primaryColor),
                       ),
@@ -345,11 +423,14 @@ class _ContactAddPageState extends State<ContactAddPage> {
                           child: SingleChildScrollView(
                             child: Column(
                               children: [
-                                widget.args.page == 5 || widget.args.page == 6
-                                    ? _buildAttachment()
-                                    : widget.args.page == 4
-                                    ? _buildVisit()
-                                    : _buildForm(),
+                                if (widget.args.page == 5)
+                                  _buildAttachment()
+                                else if (widget.args.page == 4)
+                                  _buildVisit()
+                                else if (widget.args.page == 6)
+                                  _buildUpdateStatusProspect()
+                                else
+                                  _buildForm(),
                               ],
                             ),
                           ),
@@ -372,6 +453,323 @@ class _ContactAddPageState extends State<ContactAddPage> {
       ),
     );
   }
+
+  Widget _buildUpdateStatusProspect() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      decoration: BoxDecoration(
+        color: Color(whiteColor),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Project",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(grey2Color),
+              ),
+            ),
+            SizedBox(height: 6),
+            GestureDetector(
+              onTap: () async {
+                // final result = await context.pushNamed(
+                //   'detailContactDropdown',
+                //   extra: ContactDropdownArgs(
+                //     title: 'Project',
+                //     items: projectData,
+                //     selectedId: null,
+                //   ),
+                // );
+                // if (result != null) {
+                //   final selected = result as OwnerDropdownItem;
+                //   setState(() {
+                //     selectedProject = selected.name;
+                //   });
+                // }
+                final result =await  context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Project',items:itemsProject,selectedId: selectedStatusId,));
+                  if (result != null) {
+                    final selected = result as OwnerDropdownItem;
+
+                    setState(() {
+                      selectedProject = selected.name;
+                    });
+                  }
+              },
+              child: Container(
+                width: double.infinity,
+                height: 40,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Color(grey4Color)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      selectedProject ?? "Select project",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: selectedProject == null ? Color(grey2Color) : Colors.black,
+                      ),
+                    ),
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Color(grey2Color),
+                      size: 30,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              "Status Prospect",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(grey2Color),
+              ),
+            ),
+            SizedBox(height: 6),
+            GestureDetector(
+              onTap: () async {
+                final statusState = context.read<ProspectStatusBloc>().state;
+                if (statusState.status == ProspectStatusEnum.loaded) {
+                  final statusItems = statusState.statuses
+                      .map(
+                        (e) => OwnerDropdownItem(
+                          id: e.statusProspectId,
+                          name: e.statusProspectName,
+                        ),
+                      )
+                      .toList();
+
+                  final result = await context.pushNamed(
+                    'detailContactDropdown',
+                    extra: ContactDropdownArgs(
+                      title: 'Pilih Status',
+                      items: statusItems,
+                      selectedId: selectedStatusId,
+                    ),
+                  );
+
+                  if (result != null) {
+                    final selected = result as OwnerDropdownItem;
+                    final picked = statusState.statuses
+                        .cast<ProspectStatus?>()
+                        .firstWhere(
+                          (e) => e?.statusProspectId == selected.id,
+                          orElse: () => null,
+                        );
+                    if (picked != null) {
+                      setState(() {
+                        selectedStatusId = picked.statusProspectId;
+                        selectedStatusName = picked.statusProspectName;
+                      });
+                    }
+                  }
+                } else {
+                  context.read<ProspectStatusBloc>().add(
+                        FetchProspectStatusesEvent(),
+                      );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Memuat daftar status...')),
+                  );
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                height: 40,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Color(grey4Color)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      selectedStatusName,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: selectedStatusName == "Select status"
+                            ? Color(grey2Color)
+                            : Colors.black,
+                      ),
+                    ),
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Color(grey2Color),
+                      size: 30,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              "Tanggal Appointment",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(grey2Color),
+              ),
+            ),
+            SizedBox(height: 6),
+            GestureDetector(
+              onTap: () => pickDateTime(context),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Color(grey11Color)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      selectedDate != null
+                          ? DateHelper.formatFull(selectedDate!)
+                          : DateHelper.nowFull(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(blackColor),
+                      ),
+                    ),
+                    Icon(
+                      Icons.calendar_today,
+                      color: Color(primaryColor),
+                      size: 16,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              "Appointment Volume",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(grey2Color),
+              ),
+            ),
+            SizedBox(height: 6),
+            GestureDetector(
+              onTap: () async {
+                final result = await context.pushNamed(
+                  'detailContactDropdown',
+                  extra: ContactDropdownArgs(
+                    title: 'Appointment Volume',
+                    items: itemsJmlDatang,
+                    selectedId: null,
+                  ),
+                );
+                if (result != null) {
+                  final selected = result as OwnerDropdownItem;
+                  setState(() {
+                    jmlDatang = selected.name;
+                  });
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                height: 40,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Color(grey4Color)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "${jmlDatang}",
+                      style: TextStyle(fontSize: 14, color: Colors.black),
+                    ),
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Color(grey2Color),
+                      size: 30,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              "Note",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(grey2Color),
+              ),
+            ),
+            SizedBox(height: 6),
+            TextField(
+              maxLines: 4,
+              minLines: 3,
+              controller: descTC,
+              focusNode: descFN,
+              onTapOutside: (event) => descFN.unfocus(),
+              textInputAction: TextInputAction.newline,
+              decoration: InputDecoration(
+                hintText: "Note...",
+                hintStyle: TextStyle(
+                  color: Color(grey2Color),
+                  fontSize: 14,
+                ),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Color(grey11Color)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Color(grey11Color)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Color(primaryColor)),
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            BlocConsumer<ContactBloc, ContactState>(
+              listener: (context, state) {},
+              builder: (context, state) {
+                final isLoading = state.status == ContactStatus.creating;
+
+                return customButton(
+                  isLoading
+                      ? null
+                      : () {
+                          _submitUpdateStatus(context);
+                        },
+                  isLoading ? 'Saving...' : 'Save',
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildVisit() {
     return Container(
@@ -911,7 +1309,9 @@ class _ContactAddPageState extends State<ContactAddPage> {
                 ? "Task"
                 : widget.args.page == 4
                 ? "Visit"
-                : "Attachment",
+                : widget.args.page == 5
+                ? "Attachment"
+                : "Update Status Prospect",
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -929,16 +1329,18 @@ class _ContactAddPageState extends State<ContactAddPage> {
             decoration: InputDecoration(
               hintText:
                   "Describe the ${widget.args.page == 0
-                      ? "Call"
+                      ? "call"
                       : widget.args.page == 1
-                      ? "WhatsApp"
+                      ? "whatsapp"
                       : widget.args.page == 2
-                      ? "Meeting"
+                      ? "meeting"
                       : widget.args.page == 3
-                      ? "Task"
+                      ? "task"
                       : widget.args.page == 4
-                      ? "Visit"
-                      : "Attachment"}...",
+                      ? "visit"
+                      : widget.args.page == 5
+                      ? "attachment"
+                      : "update status prospect"}...",
               hintStyle: TextStyle(color: Color(grey2Color), fontSize: 14),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
