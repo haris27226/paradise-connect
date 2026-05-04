@@ -253,7 +253,6 @@ class _ContactDetailPageState extends State<ContactDetailPage>
                   index: currentTab,
                   children: [
                     _buildActivityContent(),
-                        // _buildActivityStatusProspect(),
 
                     currentTab == 1
                         ? ContactFormPage(
@@ -397,6 +396,8 @@ class _ContactDetailPageState extends State<ContactDetailPage>
       ),
     );
   }
+
+
 Widget _buildActivityContent() {
   return BlocBuilder<ActivityBloc, ActivityState>(
     builder: (context, activityState) {
@@ -465,8 +466,9 @@ Widget _buildActivityContent() {
 
                   Column(
                     children: items.map((item) {
+
                       if (item.type == 'activity') {
-                        return _activityItem(item.data, Color(purpleColor));
+                        return _activityItem(item.data,  Color(purpleColor));
                       } else {
                         return _prospectItem(item.data);
                       }
@@ -492,48 +494,87 @@ Widget _activityItem(Activity item, Color activityColor) {
       color: Color(whiteColor),
       borderRadius: BorderRadius.circular(12),
     ),
-    child: Row(
+    child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 50,
+              width: 5,
+              decoration: BoxDecoration(
+                color: activityColor,
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            const SizedBox(width: 10),
+        
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(item.activityType,style: const TextStyle(fontWeight: FontWeight.bold)),
+        
+                  Text(DateFormat('HH:mm').format(
+                    DateTime.parse(item.activityDate),
+                  )),
+        
+                  if (item.notes != null) Text(item.notes!),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (item.imagePath != null)
         Container(
-          height: 50,
-          width: 5,
+          width: double.infinity,
+          height: 200,
           decoration: BoxDecoration(
-            color: activityColor,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              convertDriveUrl(item.imagePath??''),
+              fit: BoxFit.contain,
+              errorBuilder:
+                  (context, error, stackTrace) {
+                    return Container(
+                      width: 58,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Color(whiteColor),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Color(primaryColor),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.picture_as_pdf,
+                        color: Color(primaryColor),
+                      ),
+                    );
+                  },
+            ),
           ),
         ),
-        const SizedBox(width: 10),
-
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(item.activityType,
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-
-              Text(DateFormat('HH:mm').format(
-                DateTime.parse(item.activityDate),
-              )),
-
-              if (item.notes != null) Text(item.notes!),
-            ],
-          ),
-        ),
-      ],
+        ]
     ),
   );
 }
+
 Widget _prospectItem(dynamic item) {
   if (item.previousStatusName != null) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
       color: Color(whiteColor),
       borderRadius: BorderRadius.circular(12),
     ),
-      child: Row(
+      child: Wrap(
         children: [
           RichText(
             text: TextSpan(
@@ -569,7 +610,7 @@ Widget _prospectItem(dynamic item) {
       color: Color(whiteColor),
       borderRadius: BorderRadius.circular(12),
     ),
-      child: Row(
+      child: Wrap(
         children: [
           RichText(
             text: TextSpan(
@@ -654,8 +695,6 @@ Widget _prospectItem(dynamic item) {
               ],
             ),
           ),
-          Text("{item.attachmentUrl}"),
-
           Expanded(
             child: BlocListener<UploadAttachmentBloc, UploadAttachmentState>(
               listener: (context, state) {
@@ -710,7 +749,14 @@ Widget _prospectItem(dynamic item) {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Container(
+                                InkWell(
+                                  onTap: () {
+                                    context.pushNamed(
+                                      'attachmentWebView',
+                                      extra: item.attachmentUrl,
+                                    );
+                                  },
+                                  child: Container(
                                   width: 44,
                                   height: 44,
                                   decoration: BoxDecoration(
@@ -743,7 +789,7 @@ Widget _prospectItem(dynamic item) {
                                           },
                                     ),
                                   ),
-                                ),
+                                )),
                                 SizedBox(width: 10),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,

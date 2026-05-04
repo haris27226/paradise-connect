@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_dropdown_args.dart';
+import 'package:progress_group/features/contact/presentation/pages/attachment-view/index.dart';
 import 'package:progress_group/features/contact/presentation/pages/contact-dropdown/index.dart';
 import 'package:progress_group/features/inbox/presentation/pages/qr/index.dart';
 
@@ -95,6 +96,14 @@ class AppRouter {
                 builder: (context, state) {
                   final args = state.extra as ContactDetailArgs;
                   return ContactAddPage(args: args);
+                },
+              ),
+              GoRoute(
+                name: 'attachmentWebView',
+                path: 'attachment-web-view',
+                builder: (context, state) {
+                  final args = state.extra as String;
+                  return AttachmentWebViewPage(url: args);
                 },
               ),
              

@@ -282,7 +282,7 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
       });
 
       final response = await dio.post(
-        '/contacts/${params.contactId}/attachments/upload',
+        '/contacts/${params.contactId}/attachments',
         data: formData,
       );
 
@@ -321,7 +321,7 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
   @override
   Future<void> deleteAttachment({required int contactId,required int attachmentId}) async {
     try {
-      final url = '/contacts/$contactId/attachments/$attachmentId/deleted';
+      final url = '/contacts/$contactId/attachments/$attachmentId';
       print('API DELETE: $url');
       final response = await dio.delete(url);
       if (response.data['status'] != true) {
@@ -347,7 +347,7 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
     });
 
     final response = await dio.patch(
-      '/contacts/$contactId/attachments/$attachmentId/update',
+      '/contacts/$contactId/attachments/$attachmentId',
       data: formData,
     );
 

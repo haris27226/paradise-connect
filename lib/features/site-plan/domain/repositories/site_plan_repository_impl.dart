@@ -24,7 +24,7 @@ class SitePlanRepositoryImpl {
       ProjectSite(
         groupName: 'Paradise Serpong City 2',
         unitName: 'Ecoscape',
-        url: 'https://paradise.co.id/id/paradise-serpong-city-2', // Ganti dengan URL asli
+        url: 'https://drive.google.com/file/d/1uoo5sk90v3VxVtPp7k6wdX9x-pe4UDW8/view', // Ganti dengan URL asli
       ),
       ProjectSite(
         groupName: 'Paradise Serpong City 2',

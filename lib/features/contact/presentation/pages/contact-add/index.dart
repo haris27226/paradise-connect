@@ -28,6 +28,8 @@ import 'package:progress_group/features/contact/domain/entities/attachment/uploa
 import 'package:progress_group/features/contact/presentation/state/prospect_status/prospect_status_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/prospect_status/prospect_status_event.dart';
 import 'package:progress_group/features/contact/presentation/state/prospect_status/prospect_status_state.dart';
+import 'package:progress_group/features/contact/presentation/state/contact/contact_bloc.dart';
+import 'package:progress_group/features/contact/presentation/state/contact/contact_event.dart';
 
 import '../../../../../core/constants/colors.dart';
 import '../../../../../core/utils/helpers/date_helper.dart';
@@ -72,10 +74,13 @@ class _ContactAddPageState extends State<ContactAddPage> {
     OwnerDropdownItem(name: "4"),
     OwnerDropdownItem(name: ">5"),
   ];
+  final ImagePicker _picker = ImagePicker();
+
 
   @override
   void initState() {
     super.initState();
+    selectedDate = DateTime.now();
     _init();
   }
 
@@ -111,28 +116,17 @@ class _ContactAddPageState extends State<ContactAddPage> {
     }
   }
 
-  // Future<void> pickFile() async {
-  //   final result = await FilePicker.platform.pickFiles(
-  //     type: FileType.custom,
-  //     allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
-  //     withData: true, // WAJIB: Agar isi file tersedia di Web sebagai bytes
-  //   );
-
-  //   if (result != null && result.files.single.bytes != null) {
-  //     setState(() {
-  //       selectedFileName = result.files.single.name;
-  //       isPdf = selectedFileName!.toLowerCase().endsWith('.pdf');
-
-  //       if (kIsWeb) {
-  //         // Untuk Web: Simpan dalam bentuk bytes
-  //         selectedFile = result.files.single.bytes;
-  //       } else {
-  //         // Untuk Mobile: Simpan dalam bentuk File objek
-  //         selectedFile = File(result.files.single.path!);
-  //       }
-  //     });
-  //   }
-  // }
+  Future<void> _openCamera() async {
+    final XFile? photo = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 70,
+    );
+    final file = File(photo!.path);
+    setState(() {
+      selectedImage = file;
+      selectedFile = file; // reset file
+    });
+    }
 
   Future<void> pickDateTime(BuildContext context) async {
     final now = DateTime.now();
@@ -270,8 +264,14 @@ class _ContactAddPageState extends State<ContactAddPage> {
               final contactId = widget.args.dataContact?.contactId;
               if (contactId != null) {
                 context.read<ActivityBloc>().add(
-                  FetchActivitiesEvent(contactId: contactId, isRefresh: true),
-                );
+                      FetchActivitiesEvent(contactId: contactId, isRefresh: true),
+                    );
+                context.read<ActivityProspectStatusBloc>().add(
+                      FetchActivityProspectStatusEvent(contactId),
+                    );
+                context.read<ContactBloc>().add(
+                      FetchContactDetailEvent(contactId),
+                    );
               }
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -386,83 +386,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // GestureDetector(
-            //   onTap: pickFile,
-            //   child: Container(
-            //     width: double.infinity,
-            //     height: 130,
-            //     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            //     decoration: BoxDecoration(
-            //       borderRadius: BorderRadius.circular(8),
-            //       color: Color(grey10Color),
-            //       border: Border.all(color: Color(grey11Color)),
-            //     ),
-            //     child:
-            //         (selectedFile != null ||
-            //             selectedImage != null ||
-            //             existingImageUrl != null)
-            //         ? ClipRRect(
-            //             borderRadius: BorderRadius.circular(8),
-            //             child: (selectedFile != null && isPdf)
-            //                 ? Column(
-            //                     mainAxisAlignment: MainAxisAlignment.center,
-            //                     children: [
-            //                       Icon(
-            //                         Icons.picture_as_pdf,
-            //                         size: 60,
-            //                         color: Colors.red,
-            //                       ),
-            //                       SizedBox(height: 8),
-            //                       Text(
-            //                         selectedFileName ?? "PDF File",
-            //                         textAlign: TextAlign.center,
-            //                       ),
-            //                     ],
-            //                   )
-            //                 : (selectedFile != null || selectedImage != null) ? _buildPreviewWidget(selectedFile ?? selectedImage!)
-            //                 ? Image.file(
-            //                     selectedFile ?? selectedImage!,
-            //                     width: double.infinity,
-            //                     fit: BoxFit.cover,
-            //                   )
-            //                 : Image.network(
-            //                     convertDriveUrl(existingImageUrl!),
-            //                     width: double.infinity,
-            //                     fit: BoxFit.cover,
-            //                     errorBuilder: (context, error, stackTrace) {
-            //                       return Center(
-            //                         child: Icon(Icons.broken_image),
-            //                       );
-            //                     },
-            //                   ),
-            //           )
-            //         : Column(
-            //             mainAxisAlignment: MainAxisAlignment.center,
-            //             children: [
-            //               Container(
-            //                 width: 58,
-            //                 height: 44,
-            //                 decoration: BoxDecoration(
-            //                   color: Color(whiteColor),
-            //                   borderRadius: BorderRadius.circular(14),
-            //                   border: Border.all(color: Color(primaryColor)),
-            //                 ),
-            //                 child: Image.asset(icUpload, height: 24, width: 24),
-            //               ),
-            //               SizedBox(height: 8),
-            //               Text(
-            //                 "Upload Files",
-            //                 style: TextStyle(
-            //                   fontSize: 14,
-            //                   fontWeight: FontWeight.bold,
-            //                   color: Color(blue2Color),
-            //                 ),
-            //               ),
-            //             ],
-            //           ),
-            //   ),
-            // ),
-            GestureDetector(onTap: pickFile, child: _buildUploadFile()),
+            GestureDetector(onTap: _openCamera, child: _buildCameraFile()),
             SizedBox(height: 12),
             Text(
               "Status Prospect",
@@ -686,6 +610,19 @@ class _ContactAddPageState extends State<ContactAddPage> {
             BlocConsumer<ActivityVisitBloc, VisitState>(
               listener: (context, state) {
                 if (state is VisitSuccess) {
+                  final contactId = widget.args.dataContact?.contactId;
+                  if (contactId != null) {
+                    context.read<ActivityBloc>().add(
+                          FetchActivitiesEvent(
+                              contactId: contactId, isRefresh: true),
+                        );
+                    context.read<ActivityProspectStatusBloc>().add(
+                          FetchActivityProspectStatusEvent(contactId),
+                        );
+                    context.read<ContactBloc>().add(
+                          FetchContactDetailEvent(contactId),
+                        );
+                  }
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Visit berhasil dibuat')),
                   );
@@ -1143,7 +1080,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
     );
   }
 
-  Widget _buildUploadFile() {
+  Widget _buildCameraFile() {
     // 1. Kondisi ketika SEMUA kosong (Tampilkan tombol upload)
     if (selectedFile == null &&
         selectedImage == null &&
@@ -1156,18 +1093,17 @@ class _ContactAddPageState extends State<ContactAddPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 58,
-                height: 44,
+               padding: EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: Color(whiteColor),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: Color(primaryColor)),
                 ),
-                child: Image.asset(icUpload, height: 24, width: 24),
+                child: Icon(Icons.camera_alt_rounded, color: Color(primaryColor), size: 40),
               ),
               SizedBox(height: 8),
               Text(
-                "Upload Files",
+                "Open Camera",
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
