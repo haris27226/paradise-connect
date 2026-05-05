@@ -5,7 +5,7 @@ import 'package:progress_group/core/constants/colors.dart';
 import 'package:progress_group/core/utils/widget/custom_search_field.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_detail_args.dart';
 import 'package:progress_group/features/contact/data/models/activity/activity_dashboard.dart';
-import 'package:progress_group/features/contact/domain/entities/activity/activity.dart';
+import 'package:progress_group/features/contact/domain/entities/activity/activity_entity.dart';
 import 'package:progress_group/features/contact/presentation/pages/contact-form/index.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -43,6 +43,7 @@ class _ContactDetailPageState extends State<ContactDetailPage>
   final tabs = ["Activity", "About", "Attachment"];
   late TabController _tabController;
   int currentTab = 0;
+  
 
   @override
   void initState() {
@@ -478,76 +479,72 @@ Widget _buildActivityContent() {
   );
 }
 
+  Widget _prospectItem(dynamic item) {
+    final bool isUpdate = item.previousStatusName != null;
 
-Widget _prospectItem(dynamic item) {
-  if (item.previousStatusName != null) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-      color: Color(whiteColor),
-      borderRadius: BorderRadius.circular(12),
-    ),
-      child: Wrap(
+        color: Color(whiteColor),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          RichText(
-            text: TextSpan(
-              style: const TextStyle(color: Colors.black, fontSize: 13),
-              children: [
-                TextSpan(text: "${item.projectName} — Status berubah dari "),
-                TextSpan(
-                  text: item.previousStatusName,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const TextSpan(text: " ke "),
-                TextSpan(
-                  text: item.statusName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
-                  ),
-                ),
-                const TextSpan(text: "."),
-              ],
+          Container(
+            height: 50,
+            width: 5,
+            decoration: BoxDecoration(
+              color: Color(purpleColor),
+              borderRadius: BorderRadius.circular(16),
             ),
           ),
-        ],
-      ),
-    );
-  } else {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: Color(whiteColor),
-      borderRadius: BorderRadius.circular(12),
-    ),
-      child: Wrap(
-        children: [
-          RichText(
-            text: TextSpan(
-              style: const TextStyle(color: Colors.black, fontSize: 13),
-              children: [
-                TextSpan(text: "${item.projectName} — Status awal "),
-                TextSpan(
-                  text: item.statusName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
-                  ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 13,
                 ),
-                const TextSpan(text: "."),
-              ],
+                children: isUpdate
+                    ? [
+                        TextSpan(
+                            text: "${item.projectName} — Status berubah dari "),
+                        TextSpan(
+                          text: item.previousStatusName,
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                        const TextSpan(text: " ke "),
+                        TextSpan(
+                          text: item.statusName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
+                        const TextSpan(text: "."),
+                      ]
+                    : [
+                        TextSpan(
+                            text: "${item.projectName} — Status awal "),
+                        TextSpan(
+                          text: item.statusName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
+                        const TextSpan(text: "."),
+                      ],
+              ),
             ),
           ),
         ],
       ),
     );
   }
-}
 
   Widget _buildAttachmentContent() {
     return Padding(
@@ -919,8 +916,9 @@ String convertDriveUrl(String url) {
   return 'https://drive.google.com/uc?export=view&id=$id';
 }
 
+
 class ActivityItem extends StatefulWidget {
-  final Activity item;
+  final ActivityEntity item;
   final Color activityColor;
 
   const ActivityItem({
@@ -936,6 +934,78 @@ class ActivityItem extends StatefulWidget {
 class _ActivityItemState extends State<ActivityItem> {
   bool imageError = false;
 
+  final ScrollController _scrollController = ScrollController();
+
+  bool isAtStart = true;
+  bool isAtEnd = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _scrollController.addListener(() {
+      if (!_scrollController.hasClients) return;
+
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final offset = _scrollController.offset;
+
+      setState(() {
+        isAtStart = offset <= 0;
+        isAtEnd = offset >= maxScroll;
+      });
+    });
+
+    // delay biar posisi awal kebaca
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+
+      final maxScroll = _scrollController.position.maxScrollExtent;
+
+      setState(() {
+        isAtStart = true;
+        isAtEnd = maxScroll == 0;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollLeft() {
+    final newOffset = (_scrollController.offset - 250).clamp(0.0, _scrollController.position.maxScrollExtent);
+
+    _scrollController.animateTo(
+      newOffset,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _scrollRight() {
+    final newOffset = (_scrollController.offset + 250)
+        .clamp(0.0, _scrollController.position.maxScrollExtent);
+
+    _scrollController.animateTo(
+      newOffset,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  Widget _arrowButton(IconData icon) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.4),
+        shape: BoxShape.circle,
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Icon(icon, color: Colors.white, size: 16),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
@@ -950,7 +1020,7 @@ class _ActivityItemState extends State<ActivityItem> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ================= HEADER =================
+          /// ================= HEADER =================
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -972,13 +1042,10 @@ class _ActivityItemState extends State<ActivityItem> {
                       item.activityType,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-
                     Text(
-                      DateFormat('HH:mm').format(
-                        DateTime.parse(item.activityDate),
-                      ),
+                      DateFormat('HH:mm')
+                          .format(DateTime.parse(item.activityDate)),
                     ),
-
                     if (item.notes != null) Text(item.notes!),
                   ],
                 ),
@@ -986,59 +1053,79 @@ class _ActivityItemState extends State<ActivityItem> {
             ],
           ),
 
-          // ================= IMAGE =================
-          if (item.imagePath != null)
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: double.infinity,
-              height: imageError ? 60 : 200,
+          /// ================= IMAGES =================
+          if (item.imagePaths != null && item.imagePaths!.isNotEmpty)
+            Container(
+              height: 200,
               margin: const EdgeInsets.only(top: 10),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  convertDriveUrl(item.imagePath ?? ''),
-                  fit: BoxFit.cover,
+              child: Stack(
+                children: [
+                  ListView.builder(
+                    controller: _scrollController,
+                    scrollDirection: Axis.horizontal,
+                    itemCount: item.imagePaths!.length,
+                    itemBuilder: (context, index) {
+                      return Container(
+                        margin: const EdgeInsets.only(right: 10),
+                        child: ClipRRect(
+                          child: Image.network(
+                            convertDriveUrl(item.imagePaths![index]),
+                            fit: BoxFit.fill,
+                            loadingBuilder: (context, child, progress) {
+                              if (progress == null) return child;
+                              return Container(
+                                color: Colors.grey.shade200,
+                                alignment: Alignment.center,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey.shade200,
+                                alignment: Alignment.center,
+                                child: const Icon(
+                                  Icons.broken_image,
+                                  size: 30,
+                                  color: Colors.grey,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  ),
 
-                  // optional loading indicator (biar smooth)
-                  loadingBuilder: (context, child, progress) {
-                    if (progress == null) return child;
-
-                    return Container(
-                      color: Colors.grey.shade200,
-                      alignment: Alignment.center,
-                      child: const CircularProgressIndicator(strokeWidth: 2),
-                    );
-                  },
-
-                  // ERROR HANDLING
-                  errorBuilder: (context, error, stackTrace) {
-                    // avoid infinite setState loop
-                    if (!imageError) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) {
-                          setState(() {
-                            imageError = true;
-                          });
-                        }
-                      });
-                    }
-
-                    return Container(
-                      height: 60,
-                      width: double.infinity,
-                      color: Colors.grey.shade200,
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.broken_image,
-                        size: 30,
-                        color: Colors.grey,
+                  /// 🔥 LEFT ARROW
+                  if (!isAtStart)
+                    Positioned(
+                      left: 5,
+                      top: 0,
+                      bottom: 0,
+                      child: Center(
+                        child: GestureDetector(
+                          onTap: _scrollLeft,
+                          child: _arrowButton(Icons.arrow_back_ios),
+                        ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+
+                  /// 🔥 RIGHT ARROW
+                  if (!isAtEnd)
+                    Positioned(
+                      right: 5,
+                      top: 0,
+                      bottom: 0,
+                      child: Center(
+                        child: GestureDetector(
+                          onTap: _scrollRight,
+                          child: _arrowButton(Icons.arrow_forward_ios),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
         ],

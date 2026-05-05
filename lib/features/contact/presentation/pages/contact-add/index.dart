@@ -1,6 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -68,7 +66,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
   File? selectedFile;
   String? selectedFileName;
   bool isPdf = false;
-  // dynamic selectedFile;
+  List<File> selectedImages = [];
 
   List<OwnerDropdownItem> itemsJmlDatang = [
     OwnerDropdownItem(name: "1"),
@@ -150,12 +148,29 @@ class _ContactAddPageState extends State<ContactAddPage> {
       source: ImageSource.camera,
       imageQuality: 70,
     );
-    final file = File(photo!.path);
-    setState(() {
-      selectedImage = file;
-      selectedFile = file; // reset file
-    });
+    if (photo != null) {
+      final file = File(photo.path);
+      setState(() {
+        if (widget.args.page == 4) {
+          selectedImages.add(file);
+        } else {
+          selectedImage = file;
+          selectedFile = file; // reset file
+        }
+      });
     }
+  }
+
+  Future<void> _pickImages() async {
+    final List<XFile> photos = await _picker.pickMultiImage(
+      imageQuality: 70,
+    );
+    if (photos.isNotEmpty) {
+      setState(() {
+        selectedImages.addAll(photos.map((e) => File(e.path)));
+      });
+    }
+  }
 
   Future<void> pickDateTime(BuildContext context) async {
     final now = DateTime.now();
@@ -194,7 +209,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
     String mappedType = activityType;
     String finalNotes = notesTC.text.trim();
 
-    if (!['Call','Meeting','Visit','Email','Other',].contains(activityType)) {
+    if (!['Call','WhatsApp','Visit','Meeting','Note','Email','Task','Other'].contains(activityType)) {
       mappedType = 'Other';
       finalNotes = '[$activityType] $finalNotes'.trim();
     }
@@ -279,7 +294,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
       visitCount: int.parse(jmlDatang),
       activityDate: DateFormat('yyyy-MM-dd HH:mm:ss').format(selectedDate!),
       notes: descTC.text,
-      file: selectedFile,
+      files: selectedImages,
     );
 
     context.read<ActivityVisitBloc>().add(CreateVisitEvent(params));
@@ -784,7 +799,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GestureDetector(onTap: _openCamera, child: _buildCameraFile()),
+            _buildVisitPhotos(),
             SizedBox(height: 12),
             Text(
               "Status Prospect",
@@ -1482,95 +1497,225 @@ class _ContactAddPageState extends State<ContactAddPage> {
     );
   }
 
-  Widget _buildCameraFile() {
-    // 1. Kondisi ketika SEMUA kosong (Tampilkan tombol upload)
-    if (selectedFile == null &&
-        selectedImage == null &&
-        existingImageUrl == null) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-               padding: EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Color(whiteColor),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Color(primaryColor)),
-                ),
-                child: Icon(Icons.camera_alt_rounded, color: Color(primaryColor), size: 40),
+  // Widget _buildCameraFile() {
+  //   // 1. Kondisi ketika SEMUA kosong (Tampilkan tombol upload)
+  //   if (selectedFile == null &&
+  //       selectedImage == null &&
+  //       existingImageUrl == null) {
+  //     return Row(
+  //       mainAxisAlignment: MainAxisAlignment.center,
+  //       children: [
+  //         Column(
+  //           mainAxisAlignment: MainAxisAlignment.center,
+  //           crossAxisAlignment: CrossAxisAlignment.center,
+  //           children: [
+  //             Container(
+  //              padding: EdgeInsets.all(18),
+  //               decoration: BoxDecoration(
+  //                 color: Color(whiteColor),
+  //                 borderRadius: BorderRadius.circular(14),
+  //                 border: Border.all(color: Color(primaryColor)),
+  //               ),
+  //               child: Icon(Icons.camera_alt_rounded, color: Color(primaryColor), size: 40),
+  //             ),
+  //             SizedBox(height: 8),
+  //             Text(
+  //               "Open Camera",
+  //               style: TextStyle(
+  //                 fontSize: 14,
+  //                 fontWeight: FontWeight.bold,
+  //                 color: Color(blue2Color),
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ],
+  //     );
+  //   }
+
+  //   // 2. Jika ada file/gambar yang dipilih, tampilkan konten
+  //   return ClipRRect(
+  //     borderRadius: BorderRadius.circular(8),
+  //     child: _buildInsideContent(),
+  //   );
+  // }
+
+  // Widget _buildInsideContent() {
+  //   // PDF Logic
+  //   if (selectedFile != null && isPdf) {
+  //     return Column(
+  //       mainAxisAlignment: MainAxisAlignment.center,
+  //       children: [
+  //         Icon(Icons.picture_as_pdf, size: 60, color: Colors.red),
+  //         SizedBox(height: 8),
+  //         Text(selectedFileName ?? "PDF File", textAlign: TextAlign.center),
+  //       ],
+  //     );
+  //   }
+
+  //   // Local Image Logic (Mobile/Web)
+  //   if (selectedFile != null || selectedImage != null) {
+  //     return Center(
+  //       child: SizedBox(
+  //         height: 120,
+  //         child: _buildPreviewWidget(selectedFile ?? selectedImage!),
+  //       ),
+  //     );
+  //   }
+
+  //   // Network Image Logic
+  //   return Image.network(
+  //     convertDriveUrl(existingImageUrl!),
+  //     width: double.infinity,
+  //     fit: BoxFit.cover,
+  //     errorBuilder: (context, error, stackTrace) {
+  //       return Center(child: Icon(Icons.broken_image));
+  //     },
+  //   );
+  // }
+
+  Widget _buildVisitPhotos() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Visit Photos",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(grey2Color),
               ),
-              SizedBox(height: 8),
-              Text(
-                "Open Camera",
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Color(blue2Color),
+            ),
+            Row(
+              children: [
+                IconButton(
+                  onPressed: _openCamera,
+                  icon: Icon(Icons.camera_alt, color: Color(primaryColor)),
+                  tooltip: 'Take Photo',
                 ),
-              ),
-            ],
-          ),
-        ],
-      );
-    }
-
-    // 2. Jika ada file/gambar yang dipilih, tampilkan konten
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: _buildInsideContent(),
-    );
-  }
-
-  Widget _buildInsideContent() {
-    // PDF Logic
-    if (selectedFile != null && isPdf) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.picture_as_pdf, size: 60, color: Colors.red),
-          SizedBox(height: 8),
-          Text(selectedFileName ?? "PDF File", textAlign: TextAlign.center),
-        ],
-      );
-    }
-
-    // Local Image Logic (Mobile/Web)
-    if (selectedFile != null || selectedImage != null) {
-      return Center(
-        child: SizedBox(
-          height: 120,
-          child: _buildPreviewWidget(selectedFile ?? selectedImage!),
+                IconButton(
+                  onPressed: _pickImages,
+                  icon: Icon(Icons.photo_library, color: Color(primaryColor)),
+                  tooltip: 'Pick from Gallery',
+                ),
+              ],
+            ),
+          ],
         ),
-      );
-    }
-
-    // Network Image Logic
-    return Image.network(
-      convertDriveUrl(existingImageUrl!),
-      width: double.infinity,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return Center(child: Icon(Icons.broken_image));
-      },
+        if (selectedImages.isNotEmpty)
+          Container(
+            height: 100,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: selectedImages.length,
+              itemBuilder: (context, index) {
+                return Stack(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          selectedImages[index],
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 8,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedImages.removeAt(index);
+                          });
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.close, color: Colors.white, size: 20),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          )
+        else
+          GestureDetector(
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                builder: (context) => SafeArea(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        leading: Icon(Icons.camera_alt),
+                        title: Text('Camera'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _openCamera();
+                        },
+                      ),
+                      ListTile(
+                        leading: Icon(Icons.photo_library),
+                        title: Text('Gallery'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _pickImages();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              width: double.infinity,
+              height: 100,
+              decoration: BoxDecoration(
+                color: Color(grey10Color),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Color(grey11Color)),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_a_photo, color: Color(primaryColor)),
+                  SizedBox(height: 4),
+                  Text(
+                    "Add Photos",
+                    style: TextStyle(color: Color(grey2Color), fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 
-  Widget _buildPreviewWidget(dynamic file) {
-    // Jika file adalah bytes (Web), gunakan Image.memory
-    if (kIsWeb && file is Uint8List) {
-      return Image.memory(file, fit: BoxFit.contain, width: 200, height: 200);
-    }
+  // Widget _buildPreviewWidget(dynamic file) {
+  //   // Jika file adalah bytes (Web), gunakan Image.memory
+  //   if (kIsWeb && file is Uint8List) {
+  //     return Image.memory(file, fit: BoxFit.contain, width: 200, height: 200);
+  //   }
 
-    // Jika file adalah File (Mobile), gunakan Image.file
-    if (file is File) {
-      return Image.file(file, fit: BoxFit.contain, width: 200, height: 200);
-    }
+  //   // Jika file adalah File (Mobile), gunakan Image.file
+  //   if (file is File) {
+  //     return Image.file(file, fit: BoxFit.contain, width: 200, height: 200);
+  //   }
 
-    // Fallback (jika file kosong atau tipe lain)
-    return Container();
-  }
+  //   // Fallback (jika file kosong atau tipe lain)
+  //   return Container();
+  // }
 }

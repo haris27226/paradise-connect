@@ -22,7 +22,7 @@ abstract class ContactRemoteDataSource {
   Future<void> createContact(CreateContactParams params);
   Future<void> updateContact(int id, CreateContactParams params);
   Future<void> deleteContact(int id);
-  Future<ActivityResponseModel> getActivities({  required int contactId,  int? dealId,  String? activityType,  int page = 1,  int perPage = 15,});
+  Future<ActivityResponseModel> getActivities({int? contactId, int? dealId, String? activityType, String? followUpStartDate, String? followUpEndDate, int page = 1, int perPage = 15,});
   Future<void> createActivityVisit(CreateVisitParams params);
   Future<void> createActivity(CreateActivityParams params);
   Future<List<ActivityProspectStatusModel>> getActivityProspectStatus(int contactId);
@@ -87,14 +87,16 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
   }
 
   @override
-  Future<ActivityResponseModel> getActivities({required int contactId,int? dealId,String? activityType,int page = 1,int perPage = 15,}) async {
+  Future<ActivityResponseModel> getActivities({int? contactId, int? dealId, String? activityType, String? followUpStartDate, String? followUpEndDate, int page = 1, int perPage = 15,}) async {
     try {
       final response = await dio.get(
         '/activities',
         queryParameters: {
-          'contact_id': contactId,
+          if (contactId != null) 'contact_id': contactId,
           if (dealId != null) 'deal_id': dealId,
           if (activityType != null) 'activity_type': activityType,
+          if (followUpStartDate != null) 'follow_up_start_date': followUpStartDate,
+          if (followUpEndDate != null) 'follow_up_end_date': followUpEndDate,
           'page': page,
           'per_page': perPage,
         },
@@ -121,8 +123,12 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
         'visit_count': params.visitCount,
         'activity_date': params.activityDate,
         'notes': params.notes,
-        if (params.file != null)
-          'file': await MultipartFile.fromFile(params.file!.path),
+        if (params.files != null && params.files!.isNotEmpty)
+          'files[]': await Future.wait(
+            params.files!
+                .map((file) => MultipartFile.fromFile(file.path))
+                .toList(),
+          ),
       });
 
       final response = await dio.post(

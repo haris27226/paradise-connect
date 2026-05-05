@@ -40,6 +40,8 @@ class ActivityBloc extends Bloc<ActivityEvent, ActivityState> {
       contactId: event.contactId,
       dealId: event.dealId,
       activityType: event.activityType,
+      followUpStartDate: event.followUpStartDate,
+      followUpEndDate: event.followUpEndDate,
       page: state.currentPage,
     );
 

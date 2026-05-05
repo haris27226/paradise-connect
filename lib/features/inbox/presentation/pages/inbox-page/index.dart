@@ -4,10 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:progress_group/core/constants/colors.dart';
+import 'package:progress_group/core/utils/widget/custom_filter_button.dart';
 import 'package:progress_group/core/utils/widget/custom_header.dart';
 import 'package:progress_group/core/utils/widget/custom_search_field.dart';
-import 'package:progress_group/core/utils/widget/custom_selectbox.dart';
-import 'package:progress_group/features/contact/data/models/dropdown/selectbox_model.dart';
+import 'package:progress_group/features/auth/domain/entities/user_profile.dart';
+import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
+import 'package:progress_group/features/auth/presentation/state/profile/profile_state.dart';
+import 'package:progress_group/features/contact/data/arguments/contact_dropdown_args.dart';
+import 'package:progress_group/features/contact/data/models/dropdown/date_filter.dart';
+import 'package:progress_group/features/contact/domain/entities/prospect/prospect_status.dart';
+import 'package:progress_group/features/contact/presentation/state/contact/contact_bloc.dart';
+import 'package:progress_group/features/contact/presentation/state/contact/contact_event.dart';
+import 'package:progress_group/features/contact/presentation/state/contact/contact_state.dart';
+import 'package:progress_group/features/contact/presentation/state/prospect_status/prospect_status_bloc.dart';
+import 'package:progress_group/features/contact/presentation/state/prospect_status/prospect_status_state.dart';
 import 'package:progress_group/features/inbox/data/arguments/inbox_detail_args.dart';
 import 'package:progress_group/features/inbox/domain/entities/inbox_contact_entity.dart';
 import 'package:progress_group/features/inbox/presentation/state/inbox/inbox_block.dart';
@@ -39,6 +49,7 @@ class _InboxPageState extends State<InboxPage> {
   int _cPage = 1;
   int _gPage = 1;
   bool _isFetchingMore = false;
+  String? selectedDateLabel;
 
   @override
   void dispose() {
@@ -82,35 +93,41 @@ class _InboxPageState extends State<InboxPage> {
       _cPage = 1;
       _gPage = 1;
     }
+
+    final contactState = context.read<ContactBloc>().state;
+
     context.read<InboxContactBloc>().add(GetInboxContactsEvent(
       search: search ?? searchTC.text,
       cPage: _cPage,
       gPage: _gPage,
+      salesExecutiveId: (contactState.ownerIds != null && contactState.ownerIds!.isNotEmpty) 
+          ? contactState.ownerIds!.first 
+          : null,
+      statusProspectId: (contactState.statusProspectIds != null && contactState.statusProspectIds!.isNotEmpty) 
+          ? contactState.statusProspectIds!.first 
+          : null,
+      startDate: contactState.startDate,
+      endDate: contactState.endDate,
       isLoadMore: isLoadMore,
     ));
+    _isFetchingMore = false;
   }
-
-
-  final List<SelectBoxModel> selectBoxes = [
-    SelectBoxModel(items: ['Owner', 'B', 'C'], hint: "Owner"),
-    SelectBoxModel(items: ['1', '2', '3'], hint: "Create Date"),
-    SelectBoxModel(items: ['X', 'Y', 'Z'], hint: "Status"),
-    SelectBoxModel(items: ['A', 'B', 'C'], hint: "Priority"),
-    SelectBoxModel(items: ['Open', 'Close'], hint: "State")];
-
-    
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return BlocListener<ContactBloc, ContactState>(
+      listener: (context, state) {
+        // Refresh inbox when contact filters change
+        if (state.status == ContactStatus.loading) {
+          _fetchInbox();
+        }
+      },
+      child: SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           customHeader(context, 'Whatsapp'),
           SizedBox(height: 16),
-          // customButton( () {
-          //   context.pushNamed('qrScanner', extra: '2d992f7e-19e6-4e98-bdc8-9ee2edb353c2');
-          // }, 'Tambah Device'),
           Expanded(
             child: Padding(
               padding:  EdgeInsets.symmetric(horizontal: 16),
@@ -216,21 +233,239 @@ class _InboxPageState extends State<InboxPage> {
                     ),
                   ),
                   SizedBox(height: 10),
-                  SizedBox(
-                    height: 50,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: selectBoxes.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 10),
-                      itemBuilder: (context, index) {
-                        final item = selectBoxes[index];
-                        return CustomSelectBox(
-                          items: item.items,
-                          hints: item.hint,
-                          width: 150,
-                        );
-                      },
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      BlocBuilder<ProfileBloc, ProfileState>(
+                           builder: (context, profileState) {
+                             return BlocBuilder<ContactBloc, ContactState>(
+                               builder: (context, contactState) {
+                                 String label = 'Owner';
+                                 bool isSelected =
+                                     contactState.ownerIds != null &&
+                                     contactState.ownerIds!.isNotEmpty;
+                      
+                                 if (isSelected &&
+                                     profileState is ProfileLoaded) {
+                                   final user = profileState.profile;
+                      
+                                   String? findName(int? id) {
+                                     if (id == null) return null;
+                                     if (user.salesPersonId == id)
+                                       return user.fullName;
+                      
+                                     HierarchyNodeEntity? found;
+                                     void search(
+                                       List<HierarchyNodeEntity> nodes,
+                                     ) {
+                                       for (var n in nodes) {
+                                         if (n.salesPersonId == id) found = n;
+                                         if (found == null &&
+                                             n.subordinates.isNotEmpty)
+                                           search(n.subordinates);
+                                       }
+                                     }
+                      
+                                     search(user.subordinates);
+                                     return found?.fullName;
+                                   }
+                      
+                                   if (contactState.ownerIds!.length == 1) {
+                                     label =
+                                         findName(
+                                           contactState.ownerIds!.first,
+                                         ) ??
+                                         "Filtered";
+                                   } else {
+                                     label =
+                                         "${contactState.ownerIds!.length} Owners";
+                                   }
+                                 }
+                      
+                                 return CustomFilterButton(
+                                   label: label,
+                                   isSelected: isSelected,
+                                   onTap: () async {
+                                     if (profileState is ProfileLoaded) {
+                                       final user = profileState.profile;
+                                       final List<OwnerDropdownItem>
+                                       ownerItems = [];
+                      
+                                       ownerItems.add(
+                                         OwnerDropdownItem(
+                                           id: user.salesPersonId,
+                                           name: user.fullName,
+                                           subtitle: user.positionName,
+                                         ),
+                                       );
+                      
+                                       void addSubs(
+                                         List<HierarchyNodeEntity> subs,
+                                       ) {
+                                         for (var s in subs) {
+                                           ownerItems.add(
+                                             OwnerDropdownItem(
+                                               id: s.salesPersonId,
+                                               name: s.fullName,
+                                               subtitle: s.positionName,
+                                             ),
+                                           );
+                                           if (s.subordinates.isNotEmpty)
+                                             addSubs(s.subordinates);
+                                         }
+                                       }
+                      
+                                       addSubs(user.subordinates);
+                      
+                                       final result = await context.pushNamed(
+                                         'detailContactDropdown',
+                                         extra: ContactDropdownArgs(
+                                           title: 'Pilih Owner',
+                                           items: ownerItems,
+                                           selectedIds: contactState.ownerIds,
+                                           isMultiSelect: true,
+                                         ),
+                                       );
+                      
+                                       if (result != null) {
+                                         final selected =
+                                             result as List<OwnerDropdownItem>;
+                                         context.read<ContactBloc>().add(
+                                           FetchContactsEvent(
+                                             ownerIds: selected
+                                                 .map((e) => e.id!)
+                                                 .toList(),
+                                             isRefresh: true,
+                                             clearOwner: selected.isEmpty,
+                                           ),
+                                         );
+                                       }
+                                     }
+                                   },
+                                 );
+                               },
+                             );
+                           },
+                         ),
+                        BlocBuilder<ContactBloc, ContactState>(
+                            builder: (context, contactState) {
+                              bool isSelected = contactState.startDate != null && contactState.endDate != null;
+
+                              String label = selectedDateLabel ?? 'Create Date';
+
+                              return CustomFilterButton(
+                                label: label,
+                                isSelected: isSelected,
+                                onTap: () async {
+                                 final result = await context.pushNamed<DateFilterResult>('dateFilter');
+
+                                  if (result != null) {
+                                    if (result.isClear) {
+                                      context.read<ContactBloc>().add(
+                                        const FetchContactsEvent(
+                                          startDate: null,
+                                          endDate: null,
+                                          isRefresh: true,
+                                          clearDates: true,
+                                        ),
+                                      );
+
+                                      setState(() {
+                                        selectedDateLabel = null;
+                                      });
+                                    } else {
+                                      /// 🔥 APPLY FILTER
+                                      context.read<ContactBloc>().add(
+                                        FetchContactsEvent(
+                                          startDate: result.startDate,
+                                          endDate: result.endDate,
+                                          isRefresh: true,
+                                        ),
+                                      );
+
+                                      setState(() {
+                                        selectedDateLabel = result.label;
+                                      });
+                                    }
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                         BlocBuilder<ContactBloc, ContactState>(
+                            builder: (context, contactState) {
+                              String label = 'Status';
+                              bool isSelected =
+                                  contactState.statusProspectIds != null &&
+                                  contactState.statusProspectIds!.isNotEmpty;
+
+                              if (isSelected) {
+                                final statusState = context
+                                    .read<ProspectStatusBloc>()
+                                    .state;
+                                if (statusState.status ==
+                                    ProspectStatusEnum.loaded) {
+                                  if (contactState.statusProspectIds!.length ==
+                                      1) {
+                                    final status = statusState.statuses.cast<ProspectStatus?>().firstWhere((e) =>e?.statusProspectId ==contactState.statusProspectIds!.first,orElse: () => null,);
+                                    if (status != null) {
+                                      label = status.statusProspectName;
+                                    }
+                                  } else {
+                                    label ="${contactState.statusProspectIds!.length} Statuses";
+                                  }
+                                }
+                              }
+
+                              return CustomFilterButton(
+                                label: label,
+                                isSelected: isSelected,
+                                onTap: () async {
+                                  final statusState = context
+                                      .read<ProspectStatusBloc>()
+                                      .state;
+                                  if (statusState.status ==
+                                      ProspectStatusEnum.loaded) {
+                                    final List<OwnerDropdownItem> statusItems =
+                                        statusState.statuses
+                                            .map(
+                                              (e) => OwnerDropdownItem(
+                                                id: e.statusProspectId,
+                                                name: e.statusProspectName,
+                                              ),
+                                            )
+                                            .toList();
+
+                                    final result = await context.pushNamed(
+                                      'detailContactDropdown',
+                                      extra: ContactDropdownArgs(
+                                        title: 'Pilih Status',
+                                        items: statusItems,
+                                        selectedIds:
+                                            contactState.statusProspectIds,
+                                        isMultiSelect: true,
+                                      ),
+                                    );
+
+                                    if (result != null) {
+                                      final selected =
+                                          result as List<OwnerDropdownItem>;
+                                      context.read<ContactBloc>().add(
+                                        FetchContactsEvent(
+                                          statusProspectIds: selected
+                                              .map((e) => e.id!)
+                                              .toList(),
+                                          isRefresh: true,
+                                          clearStatus: selected.isEmpty,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                              );
+                            },
+                          )
+                    ],
                   ),
                   SizedBox(height: 10),
                   Expanded(
@@ -262,9 +497,9 @@ class _InboxPageState extends State<InboxPage> {
               ),
             ),
           ),
-          
         ],
       ),
+    ),
     );
   }
 
@@ -283,7 +518,7 @@ class _InboxPageState extends State<InboxPage> {
                 children: [
                   Image.asset(icContactDetailPhone,width: 15,height: 15,color: Color(primaryColor),),
                   SizedBox(width: 5),
-                  Text(phone,style: TextStyle(color: Color(blackColor),fontSize: 16, fontWeight: FontWeight.bold),),
+                  Text("$phone",style: TextStyle(color: Color(blackColor),fontSize: 16, fontWeight: FontWeight.bold),),
                 ],
               ),
             ),
@@ -602,7 +837,6 @@ class _InboxPageState extends State<InboxPage> {
     return SizedBox(
       width: 180,
       height: 180,
-      child: Center(child: Text("Menunggu QR...", style: TextStyle(fontSize: 12, color: Colors.grey))),
     );
   }
 }

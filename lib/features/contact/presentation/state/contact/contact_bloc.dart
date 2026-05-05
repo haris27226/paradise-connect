@@ -72,11 +72,11 @@ class ContactBloc extends Bloc<ContactEvent, ContactState> {
     final result = await getContactsUseCase(
       page: currentPage,
       perPage: event.perPage,
-      search: event.search ?? state.search,
-      startDate: event.startDate ?? state.startDate,
-      endDate: event.endDate ?? state.endDate,
-      ownerIds: event.ownerIds ?? state.ownerIds,
-      statusProspectIds: event.statusProspectIds ?? state.statusProspectIds,
+      search: event.clearSearch ? null : (event.search ?? state.search),
+      startDate: event.clearDates ? null : (event.startDate ?? state.startDate),
+      endDate: event.clearDates ? null : (event.endDate ?? state.endDate),
+      ownerIds: event.clearOwner ? null : (event.ownerIds ?? state.ownerIds),
+      statusProspectIds: event.clearStatus ? null : (event.statusProspectIds ?? state.statusProspectIds),
     );
 
     result.fold(

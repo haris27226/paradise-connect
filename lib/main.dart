@@ -3,6 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:progress_group/core/network/dio_client.dart';
+import 'package:progress_group/features/attandance/data/datasource/attendance_remote_datasource.dart';
+import 'package:progress_group/features/attandance/domain/repositories/attandance_repository.dart';
+import 'package:progress_group/features/attandance/domain/usecase/get_attendance.dart';
+import 'package:progress_group/features/attandance/domain/usecase/get_locations.dart';
+import 'package:progress_group/features/attandance/domain/usecase/submit_attendance.dart';
+import 'package:progress_group/features/attandance/domain/usecase/submit_attendance_activity.dart';
+import 'package:progress_group/features/attandance/presentation/state/attandance/attendance_bloc.dart';
 import 'package:progress_group/features/auth/data/datasources/auth_local_datasource.dart';
 import 'package:progress_group/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:progress_group/features/auth/data/repositories/auth_repository_impl.dart';
@@ -126,6 +133,13 @@ class MyApp extends StatelessWidget {
     final createActivityVisitUseCase = CreateActivityVisitUseCase(contactRepository);
     final getActivityProspectStatusUseCase = GetActivityProspectStatusUseCase(contactRepository);
 
+    final attendanceRemoteDataSource = AttendanceRemoteDataSourceImpl(dioClient.dio);
+    final attendanceRepository = AttendanceRepositoryImpl(attendanceRemoteDataSource);
+    final getAttendanceUseCase = GetAttendanceUseCase(attendanceRepository);
+    final getLocationsUseCase = GetLocationsUseCase(attendanceRepository);
+    final submitAttendanceUseCase = SubmitAttendanceUseCase(attendanceRepository);
+    final submitAttendanceActivityUseCase = SubmitAttendanceActivityUseCase(attendanceRepository);
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => AuthBloc(loginUseCase: loginUseCase,forgotPasswordUseCase: forgotPasswordUseCase,getRememberMeUseCase: getRememberMeUseCase,resetPasswordUsecase: resetPasswordUsecase)),
@@ -144,6 +158,12 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => UploadAttachmentBloc(uploadAttachmentUseCase,updateAttachmentUseCase )),
         BlocProvider(create: (_) => AttachmentCubit(getAttachmentsUseCase, deleteAttachmentUseCase)),
         BlocProvider(create: (_) => ActivityProspectStatusBloc(getActivityProspectStatusUseCase)),
+        BlocProvider(create: (_) => AttendanceBloc(
+          getAttendanceUseCase: getAttendanceUseCase,
+          getLocationsUseCase: getLocationsUseCase,
+          submitAttendanceUseCase: submitAttendanceUseCase,
+          submitAttendanceActivityUseCase: submitAttendanceActivityUseCase,
+        )),
       ],
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,

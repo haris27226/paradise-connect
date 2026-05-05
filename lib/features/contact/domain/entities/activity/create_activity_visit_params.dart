@@ -8,7 +8,7 @@ class CreateVisitParams {
   final int visitCount;
   final String activityDate;
   final String notes;
-  final File? file;
+  final List<File>? files;
   final Uint8List? fileBytes;
   final String? fileName;
 
@@ -18,7 +18,7 @@ class CreateVisitParams {
     required this.visitCount,
     required this.activityDate,
     required this.notes,
-    this.file,
+    this.files,
     this.fileBytes,
     this.fileName,
   });

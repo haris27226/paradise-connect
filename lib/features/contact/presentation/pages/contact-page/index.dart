@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:progress_group/core/constants/assets.dart';
 import 'package:progress_group/core/constants/colors.dart';
@@ -10,6 +9,7 @@ import 'package:progress_group/core/utils/widget/custom_header.dart';
 import 'package:progress_group/core/utils/widget/custom_search_field.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_detail_args.dart';
+import 'package:progress_group/features/contact/data/models/dropdown/date_filter.dart';
 import 'package:progress_group/features/contact/domain/entities/contact/contact.dart';
 import 'package:progress_group/features/auth/domain/entities/user_profile.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
@@ -37,6 +37,7 @@ class _ContactPageState extends State<ContactPage> {
   final FocusNode _searchFocus = FocusNode();
   late ScrollController _scrollController;
   Timer? _debounce;
+  String? selectedDateLabel;
 
   @override
   void initState() {
@@ -295,78 +296,57 @@ class _ContactPageState extends State<ContactPage> {
                             },
                           );
                         }
+                       
                         if (index == 1) {
                           return BlocBuilder<ContactBloc, ContactState>(
                             builder: (context, contactState) {
-                              String label = 'Create Date';
                               bool isSelected =
                                   contactState.startDate != null &&
                                   contactState.endDate != null;
 
-                              if (isSelected) {
-                                label =
-                                    "${contactState.startDate} - ${contactState.endDate}";
-                              }
+                              String label = selectedDateLabel ?? 'Create Date';
 
                               return CustomFilterButton(
                                 label: label,
                                 isSelected: isSelected,
                                 onTap: () async {
-                                  final DateTimeRange? picked =
-                                      await showDateRangePicker(
-                                        context: context,
-                                        firstDate: DateTime(2020),
-                                        lastDate: DateTime.now().add(
-                                          const Duration(days: 365),
+                                 final result = await context.pushNamed<DateFilterResult>('dateFilter');
+
+                                  if (result != null) {
+                                    if (result.isClear) {
+                                      context.read<ContactBloc>().add(
+                                        const FetchContactsEvent(
+                                          startDate: null,
+                                          endDate: null,
+                                          isRefresh: true,
+                                          clearDates: true,
                                         ),
-                                        initialDateRange: isSelected
-                                            ? DateTimeRange(
-                                                start: DateTime.parse(
-                                                  contactState.startDate!,
-                                                ),
-                                                end: DateTime.parse(
-                                                  contactState.endDate!,
-                                                ),
-                                              )
-                                            : null,
-                                        builder: (context, child) {
-                                          return Theme(
-                                            data: Theme.of(context).copyWith(
-                                              colorScheme: ColorScheme.light(
-                                                primary: Color(primaryColor),
-                                              ),
-                                            ),
-                                            child: child!,
-                                          );
-                                        },
                                       );
 
-                                  if (picked != null) {
-                                    final startDate = DateFormat(
-                                      'yyyy-MM-dd',
-                                    ).format(picked.start);
-                                    final endDate = DateFormat(
-                                      'yyyy-MM-dd',
-                                    ).format(picked.end);
-                                    context.read<ContactBloc>().add(
-                                      FetchContactsEvent(
-                                        startDate: startDate,
-                                        endDate: endDate,
-                                        isRefresh: true,
-                                      ),
-                                    );
+                                      setState(() {
+                                        selectedDateLabel = null;
+                                      });
+                                    } else {
+                                      /// 🔥 APPLY FILTER
+                                      context.read<ContactBloc>().add(
+                                        FetchContactsEvent(
+                                          startDate: result.startDate,
+                                          endDate: result.endDate,
+                                          isRefresh: true,
+                                        ),
+                                      );
+
+                                      setState(() {
+                                        selectedDateLabel = result.label;
+                                      });
+                                    }
                                   }
                                 },
                               );
                             },
                           );
                         }
-                        return CustomFilterButton(
-                          label: 'Create Date',
-                          onTap: () {
-                            // TODO: Implement other filters
-                          },
-                        );
+                        return null;
                       },
                     ),
                   ),

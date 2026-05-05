@@ -175,20 +175,7 @@ class _DropdownListContactState extends State<DropdownListContact> {
                               color: isSelected ? Color(grey1Color) : Color(whiteColor),
                               child: Row(
                                 children: [
-                                  // CircleAvatar(
-                                  //   radius: 22,
-                                  //   backgroundColor: isSelected
-                                  //       ? Color(primaryColor)
-                                  //       : Color(primaryColor).withOpacity(0.12),
-                                  //   child: Text(
-                                  //     item.name.isNotEmpty ? item.name[0].toUpperCase() : '?',
-                                  //     style: TextStyle(
-                                  //       color: isSelected ? Colors.white : Color(primaryColor),
-                                  //       fontWeight: FontWeight.bold,
-                                  //       fontSize: 16,
-                                  //     ),
-                                  //   ),
-                                  // ),
+
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(

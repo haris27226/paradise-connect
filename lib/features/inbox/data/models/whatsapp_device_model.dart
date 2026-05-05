@@ -23,12 +23,12 @@ class WhatsappDeviceModel {
 
   factory WhatsappDeviceModel.fromJson(Map<String, dynamic> json) {
     return WhatsappDeviceModel(
-      whatsappNumberId: json['whatsapp_number_id'],
-      userId: json['user_id'],
-      sessionCode: json['session_code'],
-      whatsappNumber: json['whatsapp_number'],
-      status: json['status'],
-      isActive: json['is_active'],
+      whatsappNumberId: json['whatsapp_number_id'] ?? 0,
+      userId: json['user_id'] ?? 0,
+      sessionCode: json['session_code'] ?? '',
+      whatsappNumber: json['whatsapp_number'] ?? '',
+      status: json['status'] ?? '',
+      isActive: json['is_active'] ?? false,
       lastConnected: json['last_connected'],
       lastDisconnected: json['last_disconnected'],
       user: json['m_app_user'] != null ? AppUser.fromJson(json['m_app_user']) : null,
@@ -38,17 +38,17 @@ class WhatsappDeviceModel {
 
 class AppUser {
   final int userId;
-  final String fullName;
-  final String username;
-  final String email;
-  final String phoneNumber;
+  final String? fullName;
+  final String? username;
+  final String? email;
+  final String? phoneNumber;
 
   AppUser({
     required this.userId,
-    required this.fullName,
-    required this.username,
-    required this.email,
-    required this.phoneNumber,
+    this.fullName,
+    this.username,
+    this.email,
+    this.phoneNumber,
   });
 
   factory AppUser.fromJson(Map<String, dynamic> json) {

@@ -2,7 +2,15 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 abstract class InboxContactRemoteDataSource {
-  Future<Map<String, dynamic>> getInboxContacts({String? search,int? cPage,int? gPage});
+  Future<Map<String, dynamic>> getInboxContacts({
+    String? search,
+    int? cPage,
+    int? gPage,
+    int? salesExecutiveId,
+    int? statusProspectId,
+    String? startDate,
+    String? endDate,
+  });
   Future<Map<String, dynamic>> getWhatsappDevices();
   Future<Map<String, dynamic>> getQrSession({required String session});
 }
@@ -13,7 +21,7 @@ class InboxContactRemoteDataSourceImpl implements InboxContactRemoteDataSource {
   InboxContactRemoteDataSourceImpl(this.dio);
 
   @override
-  Future<Map<String, dynamic>> getInboxContacts({String? search, int? cPage, int? gPage}) async {
+  Future<Map<String, dynamic>> getInboxContacts({  String? search,  int? cPage,  int? gPage,  int? salesExecutiveId,  int? statusProspectId,  String? startDate,  String? endDate,}) async {
     try {
       final response = await dio.get(
         '/whatsapp/contacts',
@@ -21,6 +29,10 @@ class InboxContactRemoteDataSourceImpl implements InboxContactRemoteDataSource {
           'search': search ?? '',
           'c_page': cPage ?? 1,
           'g_page': gPage ?? 1,
+          'sales_executive_id': salesExecutiveId,
+          'status_prospect_id': statusProspectId,
+          'start_date': startDate,
+          'end_date': endDate,
         },
       );
 

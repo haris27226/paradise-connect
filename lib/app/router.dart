@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_dropdown_args.dart';
 import 'package:progress_group/features/contact/presentation/pages/attachment-view/index.dart';
 import 'package:progress_group/features/contact/presentation/pages/contact-dropdown/index.dart';
+import 'package:progress_group/features/contact/presentation/pages/date-selection/index.dart';
 import 'package:progress_group/features/inbox/presentation/pages/qr/index.dart';
 
 import '../features/attandance/data/arguments/attandance_args.dart';
@@ -104,6 +105,13 @@ class AppRouter {
                 builder: (context, state) {
                   final args = state.extra as String;
                   return AttachmentWebViewPage(url: args);
+                },
+              ),
+              GoRoute(
+                name: 'dateFilter',
+                path: 'date-filter',
+                builder: (context, state) {
+                  return const DateFilterPage();
                 },
               ),
              

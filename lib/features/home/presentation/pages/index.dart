@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:progress_group/core/constants/colors.dart';
 import 'package:progress_group/core/constants/assets.dart';
+import 'package:progress_group/core/utils/helpers/date_helper.dart';
 import 'package:progress_group/features/home/data/datasource/chart_service.dart';
 import 'package:progress_group/features/home/presentation/state/report-whatsapp/report_bloc.dart';
 import 'package:progress_group/features/home/presentation/state/report-whatsapp/report_event.dart';
@@ -11,6 +12,12 @@ import 'package:progress_group/features/home/presentation/state/report-whatsapp/
 import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_event.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_state.dart';
+import 'package:progress_group/features/contact/presentation/state/activity/activity_bloc.dart';
+import 'package:progress_group/features/contact/presentation/state/activity/activity_event.dart';
+import 'package:progress_group/features/contact/presentation/state/activity/activity_state.dart';
+import 'package:progress_group/features/inbox/data/arguments/inbox_detail_args.dart';
+import 'package:progress_group/features/inbox/domain/entities/inbox_contact_entity.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/utils/widget/custom_header.dart';
 
@@ -24,11 +31,11 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final ChartService _chartService = ChartService();
 
-  // DateTime _chartStartDate = DateTime(2026, 1, 1);
-  // DateTime _chartEndDate = DateTime(2026, 1, 7);
+
   DateTime _chartEndDate = DateTime.now();
   DateTime _chartStartDate = DateTime.now().subtract(const Duration(days: 6));
   int day = 0;
+  final Set<int> _completedActivityIds = {};
 
   
   @override
@@ -48,7 +55,6 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (picked != null) {
-      // Menghitung jumlah hari yang dipilih
       final calculatedDays = picked.end.difference(picked.start).inDays + 1;
       
       if (calculatedDays < 2) {
@@ -83,11 +89,10 @@ class _HomePageState extends State<HomePage> {
         return;
       }
 
-      // 2. Simpan nilai calculatedDays ke variabel day di dalam setState
       setState(() {
         _chartStartDate = picked.start;
         _chartEndDate = picked.end;
-        day = calculatedDays; // <--- Masukkan ke sini
+        day = calculatedDays;
       });
       
       _loadData();
@@ -109,12 +114,31 @@ class _HomePageState extends State<HomePage> {
       context.read<ProfileBloc>().add(GetProfileEvent());
     }
 
+    if (mounted) {
+      final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      context.read<ActivityBloc>().add(
+            FetchActivitiesEvent(
+              followUpStartDate: todayStr,
+              followUpEndDate: todayStr,
+              isRefresh: true,
+            ),
+          );
+    }
+
     try {
       await _chartService.fetchChartData();
       setState(() {
       });
     } catch (e) {
     }
+    _getTask();
+
+
+  }
+
+
+  Future<void> _getTask() async {
+    context.read<ActivityBloc>().add(const FetchActivitiesEvent(isRefresh: true));
   }
 
   @override
@@ -166,15 +190,11 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     SizedBox(height: 6),
-                    Text("Funnel", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    SizedBox(height: 5),
-                    Row(children: [_buildCard(), _buildCard()]),
-                    Row(children: [_buildCard(), _buildCard()]),
-                    Row(children: [_buildCard(), _buildCard()]),
+                    _buildComingTask(),
                     SizedBox(height: 6),
                     Text("WhatsApp", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     SizedBox(height: 5),
-                    _buildchart(),
+                    _buildWhatsAppChart(),
                   ],
                 ),
               ),
@@ -185,83 +205,229 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildCard() {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 6,right: 3,left: 3),
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: Color(whiteColor),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                children: [
-                  Text("Leads :", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(grey2Color))),
-                  Text("250", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(blackColor))),
-                  Row(
+ Widget _buildComingTask(){
+  return BlocBuilder<ActivityBloc, ActivityState>(
+    builder: (context, state) {
+      if (state.status == ActivityStatus.loading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      final activities = state.activities;
+
+      return Column(
+        children: [
+          Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Upcoming Task",style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                GestureDetector(
+                  onTap: () {
+                    // context.pushNamed('activities'); // TODO: navigate to all activities
+                  },
+                  child: Text("See All",style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold,color: Color(primaryColor))),
+                ),
+              ],
+            ),
+          SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  spreadRadius: 2,
+                  blurRadius: 5,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: activities.isEmpty
+                ? SizedBox(
+                  height: 240,
+                  width: double.infinity,
+                  child: Center(child: Text("No upcoming tasks for today")),
+                )
+                : SizedBox(
+                    height: 240,
+                    child: ListView.builder(
+                      itemCount: activities.length,
+                      itemBuilder: (context, index) {
+                        final activity = activities[index];
+                        final bool isCompleted = _completedActivityIds.contains(activity.activityId);
+                        final bool isWhatsApp = activity.activityType.toLowerCase().contains('whatsapp');
+                        final bool isCall = activity.activityType.toLowerCase().contains('call');
+
+                        return GestureDetector(
+                          onTap: () async {
+                            if (isWhatsApp) {
+                              if (activity.waId != null && activity.jid != null && activity.sessionCode != null) {
+                                context.pushNamed('detailInbox',
+                                  extra: InboxDetailArgs(
+                                    data: InboxContact(
+                                      id: activity.waId!,
+                                      name: activity.contactName ?? 'Unknown',
+                                      jid: activity.jid!,
+                                      isGroup: activity.isGroup ?? false,
+                                      initials: activity.initials ?? '?',
+                                      sessionCode: activity.sessionCode!,
+                                    ),
+                                    icon: Icons.person,
+                                  ),
+                                );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Missing message history'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  } else if (isCall) {
+                    final Uri telLaunchUri = Uri(
+                      scheme: 'tel',
+                      path: activity.phoneNumber,
+                    );
+                    if (await canLaunchUrl(telLaunchUri)) {
+                      await launchUrl(telLaunchUri);
+                    }
+                  }
+
+                  setState(() {
+                    if (isCompleted) {
+                      _completedActivityIds.remove(activity.activityId);
+                    } else {
+                      _completedActivityIds.add(activity.activityId);
+                    }
+                  });
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
+                  decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Color(grey1Color)))),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("(Growth ", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(blackColor))),
-                      Text("10%", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(greenPercentColor))),
-                      Text(")", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(blackColor))),
-                    ],
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text("→ 40 %", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(blackColor))),
-                      Text("Conv.", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(blackColor))),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text("Leads", style: TextStyle(fontSize: 8,fontWeight: FontWeight.bold,color: Color(grey3Color))),
                       Row(
                         children: [
-                          Container(
-                            height: 6,
-                            width: 6,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Color(bluePeriodColor),
-                            ),
+                          Icon(isCompleted ? Icons.check_circle : Icons.check_circle_outline_rounded,
+                            color: isCompleted ? Colors.green : Color(primaryColor),
+                            size: 40,
                           ),
-                          Text("10", style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(blackColor))),
-                          SizedBox(width: 5),
-                          Text("-", style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(blackColor))),
-                          SizedBox(width: 5),
-                          Container(
-                            height: 6,
-                            width: 6,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Color(redPeriodColor),
-                            ),
+                          const SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment:CrossAxisAlignment.start,
+                            children: [
+                              Text(activity.activityType, style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold,color: Color(blackColor),decoration: isCompleted ? TextDecoration.lineThrough : null)),
+                              Text(activity.nextFollowUpDate != null ? DateHelper.formatToIndonesian(DateTime.parse(activity.nextFollowUpDate!)) : "No follow-up date",style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold,color: Color(grey2Color)))
+                            ],
                           ),
-                          Text("10", style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(blackColor))),
                         ],
                       ),
+                      isWhatsApp? Image.asset(icContactDetailWA): Icon(isCall? Icons.phone_outlined: Icons.event_note_outlined,color: Color(primaryColor),size: 30,),
                     ],
                   ),
-                ],
-              ),
-            ],
+                ),
+              );
+            },
           ),
         ),
-      ),
-    );
-  }
+        ) ],
+      );
+    },
+  );
+ }
 
-  Widget _buildchart() {
+
+  // Widget _buildFunnel(){
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Text("Funnel", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+  //       SizedBox(height: 5),
+  //       Row(children: [_buildCard(), _buildCard()]),
+  //       Row(children: [_buildCard(), _buildCard()]),
+  //       Row(children: [_buildCard(), _buildCard()]),
+  //     ],
+  //   );
+  // }
+  // Widget _buildCard() {
+  //   return Expanded(
+  //     child: Padding(
+  //       padding: const EdgeInsets.only(bottom: 6,right: 3,left: 3),
+  //       child: Container(
+  //         padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+  //         decoration: BoxDecoration(
+  //           color: Color(whiteColor),
+  //           borderRadius: BorderRadius.circular(10),
+  //         ),
+  //         child: Row(
+  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //           children: [
+  //             Column(
+  //               children: [
+  //                 Text("Leads :", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(grey2Color))),
+  //                 Text("250", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(blackColor))),
+  //                 Row(
+  //                   children: [
+  //                     Text("(Growth ", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(blackColor))),
+  //                     Text("10%", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(greenPercentColor))),
+  //                     Text(")", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(blackColor))),
+  //                   ],
+  //                 ),
+  //               ],
+  //             ),
+  //             Column(
+  //               crossAxisAlignment: CrossAxisAlignment.end,
+  //               children: [
+  //                 Column(
+  //                   crossAxisAlignment: CrossAxisAlignment.end,
+  //                   children: [
+  //                     Text("→ 40 %", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(blackColor))),
+  //                     Text("Conv.", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(blackColor))),
+  //                   ],
+  //                 ),
+  //                 Column(
+  //                   crossAxisAlignment: CrossAxisAlignment.end,
+  //                   children: [
+  //                     Text("Leads", style: TextStyle(fontSize: 8,fontWeight: FontWeight.bold,color: Color(grey3Color))),
+  //                     Row(
+  //                       children: [
+  //                         Container(
+  //                           height: 6,
+  //                           width: 6,
+  //                           decoration: BoxDecoration(
+  //                             shape: BoxShape.circle,
+  //                             color: Color(bluePeriodColor),
+  //                           ),
+  //                         ),
+  //                         Text("10", style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(blackColor))),
+  //                         SizedBox(width: 5),
+  //                         Text("-", style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(blackColor))),
+  //                         SizedBox(width: 5),
+  //                         Container(
+  //                           height: 6,
+  //                           width: 6,
+  //                           decoration: BoxDecoration(
+  //                             shape: BoxShape.circle,
+  //                             color: Color(redPeriodColor),
+  //                           ),
+  //                         ),
+  //                         Text("10", style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(blackColor))),
+  //                       ],
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ],
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  Widget _buildWhatsAppChart() {
     const double maxHeight = 110.0;
     String _formatYAxisLabel(double value) {
         if (value == 0) return "0";

@@ -3,7 +3,7 @@ import 'package:progress_group/features/contact/domain/entities/activity/activit
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_visit_params.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/attachment_entity.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/attachment_type.dart';
-import '../entities/activity/activity.dart';
+import '../entities/activity/activity_entity.dart';
 import '../entities/contact/contact.dart';
 import '../entities/contact/contact_response.dart';
 import '../entities/activity/create_activity_params.dart';
@@ -98,12 +98,14 @@ class ContactRepositoryImpl implements ContactRepository {
   }
 
   @override
-  Future<Either<String, List<Activity>>> getActivities({  required int contactId,  int? dealId,  String? activityType,  int page = 1,}) async {
+  Future<Either<String, List<ActivityEntity>>> getActivities({int? contactId, int? dealId, String? activityType, String? followUpStartDate, String? followUpEndDate, int page = 1,}) async {
     try {
       final result = await remoteDataSource.getActivities(
         contactId: contactId,
         dealId: dealId,
         activityType: activityType,
+        followUpStartDate: followUpStartDate,
+        followUpEndDate: followUpEndDate,
         page: page,
       );
       return Right(result.activities);

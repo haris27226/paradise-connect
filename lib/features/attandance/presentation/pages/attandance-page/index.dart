@@ -1,9 +1,15 @@
 import 'dart:async';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:progress_group/core/constants/colors.dart';
+import 'package:progress_group/features/attandance/domain/entities/attandance_entity.dart';
+import 'package:progress_group/features/attandance/presentation/state/attandance/attendance_bloc.dart';
+import 'package:progress_group/features/attandance/presentation/state/attandance/attendance_event.dart';
+import 'package:progress_group/features/attandance/presentation/state/attandance/attendance_state.dart';
 import '../../../../../core/utils/helpers/date_helper.dart';
 import '../../../../../core/utils/widget/custom_header.dart';
 import '../../../data/arguments/attandance_args.dart';
@@ -35,6 +41,7 @@ class _AttandancePageState extends State<AttandancePage> {
     _pageController = PageController();
     Future.microtask(() {
       _initLocation();
+      _getLog();
     });
   }
 
@@ -175,7 +182,7 @@ class _AttandancePageState extends State<AttandancePage> {
     }
   }
 
-  Future<void> _handleMoveCamera(String title)async{
+  Future<void> _handleMoveCamera(String title, int flagParam)async{
      final position = await _getCurrentLocationOnce();
 
     if (position == null) {
@@ -215,6 +222,7 @@ class _AttandancePageState extends State<AttandancePage> {
     context.pushNamed(
       'camera',
       extra: AttandanceArgs(
+        flag: flagParam,
         type: title,
         location:_address,
         time: DateHelper.formatTime(DateTime.now()),
@@ -222,9 +230,8 @@ class _AttandancePageState extends State<AttandancePage> {
     );
   }
 
-  Future<void> _onRefresh() async {
-    await Future.delayed(const Duration(seconds: 1));
-    // Refresh logic
+  Future<void> _getLog() async {
+    context.read<AttendanceBloc>().add(GetAttendanceEvent());
   }
 
   @override
@@ -245,50 +252,81 @@ class _AttandancePageState extends State<AttandancePage> {
               ),
             ),
             SizedBox(height: 60,),
-            Expanded(
-              child: Container(
-              width: double.infinity,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              padding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-              decoration: BoxDecoration(
-                color: Color(whiteColor),
-                borderRadius: BorderRadius.circular(16),
-              ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Log", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(blackColor)),),
-                    SizedBox(height: 5),
-                    Expanded(
-                      child: RefreshIndicator(
-                        onRefresh: _onRefresh,
-                        child: ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: 20,
-                          itemBuilder: (_, __) => _buildCard(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
+            _buildLog()
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCard(){
+  Widget _buildLog() {
+    return Expanded(
+      child: Container(
+        width: double.infinity,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Color(whiteColor),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Log", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            SizedBox(height: 5),
+
+            Expanded(
+              child: BlocBuilder<AttendanceBloc, AttendanceState>(
+                builder: (context, state) {
+
+                  if (state is AttendanceLoading) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+
+                  if (state is AttendanceLoaded) {
+                    final data = state.data;
+
+                    return RefreshIndicator(
+                      onRefresh: _getLog,
+                      child: ListView.builder(
+                        itemCount: data.length,
+                        itemBuilder: (_, i) => _buildCard(data[i]),
+                      ),
+                    );
+                  }
+
+                  if (state is AttendanceError) {
+                    return Center(child: Text(state.message));
+                  }
+
+                  return SizedBox();
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard(AttendanceEntity item) {
+    final date = DateTime.parse(item.date);
+
+    String formatTime(String? value) {
+      if (value == null) return "-";
+      final dt = DateTime.parse(value);
+      return DateFormat('hh:mm a').format(dt);
+    }
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: GestureDetector(
-        onTap: () {
-        _showAttendanceDialog();
-        },  
+        onTap: _showAttendanceDialog,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            
+            /// DATE
             Container(
               width: 70,
               height: 40,
@@ -296,43 +334,32 @@ class _AttandancePageState extends State<AttandancePage> {
                 color: Color(grey10Color),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Center(
-                child: Column(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text("06", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(blackColor)),),
-                  Text("Mon", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w100, color: Color(blackColor)),),
-                ],
-              )),
-            ),
-            SizedBox(width:2),
-            Container(
-              height: 40,
-              width: 70,
-              child: Column(
-                children: [
-                  Icon(Icons.access_time_filled, size: 17,color: Color(greenPercentColor),),
-                  Text("08:00 AM", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w100, color: Color(blackColor)),),
+                  Text("${date.day}", style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(DateFormat('EEE').format(date)),
                 ],
               ),
             ),
-            Container(
-              height: 40,
-              width: 2,
-              decoration: BoxDecoration(
-                color: Color(grey10Color),
-              ),
+
+            /// CLOCK IN
+            Column(
+              children: [
+                Icon(Icons.access_time_filled, size: 17, color: Color(greenPercentColor)),
+                Text(formatTime(item.clockIn)),
+                // Text("${item.checkInActivity}")
+              ],
             ),
-            Container(
-              height: 40,
-              width: 70,
-              child: Column(
-                children: [
-                  Icon(Icons.access_time_filled, size: 17,color: Color(redPeriodColor),),
-                  Text("08:00 AM", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w100, color: Color(blackColor)),),
-                ],
-              ),
+
+            Container(width: 2, height: 40, color: Color(grey10Color)),
+
+            /// CLOCK OUT
+            Column(
+              children: [
+                Icon(Icons.access_time_filled, size: 17, color: Color(redPeriodColor)),
+                Text(formatTime(item.clockOut)),
+              ],
             ),
           ],
         ),
@@ -392,102 +419,103 @@ class _AttandancePageState extends State<AttandancePage> {
   }
 
 
-  Widget _buildTabBar() {
-    const double tabHeight = 35;
+Widget _buildTabBar() {
+  const double height = 45;
+  final tabs = ["Clock In", "Check In", "Clock Out"];
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 50),
-      child: Container(
-        height: tabHeight,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Stack(
-            children: [
-              AnimatedBuilder(
-                animation: _pageController,
-                builder: (context, child) {
-                  final page = _pageController.hasClients
-                      ? (_pageController.page ?? 0)
-                      : selectedIndex.toDouble();
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 10),
+    child: SizedBox(
+      height: height,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final tabWidth = constraints.maxWidth / 2.6;
 
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      final tabWidth = constraints.maxWidth / 2;
+          final page = _pageController.hasClients? (_pageController.page ?? 0): selectedIndex.toDouble();
 
-                      return Transform.translate(
-                        offset: Offset(tabWidth * page, 0),
-                        child: Container(
-                          width: tabWidth,
-                          height: tabHeight,
-                          decoration: BoxDecoration(
-                            color: Color(primaryColor),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
+          List<int> order = [0, 1, 2];
+          order.sort((a, b) {
+            return (b - page).abs().compareTo((a - page).abs());
+          });
 
-              /// 🔥 TEXT TAB
-              Row(
-                children: List.generate(2, (index) {
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => _onTabChanged(index),
-                      child: Center(
-                        child: AnimatedBuilder(
-                          animation: _pageController,
-                          builder: (context, _) {
-                            final page = _pageController.hasClients
-                                ? (_pageController.page ?? 0)
-                                : selectedIndex.toDouble();
+          return Stack(
+            children: order.map((index) {
+              return _buildStackTab(
+                index: index,
+                left: index * (tabWidth - 25),
+                tabWidth: tabWidth,
+                height: height,
+                tabs: tabs,
+                page: page,
+              );
+            }).toList(),
+          );
+        },
+      ),
+    ),
+  );
+}
 
-                            final isActive = (page - index).abs() < 0.5;
+  Widget _buildStackTab({required int index,required double left,required double tabWidth,required double height,required List<String> tabs,required double page,}) {
+    final isActive = (page - index).abs() < 0.5;
 
-                            return Text(
-                              index == 0 ? "Check In" : "Check Out",
-                              style: TextStyle(
-                                color: isActive ? Colors.white : Colors.grey,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
+    return Positioned(
+      left: left,
+      child: GestureDetector(
+        onTap: () => _onTabChanged(index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          width: tabWidth,
+          height: height,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isActive? Color(primaryColor): (index == 1? Colors.grey.shade300: Colors.grey.shade200),
+           borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isActive ? 0.15 : 0.05),
+                blurRadius: isActive ? 10 : 4,
+                offset: const Offset(0, 2),
+              )
             ],
+          ),
+          child: Text(
+            tabs[index],
+            style: TextStyle(
+              color: isActive ? Colors.white : Colors.grey[700],
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
           ),
         ),
       ),
     );
   }
+
+
   Widget _buildPageView() {
-    return Container(
+    return SizedBox(
       height: 190,
       child: PageView(
         controller: _pageController,
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        physics: const BouncingScrollPhysics(),
         onPageChanged: (index) {
           setState(() => selectedIndex = index);
         },
         children: [
-          _buildCheckIn(),
-          _buildCheckOut(),
+          _buildClockIn(),   
+          _buildCheckInActivity(),
+          _buildClockOut(),
         ],
       ),
     );
-    }
-  Widget _buildCheckForm({required String title}) {
+  }
+
+  Widget _buildCheckInActivity(){
+    return _buildCheckForm(title: "Check In", flagParam: 6);
+  }
+  
+  Widget _buildCheckForm({required String title,required int flagParam}) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -507,7 +535,7 @@ class _AttandancePageState extends State<AttandancePage> {
           child: InkWell(
             borderRadius: BorderRadius.circular(100),
             onTap: () async {
-             _handleMoveCamera(title);
+             _handleMoveCamera(title, flagParam);
             },
             child: Container(
               height: 90,
@@ -557,12 +585,12 @@ class _AttandancePageState extends State<AttandancePage> {
     );
   }  
 
-  Widget _buildCheckOut() {
-    return _buildCheckForm(title: "Clock Out");
+  Widget _buildClockOut() {
+    return _buildCheckForm(title: "Clock Out",flagParam: 1);
   }
 
-  Widget _buildCheckIn() {
-    return _buildCheckForm(title: "Clock In");
+  Widget _buildClockIn() {
+    return _buildCheckForm(title: "Clock In", flagParam: 0);
   }
 
     

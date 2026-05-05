@@ -1,10 +1,16 @@
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:progress_group/core/utils/helpers/date_helper.dart';
 import 'package:progress_group/core/utils/widget/custom_button.dart';
 import 'package:progress_group/features/attandance/data/arguments/attandance_args.dart';
+import 'package:progress_group/features/attandance/presentation/state/attandance/attendance_bloc.dart';
+import 'package:progress_group/features/attandance/presentation/state/attandance/attendance_event.dart';
+import 'package:progress_group/features/attandance/presentation/state/attandance/attendance_state.dart';
+import 'package:progress_group/features/contact/data/arguments/contact_dropdown_args.dart';
 
 import '../../../../../core/constants/colors.dart';
 import '../../../../../core/utils/widget/custom_header.dart';
@@ -29,16 +35,27 @@ class _CameraPageState extends State<CameraPage> {
   bool get _isCameraReady => _controller != null && _controller!.value.isInitialized;
   List<CameraDescription>? _cameras;
   bool _isSwitching = false;
+  int? _selectedLocationId;
 
   @override
   void initState() {
     super.initState();
     _initCamera();
+    context.read<AttendanceBloc>().add(GetLocationsEvent());
   }
 
   Future<void> _initCamera() async {
     try {
       _cameras = await availableCameras();
+
+      if (_cameras == null || _cameras!.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Camera not found on this device")),
+          );
+        }
+        return;
+      }
 
       _controller = CameraController(
         _cameras![_cameraIndex],
@@ -52,6 +69,11 @@ class _CameraPageState extends State<CameraPage> {
       setState(() {});
     } catch (e) {
       debugPrint("ERROR CAMERA: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to open camera: $e")),
+        );
+      }
     }
   }
 
@@ -69,26 +91,37 @@ class _CameraPageState extends State<CameraPage> {
     }
   }
 
-  Future<void> _switchCamera() async {
-    if (_cameras == null || _cameras!.isEmpty) return;
+  // Future<void> _switchCamera() async {
+  //   if (_cameras == null || _cameras!.isEmpty) return;
 
-    setState(() => _isSwitching = true);
+  //   setState(() => _isSwitching = true);
 
-    _cameraIndex = (_cameraIndex + 1) % _cameras!.length;
+  //   _cameraIndex = (_cameraIndex + 1) % _cameras!.length;
 
-    await _controller?.dispose();
+  //   await _controller?.dispose();
 
-    _controller = CameraController(
-      _cameras![_cameraIndex],
-      ResolutionPreset.medium,
-      enableAudio: false,
-    );
+  //   _controller = CameraController(
+  //     _cameras![_cameraIndex],
+  //     ResolutionPreset.medium,
+  //     enableAudio: false,
+  //   );
 
-    await _controller!.initialize();
+  //   await _controller!.initialize();
 
-    if (!mounted) return;
+  //   if (!mounted) return;
 
-    setState(() => _isSwitching = false);
+  //   setState(() => _isSwitching = false);
+  // }
+
+  void _handleSubmit() {
+    if (_imageFile == null) return;
+
+    final flag = widget.args.flag;
+
+    final datetime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+    final location = pameranTC.text.isNotEmpty ? pameranTC.text : (widget.args.location ?? "Unknown");
+
+    context.read<AttendanceBloc>().add(SubmitAttendanceEvent(datetime: datetime,flag: flag!,location: location,note: notesTC.text,filePath: _imageFile!.path,));
   }
 
   @override
@@ -99,13 +132,43 @@ class _CameraPageState extends State<CameraPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            customHeader( context, widget.args.type ?? "-", colorBg: Color(primaryColor), colorBack: Color(whiteColor), colorTitle: Color(whiteColor), isBack: true,iconLeft:_imageFile != null? Icons.history:null,iconLeftOnTap: (){  setState(() { _imageFile = null;  }); }, colorIconLeft: Color(whiteColor) ),
-            Expanded(child: _buildBody()),
-          ],
+    return BlocListener<AttendanceBloc, AttendanceState>(
+      listener: (context, state) {
+        if (state is AttendanceSubmitSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Attendance recorded successfully!")),
+          );
+          context.pop();
+          // Refresh logs on home page
+          context.read<AttendanceBloc>().add(GetAttendanceEvent());
+        } else if (state is AttendanceError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+          );
+        }
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              customHeader(
+                context,
+                widget.args.type ?? "-",
+                colorBg: Color(primaryColor),
+                colorBack: Color(whiteColor),
+                colorTitle: Color(whiteColor),
+                isBack: true,
+                iconLeft: _imageFile != null ? Icons.history : null,
+                iconLeftOnTap: () {
+                  setState(() {
+                    _imageFile = null;
+                  });
+                },
+                colorIconLeft: Color(whiteColor),
+              ),
+              Expanded(child: _buildBody()),
+            ],
+          ),
         ),
       ),
     );
@@ -161,9 +224,8 @@ class _CameraPageState extends State<CameraPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 60),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(width: 70),
           GestureDetector(
             onTap: _takePicture,
             child: Container(
@@ -176,15 +238,6 @@ class _CameraPageState extends State<CameraPage> {
               child: Icon(Icons.camera_alt, color: Colors.white, size: 30),
             ),
           ),
-          GestureDetector(
-            onTap: _switchCamera,
-            child: Container(
-              height: 70,
-              width: 70,
-              decoration: BoxDecoration(shape: BoxShape.circle),
-              child: Icon(Icons.flip_camera_ios, color: Colors.white, size: 30),
-            ),
-          ),
         ],
       ),
     );
@@ -193,7 +246,7 @@ class _CameraPageState extends State<CameraPage> {
   Widget _buildPreview() {
     return SingleChildScrollView(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom, // ⬅️ ini kunci!
+        bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Column(
         children: [
@@ -252,77 +305,111 @@ class _CameraPageState extends State<CameraPage> {
               ),
             ],
           ),
-
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: 10),
-                Text("Pameran/ Open Table (optional)",style: TextStyle(fontSize: 14, color: Color(grey2Color))),
+                Text("Pameran/ Open Table (optional)", style: TextStyle(fontSize: 14, color: Color(grey2Color))),
                 SizedBox(height: 5),
                 Container(
                   width: double.infinity,
                   height: 50,
                   alignment: Alignment.centerRight,
                   decoration: BoxDecoration(
-                    border: Border.all(color: Color(grey4Color),width: 1),
+                    border: Border.all(color: Color(grey4Color), width: 1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          maxLines: 1,
-                          minLines: 1,
-                          controller: pameranTC,
-                          focusNode: pameranFN,
-                          onTapOutside: (event) => pameranFN.unfocus(),
-                          textInputAction: TextInputAction.newline,
-                          decoration: InputDecoration(
-                            hintText: "Select Pameran",
-                            hintStyle: TextStyle(color: Color(grey2Color),fontSize: 14),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            border: InputBorder.none,
-                            // border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey11Color))),
-                            // enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey11Color))),
-                            // focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(primaryColor))),
+                  child: InkWell(
+                    onTap: () async {
+                      final state = context.read<AttendanceBloc>().state;
+                      if (state is AttendanceLoaded && state.locations != null) {
+                        final items = state.locations!.map((e) => OwnerDropdownItem(
+                          id: e.id,
+                          name: e.name,
+                        )).toList();
+
+                        final result = await context.pushNamed(
+                          'detailContactDropdown',
+                          extra: ContactDropdownArgs(
+                            title: 'Select Pameran',
+                            items: items,
+                            selectedId: _selectedLocationId,
+                            isMultiSelect: false,
+                          ),
+                        );
+
+                        if (result != null) {
+                          final selected = result as OwnerDropdownItem;
+                          setState(() {
+                            _selectedLocationId = selected.id;
+                            pameranTC.text = selected.name;
+                          });
+                        }
+                      }
+                    },
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            enabled: false,
+                            maxLines: 1,
+                            minLines: 1,
+                            controller: pameranTC,
+                            decoration: InputDecoration(
+                              hintText: "Select Pameran",
+                              hintStyle: TextStyle(color: Color(grey2Color), fontSize: 14),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              border: InputBorder.none,
+                            ),
                           ),
                         ),
-                      ),
-                      Icon(Icons.keyboard_arrow_up),
-                      SizedBox(width: 5)
-                    ],
+                        Icon(Icons.keyboard_arrow_up),
+                        SizedBox(width: 5)
+                      ],
+                    ),
                   ),
                 ),
                 SizedBox(height: 20),
-                Text("Notes",style: TextStyle(fontSize: 14, color: Color(grey2Color))),
+                Text("Notes", style: TextStyle(fontSize: 14, color: Color(grey2Color))),
                 SizedBox(height: 5),
                 Container(
                   height: 80,
                   child: TextFormField(
-                    maxLines: null, 
-                    minLines: 3,    
+                    maxLines: null,
+                    minLines: 3,
                     controller: notesTC,
                     focusNode: notesFN,
                     onTapOutside: (event) => notesFN.unfocus(),
                     decoration: InputDecoration(
                       hintText: "Enter notes...",
-                      hintStyle: TextStyle(fontSize: 14,color: Color(grey3Color),),
+                      hintStyle: TextStyle(fontSize: 14, color: Color(grey3Color)),
                       contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8),borderSide: BorderSide(color: Color(grey4Color)),),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8),borderSide: BorderSide(color: Color(grey4Color)),),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8),borderSide: BorderSide(color: Color(grey4Color)),),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Color(grey4Color)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Color(grey4Color)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Color(primaryColor)),
+                      ),
                     ),
                   ),
                 ),
-
                 SizedBox(height: 40),
-
-                customButton(() {
-                  context.pop();
-                }, "Submit"),
-
+                BlocBuilder<AttendanceBloc, AttendanceState>(
+                  builder: (context, state) {
+                    if (state is AttendanceSubmitLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    return customButton(_handleSubmit, "Submit");
+                  },
+                ),
                 SizedBox(height: 20),
               ],
             ),
@@ -331,6 +418,4 @@ class _CameraPageState extends State<CameraPage> {
       ),
     );
   }
-
-
 }

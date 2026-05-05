@@ -3,7 +3,7 @@ import 'package:progress_group/features/contact/domain/entities/activity/activit
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_visit_params.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/attachment_entity.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/upload_attachment_params.dart';
-import '../entities/activity/activity.dart';
+import '../entities/activity/activity_entity.dart';
 import '../entities/contact/contact.dart';
 import '../entities/contact/contact_response.dart';
 import '../entities/activity/create_activity_params.dart';
@@ -21,7 +21,7 @@ abstract class ContactRepository {
   Future<Either<String, void>> updateContact(int id, CreateContactParams params);
   Future<Either<String, void>> createContact(CreateContactParams params);
   Future<Either<String, void>> deleteContact(int id);
-  Future<Either<String, List<Activity>>> getActivities({required int contactId,int? dealId,String? activityType,int page = 1,});
+  Future<Either<String, List<ActivityEntity>>> getActivities({int? contactId, int? dealId, String? activityType, String? followUpStartDate, String? followUpEndDate, int page = 1,});
   Future<Either<String, void>> createActivityVisit(CreateVisitParams params);
   Future<Either<String, void>> createActivity(CreateActivityParams params);
   Future<Either<String, List<ActivityProspectStatusEntity>>> getActivityProspectStatus(int contactId);

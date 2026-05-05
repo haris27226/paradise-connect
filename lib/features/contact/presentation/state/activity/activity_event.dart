@@ -10,20 +10,24 @@ abstract class ActivityEvent extends Equatable {
 }
 
 class FetchActivitiesEvent extends ActivityEvent {
-  final int contactId;
+  final int? contactId;
   final int? dealId;
   final String? activityType;
+  final String? followUpStartDate;
+  final String? followUpEndDate;
   final bool isRefresh;
 
   const FetchActivitiesEvent({
-    required this.contactId,
+    this.contactId,
     this.dealId,
     this.activityType,
+    this.followUpStartDate,
+    this.followUpEndDate,
     this.isRefresh = false,
   });
 
   @override
-  List<Object?> get props => [contactId, dealId, activityType, isRefresh];
+  List<Object?> get props => [contactId, dealId, activityType, followUpStartDate, followUpEndDate, isRefresh];
 }
 
 class CreateActivityEvent extends ActivityEvent {

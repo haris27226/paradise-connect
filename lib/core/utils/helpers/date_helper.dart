@@ -46,6 +46,10 @@ class DateHelper {
     return DateFormat('yyyy-MM-dd').format(date);
   }
 
+  static String formatToIndonesian(DateTime date) {
+    return DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(date);
+  }
+
   static String nowDay() {
     return formatDay(DateTime.now());
   }

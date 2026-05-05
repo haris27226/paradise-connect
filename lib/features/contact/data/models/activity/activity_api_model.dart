@@ -1,6 +1,6 @@
-import '../../../domain/entities/activity/activity.dart';
+import '../../../domain/entities/activity/activity_entity.dart';
 
-class ActivityApiModel extends Activity {
+class ActivityApiModel extends ActivityEntity {
 
    ActivityApiModel({
     required super.activityId,
@@ -12,7 +12,16 @@ class ActivityApiModel extends Activity {
     super.nextFollowUpDate,
     required super.createdBy,
     required super.createdAt,
-   super.imagePath,
+    super.imagePath,
+    super.imagePaths,
+    super.phoneNumber,
+    super.whatsappNumber,
+    super.waId,
+    super.contactName,
+    super.jid,
+    super.isGroup,
+    super.initials,
+    super.sessionCode,
   });
 
   factory ActivityApiModel.fromJson(Map<String, dynamic> json) {
@@ -27,6 +36,15 @@ class ActivityApiModel extends Activity {
       createdBy: json['created_by'],
       createdAt: json['created_at'] ?? '',
       imagePath: json['image_path'],
+      imagePaths: json['image_paths'] != null ? List<String>.from(json['image_paths']) : null,
+      phoneNumber: json['phone_number'],
+      whatsappNumber: json['whatsapp_number'],
+      waId: json['id'],
+      contactName: json['name'] ?? json['contact_name'],
+      jid: json['jid'],
+      isGroup: json['isGroup'],
+      initials: json['initials'],
+      sessionCode: json['sessionCode'],
     );
   }
 }

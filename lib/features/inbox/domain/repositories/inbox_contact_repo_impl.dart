@@ -13,8 +13,24 @@ class InboxContactRepositoryImpl implements InboxContactRepository {
   InboxContactRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<(List<InboxContact> contacts, List<InboxContact> groups)> getContacts({String? search,int? cPage,int? gPage}) async {
-    final result = await remoteDataSource.getInboxContacts(search: search,cPage: cPage,gPage: gPage);
+  Future<(List<InboxContact> contacts, List<InboxContact> groups)> getContacts({
+    String? search,
+    int? cPage,
+    int? gPage,
+    int? salesExecutiveId,
+    int? statusProspectId,
+    String? startDate,
+    String? endDate,
+  }) async {
+    final result = await remoteDataSource.getInboxContacts(
+      search: search,
+      cPage: cPage,
+      gPage: gPage,
+      salesExecutiveId: salesExecutiveId,
+      statusProspectId: statusProspectId,
+      startDate: startDate,
+      endDate: endDate,
+    );
 
     final response = BaseResponse<Map<String, dynamic>>.fromJson(result,(data) => data,);
 

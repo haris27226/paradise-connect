@@ -1,12 +1,12 @@
 import 'package:equatable/equatable.dart';
+import 'package:progress_group/features/contact/domain/entities/activity/activity_entity.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/activity_prospect_status.dart';
-import '../../../domain/entities/activity/activity.dart';
 
 enum ActivityStatus { initial, loading, loaded, error, creating, createSuccess }
 
 class ActivityState extends Equatable {
   final ActivityStatus status;
-  final List<Activity> activities;
+  final List<ActivityEntity> activities;
   final String? errorMessage;
   final int currentPage;
   final bool hasReachedMax;
@@ -21,7 +21,7 @@ class ActivityState extends Equatable {
 
   ActivityState copyWith({
     ActivityStatus? status,
-    List<Activity>? activities,
+    List<ActivityEntity>? activities,
     String? errorMessage,
     int? currentPage,
     bool? hasReachedMax,
