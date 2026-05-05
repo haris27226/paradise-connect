@@ -9,6 +9,8 @@ class AttachmentCubit extends Cubit<AttachmentState> {
 
   AttachmentCubit(this.getAttachments, this.deleteAttachmentUseCase) : super(AttachmentInitial());
 
+  void reset() => emit(AttachmentInitial());
+
   Future<void> fetch(int contactId, int? dealId) async {
     emit(AttachmentLoading());
 

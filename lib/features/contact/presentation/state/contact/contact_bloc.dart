@@ -27,7 +27,14 @@ class ContactBloc extends Bloc<ContactEvent, ContactState> {
     on<FetchContactDetailEvent>(_onFetchContactDetail);
     on<UpdateContactEvent>(_onUpdateContact);
     on<DeleteContactEvent>(_onDeleteContact);
+    on<ClearContactDetailEvent>((event, emit) => emit(state.copyWith(
+          contactDetail: null,
+          status: ContactStatus.initial,
+        )));
+    on<ClearContactsEvent>((event, emit) => emit(const ContactState()));
   }
+
+
 
   Future<void> _onFetchContacts(
     FetchContactsEvent event,

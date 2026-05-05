@@ -100,6 +100,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadData() async {
+    await _getTask();
     if (mounted) {
       context.read<ReportBloc>().add(
         GetVolumeReportEvent(
@@ -131,14 +132,18 @@ class _HomePageState extends State<HomePage> {
       });
     } catch (e) {
     }
-    _getTask();
-
-
   }
 
 
   Future<void> _getTask() async {
-    context.read<ActivityBloc>().add(const FetchActivitiesEvent(isRefresh: true));
+    final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    context.read<ActivityBloc>().add(
+      FetchActivitiesEvent(
+        followUpStartDate: todayStr,
+        followUpEndDate: todayStr,
+        isRefresh: true,
+      ),
+    );
   }
 
   @override
@@ -174,7 +179,7 @@ class _HomePageState extends State<HomePage> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
                         decoration: BoxDecoration(
-                          color: Color(grey1Color),
+                          color: Color(grey10Color),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
@@ -304,7 +309,7 @@ class _HomePageState extends State<HomePage> {
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
-                  decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Color(grey1Color)))),
+                  decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Color(grey10Color)))),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -319,7 +324,8 @@ class _HomePageState extends State<HomePage> {
                             crossAxisAlignment:CrossAxisAlignment.start,
                             children: [
                               Text(activity.activityType, style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold,color: Color(blackColor),decoration: isCompleted ? TextDecoration.lineThrough : null)),
-                              Text(activity.nextFollowUpDate != null ? DateHelper.formatToIndonesian(DateTime.parse(activity.nextFollowUpDate!)) : "No follow-up date",style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold,color: Color(grey2Color)))
+                              Text(activity.contactName ?? "Unknown",style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold,color: Color(grey2Color))),
+                              Text(activity.nextFollowUpDate != null ? DateHelper.formatToIndonesian(DateTime.parse(activity.nextFollowUpDate!)) : "No follow-up date",style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold,color: Color(grey2Color))),
                             ],
                           ),
                         ],

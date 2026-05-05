@@ -144,18 +144,42 @@ class _ContactFormPageState extends State<ContactFormPage> {
   }
 
   void _init() async {
-    if (widget.args.page == 1 && widget.args.dataContact != null) {
-      await _fillForm(widget.args.dataContact!);
+    final contactId = widget.args.dataContact?.contactId;
+    final contactState = context.read<ContactBloc>().state;
+    final currentDetail = contactState.contactDetail;
+    
+    // Check if we already have the correct detail in state
+    final hasLatestDetail = currentDetail != null && currentDetail.contactId == contactId;
+
+    if (widget.args.page == 1) {
+      // Edit mode: Use latest detail from bloc if available, otherwise fallback to args
+      if (hasLatestDetail) {
+        await _fillForm(currentDetail);
+      } else if (widget.args.dataContact != null) {
+        await _fillForm(widget.args.dataContact!);
+      }
     } else if (widget.args.page == 2 && widget.args.dataContact != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.read<ContactBloc>().add(
-          FetchContactDetailEvent(widget.args.dataContact!.contactId),
-        );
-      });
+      // About tab (View mode): 
+      // If we already have the detail in bloc, just fill form.
+      // If not, fetch it.
+      if (hasLatestDetail) {
+        await _fillForm(currentDetail);
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          context.read<ContactBloc>().add(
+            FetchContactDetailEvent(contactId!),
+          );
+        });
+      }
     }
 
-    context.read<ProspectStatusBloc>().add(FetchProspectStatusesEvent());
-    context.read<ContactPropertiesBloc>().add(FetchContactPropertiesEvent());
+    if (context.read<ProspectStatusBloc>().state.status != ProspectStatusEnum.loaded) {
+      context.read<ProspectStatusBloc>().add(FetchProspectStatusesEvent());
+    }
+    if (context.read<ContactPropertiesBloc>().state.status != ContactPropertiesStatus.loaded) {
+      context.read<ContactPropertiesBloc>().add(FetchContactPropertiesEvent());
+    }
+
 
     if (widget.args.page == 0 && widget.args.dataContact == null) {
       final today = DateHelper.formatNumericCompact(DateTime.now());
@@ -164,6 +188,26 @@ class _ContactFormPageState extends State<ContactFormPage> {
         if (firstApptDateTC.text.isEmpty) firstApptDateTC.text = today;
         if (firstVisitorDateTC.text.isEmpty) firstVisitorDateTC.text = today;
         if (fspTC.text.isEmpty) fspTC.text = today;
+        
+        // Defaults for Deal Value and Visit Count
+        if (dealValueTC.text.isEmpty) dealValueTC.text = "0";
+        if (vCountTC.text.isEmpty) vCountTC.text = "0";
+
+
+        selectedSalutation ??= "Mr.";
+        selectFirstProject ??= itemsProject.first.name;
+        selectFirstProjectCategory ??= itemsProjectCategory.first.name;
+        final firstProducts = projectData[selectFirstProject]?[selectFirstProjectCategory] ?? [];
+        if (firstProducts.isNotEmpty) {
+          selectFirstProjectProduct ??= firstProducts.first;
+        }
+
+        selectLastProject ??= itemsLastProject.first.name;
+        selectLastProjectCategory ??= itemsLastProjectCategory.first.name;
+        final lastProducts = projecLasttData[selectLastProject]?[selectLastProjectCategory] ?? [];
+        if (lastProducts.isNotEmpty) {
+          selectLastProjectProduct ??= lastProducts.first;
+        }
       });
     }
   }
@@ -199,24 +243,30 @@ class _ContactFormPageState extends State<ContactFormPage> {
     fspTC.text = _formatFromContact(contact.firstSpDate);
     lspTC.text = _formatFromContact(contact.lastSpDate);
 
-
-    if ((contact.projectName ?? '').isNotEmpty)
-      selectedProject = contact.projectName;
-    if ((contact.blokNo ?? '').isNotEmpty) fBlockNoTC.text = contact.blokNo!;
-
-    try {
-      print(
-        'DEBUG: _fillForm contact.ownerId=${contact.ownerId}, statusProspectId=${contact.statusProspectId}',
-      );
-    } catch (e) {}
-
+    print("data contact: $contact");
     setState(() {
       selectedSalutation = contact.salutation;
       selectedOwnerId = contact.ownerId;
-      selectedProject = contact.firstProject;
       selectedStatusId = contact.statusProspectId;
       selectedSalesExecutiveId = contact.salesExecutiveId;
       selectedSalesManagerId = contact.salesManagerId;
+      
+      // Update dropdowns if specific project/product info is available
+      if ((contact.projectName ?? '').isNotEmpty) {
+        selectFirstProject = contact.projectName;
+      }
+      if ((contact.firstProject ?? '').isNotEmpty) {
+        selectFirstProject = contact.firstProject;
+      }
+      if ((contact.lastProject ?? '').isNotEmpty) {
+        selectLastProject = contact.lastProject;
+      }
+      
+      if ((contact.blokNo ?? '').isNotEmpty) {
+        fBlockNoTC.text = contact.blokNo!;
+      }
+
+
 
       final profileState = context.read<ProfileBloc>().state;
       if (profileState is ProfileLoaded) {
@@ -258,10 +308,11 @@ class _ContactFormPageState extends State<ContactFormPage> {
           return null;
         }
 
-        selectedOwnerName = findName(selectedOwnerId);
-        selectedSalesExecutiveName = findName(selectedSalesExecutiveId);
-        selectedSalesManagerName = findName(selectedSalesManagerId);
+        selectedOwnerName = contact.ownerName ?? findName(selectedOwnerId);
+        selectedSalesExecutiveName = contact.salesExecutiveName ?? findName(selectedSalesExecutiveId);
+        selectedSalesManagerName = contact.salesManagerName ?? findName(selectedSalesManagerId);
       }
+
 
       final statusState = context.read<ProspectStatusBloc>().state;
       if (statusState.status == ProspectStatusEnum.loaded) {
@@ -656,13 +707,27 @@ class _ContactFormPageState extends State<ContactFormPage> {
           );
         } else if (state.status == ContactStatus.createSuccess) {
           context.pop(); // Close loading
-          context.read<ContactBloc>().add(
-            const FetchContactsEvent(isRefresh: true),
-          );
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Contact created successfully')),
-          );
-          context.pop(); // Go back
+          
+          if (widget.args.page == 1) {
+            // If editing, go back to detail page and preserve/set tab
+            context.goNamed(
+              'detailContact',
+              extra: ContactDetailArgs(
+                dataContact: widget.args.dataContact,
+                initialTab: widget.args.initialTab,
+              ),
+            );
+          } else {
+
+            context.read<ContactBloc>().add(
+              const FetchContactsEvent(isRefresh: true),
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Contact created successfully')),
+            );
+            context.pop(); // Go back to list
+          }
+
         } else if (state.status == ContactStatus.detailLoaded &&
             state.contactDetail != null) {
           _fillForm(state.contactDetail!);
@@ -686,12 +751,20 @@ class _ContactFormPageState extends State<ContactFormPage> {
           ),
           BlocListener<ProspectStatusBloc, ProspectStatusState>(
             listener: (context, state) {
-              if (state.status == ProspectStatusEnum.loaded &&
-                  widget.args.page != 0) {
-                final contact =
-                    context.read<ContactBloc>().state.contactDetail ??
-                    widget.args.dataContact;
-                if (contact != null) _fillForm(contact);
+              if (state.status == ProspectStatusEnum.loaded) {
+                if (widget.args.page == 0 && selectedStatusId == null && state.statuses.isNotEmpty) {
+                  setState(() {
+                    selectedStatusId = state.statuses.first.statusProspectId;
+                    selectedStatusProspectName = state.statuses.first.statusProspectName;
+                  });
+                }
+
+                if (widget.args.page != 0) {
+                  final contact =
+                      context.read<ContactBloc>().state.contactDetail ??
+                      widget.args.dataContact;
+                  if (contact != null) _fillForm(contact);
+                }
               }
             },
           ),
@@ -1302,11 +1375,12 @@ class _ContactFormPageState extends State<ContactFormPage> {
       onTap: isReadOnly ? _goToEdit : onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        height: 50,
+        constraints: const BoxConstraints(minHeight: 50),
+
         decoration: BoxDecoration(
           color: Color(whiteColor),
           border: Border(
-            bottom: BorderSide(width: 1, color: Color(grey10Color)),
+            bottom: BorderSide(width: 1, color: Color(grey9Color)),
           ),
         ),
         child: Row(
@@ -1314,6 +1388,8 @@ class _ContactFormPageState extends State<ContactFormPage> {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+
                 children: [
                   if (!isEmpty)
                     Text(
@@ -1324,6 +1400,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+
                   Text(
                     isEmpty ? label : value,
                     style: TextStyle(
@@ -1342,14 +1419,20 @@ class _ContactFormPageState extends State<ContactFormPage> {
     );
   }
 
-  void _goToEdit() {
-    context.pushNamed(
+  void _goToEdit() async {
+    await context.pushNamed(
       'formContact',
       extra: ContactDetailArgs(
         page: 1,
         dataContact: widget.args.dataContact,
+        initialTab: 1,
       ),
     );
+    if (mounted && widget.args.dataContact != null) {
+      context.read<ContactBloc>().add(
+        FetchContactDetailEvent(widget.args.dataContact!.contactId),
+      );
+    }
   }
 
   Widget _buildField({  required String label,  required TextEditingController controller,  required FocusNode focusNode,  String fieldType = 'text',}) {
@@ -1359,17 +1442,19 @@ class _ContactFormPageState extends State<ContactFormPage> {
       onTap: isReadOnly ? _goToEdit : null,
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 5, horizontal: 16),
-        height: 50,
+        constraints: const BoxConstraints(minHeight: 50),
+
         decoration: BoxDecoration(
           color: Color(whiteColor),
-          border:
-              Border(bottom: BorderSide(width: 1, color: Color(grey10Color))),
+          border:Border(bottom: BorderSide(width: 1, color: Color(grey9Color))),
         ),
         child: Row(
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+
                 children: [
                   Builder(
                     builder: (context) {
@@ -1398,6 +1483,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
                               controller: controller,
                               focusNode: focusNode,
                               readOnly: isReadOnly,
+                              maxLines: null,
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Color(blackColor),
@@ -1407,7 +1493,16 @@ class _ContactFormPageState extends State<ContactFormPage> {
                                 isDense: true,
                                 label: Text(
                                   label,
-                                  style: TextStyle(fontSize: 12),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(grey2Color),
+                                  ),
+                                ),
+                                floatingLabelStyle: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(grey2Color),
                                 ),
                                 border: InputBorder.none,
                                 enabledBorder: InputBorder.none,
@@ -1428,6 +1523,8 @@ class _ContactFormPageState extends State<ContactFormPage> {
                           focusNode: focusNode,
                           readOnly: isReadOnly,
                           enabled: !isReadOnly,
+                          maxLines: null,
+
                           inputFormatters: [
                             FilteringTextInputFormatter.digitsOnly,
                           ],
@@ -1439,7 +1536,22 @@ class _ContactFormPageState extends State<ContactFormPage> {
                           ),
                           decoration: InputDecoration(
                             isDense: true,
-                            label: Text(label, style: TextStyle(fontSize: 12)),
+                            label: Text(
+                              label,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Color(grey2Color),
+                              ),
+                            ),
+                            floatingLabelStyle: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(grey2Color),
+                            ),
+
+
+
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: InputBorder.none,
@@ -1456,6 +1568,8 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         focusNode: focusNode,
                         readOnly: isReadOnly,
                         enabled: !isReadOnly,
+                        maxLines: null,
+
                         style: TextStyle(
                           fontSize: 12,
                           color: Color(blackColor),
@@ -1463,7 +1577,22 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         ),
                         decoration: InputDecoration(
                           isDense: true,
-                          label: Text(label, style: TextStyle(fontSize: 12)),
+                          label: Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(grey2Color),
+                            ),
+                          ),
+                          floatingLabelStyle: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(grey2Color),
+                          ),
+
+
+
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,

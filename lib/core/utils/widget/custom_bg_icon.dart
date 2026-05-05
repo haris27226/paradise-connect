@@ -29,7 +29,7 @@ class BgIcon extends StatelessWidget {
           width: 44,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: Color(grey8Color),
+            color: Color(grey11Color),
             borderRadius: BorderRadius.circular(14),
           ),
           child: asset != null && asset!.isNotEmpty

@@ -17,18 +17,19 @@ const int chartBarBgColor = 0xFFF3E5F5;
 const int chartLineColor = 0xFFF44336;
 const int chartAreaColor = 0xFFFF9800;
 
-const int grey1Color = 0xFFE6EDF5;
-const int grey2Color = 0xFF7D8592;
-const int grey3Color = 0xFF8D94A0;
-const int grey4Color = 0xFFD8E0F0;
-const int grey5Color = 0xFF7D8593;
-const int grey6Color = 0xFFF4F1FD;
-const int grey7Color = 0xFF91929E;
-const int grey8Color = 0xFFF3F8FC;
-const int grey9Color = 0xFF615E83;
-const int grey10Color = 0xFFE1E7F3;
-const int grey11Color = 0xFFD8DDE6;
-const int grey12Color = 0xFF979797;
+
+const int grey1Color  = 0xFF615E83; 
+const int grey2Color  = 0xFF7D8592;
+const int grey3Color  = 0xFF7D8593;
+const int grey4Color  = 0xFF8D94A0;
+const int grey5Color  = 0xFF91929E;
+const int grey6Color = 0xFF979797;
+const int grey7Color = 0xFFD8DDE6;
+const int grey8Color  = 0xFFD8E0F0;
+const int grey9Color = 0xFFE1E7F3;
+const int grey10Color  = 0xFFE6EDF5;
+const int grey11Color  = 0xFFF3F8FC;
+const int grey12Color  = 0xFFF4F1FD; 
 
 const int whiteColor = 0xFFFFFFFF;
 const int blackColor = 0xFF000000;

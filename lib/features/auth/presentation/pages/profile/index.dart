@@ -368,7 +368,7 @@ class _ProfilePageState extends State<ProfilePage> {
           fillColor: Colors.grey[50],
           hintStyle: TextStyle(
             fontSize: 14,
-            color: Color(grey3Color),
+            color: Color(grey4Color),
           ),
           border: _border(),
           enabledBorder: _border(),
@@ -384,9 +384,9 @@ class _ProfilePageState extends State<ProfilePage> {
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Color(grey11Color),
+        color: Color(grey7Color),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Color(grey4Color)),
+        border: Border.all(color: Color(grey8Color)),
       ),
       child: Text(
         value,
@@ -399,7 +399,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
       borderSide: BorderSide(
-        color: color ?? Color(grey4Color),
+        color: color ?? Color(grey8Color),
         width: width,
       ),
     );

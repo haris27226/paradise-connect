@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:progress_group/core/constants/colors.dart';
+import 'package:progress_group/core/utils/helpers/image_url.dart';
 import 'package:progress_group/features/attandance/domain/entities/attandance_entity.dart';
 import 'package:progress_group/features/attandance/presentation/state/attandance/attendance_bloc.dart';
 import 'package:progress_group/features/attandance/presentation/state/attandance/attendance_event.dart';
@@ -320,8 +321,9 @@ class _AttandancePageState extends State<AttandancePage> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-      child: GestureDetector(
-        onTap: _showAttendanceDialog,
+      child: Container(
+          color: Colors.transparent,
+
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -331,7 +333,7 @@ class _AttandancePageState extends State<AttandancePage> {
               width: 70,
               height: 40,
               decoration: BoxDecoration(
-                color: Color(grey10Color),
+                color: Color(grey9Color),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Column(
@@ -344,23 +346,58 @@ class _AttandancePageState extends State<AttandancePage> {
             ),
 
             /// CLOCK IN
-            Column(
-              children: [
-                Icon(Icons.access_time_filled, size: 17, color: Color(greenPercentColor)),
-                Text(formatTime(item.clockIn)),
-                // Text("${item.checkInActivity}")
-              ],
+            GestureDetector(
+              onTap: item.clockIn != null
+                  ? () => _showAttendanceDialog(item, 0)
+                  : null,
+              child: Column(
+                children: [
+                  // if (item.fileAttchment0 != null &&
+                  //     item.fileAttchment0!.isNotEmpty)
+                  //   Padding(
+                  //     padding: const EdgeInsets.only(bottom: 4),
+                  //     child: ClipRRect(
+                  //       borderRadius: BorderRadius.circular(4),
+                  //       child: Image.network(
+                  //         convertDriveUrl(item.fileAttchment0!.first),
+                  //         width: 35,
+                  //         height: 35,
+                  //         fit: BoxFit.cover,
+                  //         errorBuilder: (context, error, stackTrace) =>
+                  //             Container(
+                  //           width: 35,
+                  //           height: 35,
+                  //           color: Colors.grey.shade200,
+                  //           child: const Icon(Icons.image, size: 20),
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ),
+                  Icon(Icons.access_time_filled,
+                      size: 17, color: Color(greenPercentColor)),
+                  Text(formatTime(item.clockIn)),
+                ],
+              ),
             ),
 
-            Container(width: 2, height: 40, color: Color(grey10Color)),
+            Container(width: 2, height: 40, color: Color(grey9Color)),
 
             /// CLOCK OUT
-            Column(
-              children: [
-                Icon(Icons.access_time_filled, size: 17, color: Color(redPeriodColor)),
-                Text(formatTime(item.clockOut)),
-              ],
+            GestureDetector(
+              onTap: item.clockOut != null
+                  ? () => _showAttendanceDialog(item, 1)
+                  : null,
+              child: Column(
+                children: [
+                 
+                  Icon(Icons.access_time_filled,
+                      size: 17, color: Color(redPeriodColor)),
+                  Text(formatTime(item.clockOut)),
+                ],
+              ),
             ),
+
+
           ],
         ),
       ),
@@ -398,7 +435,7 @@ class _AttandancePageState extends State<AttandancePage> {
 
   Widget _buildFloatingCard() {
     return Positioned(
-     top: 55, 
+      top: 55,
       left: 16,
       right: 16,
       child: Container(
@@ -407,54 +444,74 @@ class _AttandancePageState extends State<AttandancePage> {
           color: Color(whiteColor),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Column(
-          children: [
-            _buildTabBar(),
-            SizedBox(height: 5),
-            _buildPageView(),
-          ],
+        child: BlocBuilder<AttendanceBloc, AttendanceState>(
+          builder: (context, state) {
+            AttendanceEntity? today;
+            if (state is AttendanceLoaded && state.data.isNotEmpty) {
+              final now = DateTime.now();
+              final todayStr = DateFormat('yyyy-MM-dd').format(now);
+              try {
+                today = state.data.firstWhere((e) => e.date == todayStr);
+              } catch (_) {
+                // Not found
+              }
+            }
+            return Column(
+              children: [
+                _buildTabBar(),
+                const SizedBox(height: 5),
+                _buildPageView(today),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
 
-Widget _buildTabBar() {
-  const double height = 45;
-  final tabs = ["Clock In", "Check In", "Clock Out"];
 
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 10),
-    child: SizedBox(
-      height: height,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final tabWidth = constraints.maxWidth / 2.6;
+  Widget _buildTabBar() {
+    const double height = 45;
+    final tabs = ["Clock In", "Check In", "Clock Out"];
 
-          final page = _pageController.hasClients? (_pageController.page ?? 0): selectedIndex.toDouble();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(height / 2),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final tabWidth = constraints.maxWidth / 2.7;
 
-          List<int> order = [0, 1, 2];
-          order.sort((a, b) {
-            return (b - page).abs().compareTo((a - page).abs());
-          });
+            final page = _pageController.hasClients? (_pageController.page ?? 0): selectedIndex.toDouble();
 
-          return Stack(
-            children: order.map((index) {
-              return _buildStackTab(
-                index: index,
-                left: index * (tabWidth - 25),
-                tabWidth: tabWidth,
-                height: height,
-                tabs: tabs,
-                page: page,
-              );
-            }).toList(),
-          );
-        },
+            List<int> order = [0, 1, 2];
+            order.sort((a, b) {
+              return (b - page).abs().compareTo((a - page).abs());
+            });
+
+            return Stack(
+              children: order.map((index) {
+                return _buildStackTab(
+                  index: index,
+                  left: index * (tabWidth - 25),
+                  tabWidth: tabWidth,
+                  height: height,
+                  tabs: tabs,
+                  page: page,
+                );
+              }).toList(),
+            );
+          },
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
+
 
   Widget _buildStackTab({required int index,required double left,required double tabWidth,required double height,required List<String> tabs,required double page,}) {
     final isActive = (page - index).abs() < 0.5;
@@ -469,15 +526,15 @@ Widget _buildTabBar() {
           height: height,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isActive? Color(primaryColor): (index == 1? Colors.grey.shade300: Colors.grey.shade200),
-           borderRadius: BorderRadius.circular(20),
-            boxShadow: [
+            color: isActive? Color(primaryColor): Colors.transparent,
+           borderRadius: BorderRadius.circular(height / 2),
+            boxShadow: isActive ? [
               BoxShadow(
-                color: Colors.black.withOpacity(isActive ? 0.15 : 0.05),
-                blurRadius: isActive ? 10 : 4,
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
                 offset: const Offset(0, 2),
               )
-            ],
+            ] : [],
           ),
           child: Text(
             tabs[index],
@@ -493,7 +550,8 @@ Widget _buildTabBar() {
   }
 
 
-  Widget _buildPageView() {
+
+  Widget _buildPageView(AttendanceEntity? today) {
     return SizedBox(
       height: 190,
       child: PageView(
@@ -503,29 +561,61 @@ Widget _buildTabBar() {
           setState(() => selectedIndex = index);
         },
         children: [
-          _buildClockIn(),   
-          _buildCheckInActivity(),
-          _buildClockOut(),
+          _buildClockIn(today),
+          _buildCheckInActivity(today),
+          _buildClockOut(today),
         ],
       ),
     );
   }
 
-  Widget _buildCheckInActivity(){
-    return _buildCheckForm(title: "Check In", flagParam: 6);
+
+  Widget _buildCheckInActivity(AttendanceEntity? today) {
+    return _buildCheckForm(
+      title: "Check In",
+      flagParam: 6,
+      image: (today?.fileAttchment6 != null && today!.fileAttchment6!.isNotEmpty)
+          ? today.fileAttchment6!.first
+          : null,
+    );
   }
+
   
-  Widget _buildCheckForm({required String title,required int flagParam}) {
+  Widget _buildCheckForm({
+    required String title,
+    required int flagParam,
+    String? image,
+  }) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        if (image != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                convertDriveUrl(image),
+                width: 50,
+                height: 50,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 50,
+                  height: 50,
+                  color: Colors.grey.shade200,
+                  child: const Icon(Icons.broken_image, size: 20),
+                ),
+              ),
+            ),
+          ),
         Text(
           DateHelper.formatTime(DateTime.now()),
+
           style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
         ),
         Text(
           DateHelper.formatDayDate(DateTime.now()),
-          style: TextStyle(fontSize: 11, color: Color(grey12Color)),
+          style: TextStyle(fontSize: 11, color: Color(grey6Color)),
         ),
         SizedBox(height: 8),
 
@@ -579,22 +669,54 @@ Widget _buildTabBar() {
         SizedBox(height: 12),
         Text(
           "Please $title!",
-          style: TextStyle(fontSize: 12, color: Color(grey12Color)),
+          style: TextStyle(fontSize: 12, color: Color(grey6Color)),
         ),
       ],
     );
   }  
 
-  Widget _buildClockOut() {
-    return _buildCheckForm(title: "Clock Out",flagParam: 1);
+  Widget _buildClockOut(AttendanceEntity? today) {
+    return _buildCheckForm(
+      title: "Clock Out",
+      flagParam: 1,
+      image: (today?.fileAttchment1 != null && today!.fileAttchment1!.isNotEmpty)
+          ? today.fileAttchment1!.last
+          : null,
+    );
   }
 
-  Widget _buildClockIn() {
-    return _buildCheckForm(title: "Clock In", flagParam: 0);
+  Widget _buildClockIn(AttendanceEntity? today) {
+    return _buildCheckForm(
+      title: "Clock In",
+      flagParam: 0,
+      image: (today?.fileAttchment0 != null && today!.fileAttchment0!.isNotEmpty)
+          ? today.fileAttchment0!.first
+          : null,
+    );
   }
+
 
     
-  void _showAttendanceDialog() {
+  void _showAttendanceDialog(AttendanceEntity item, int flag) {
+    final String timeValue = flag == 0 ? item.clockIn ?? "-" : item.clockOut ?? "-";
+    final List<String>? images =
+        flag == 0 ? item.fileAttchment0 : item.fileAttchment1;
+    final String note = flag == 0 ? item.note0 ?? "-" : item.note1 ?? "-";
+    final String location =
+        flag == 0 ? item.location0 ?? "-" : item.location1 ?? "-";
+
+    String formatTime(String? value) {
+      if (value == null || value == "-") return "-";
+      final dt = DateTime.parse(value);
+      return DateFormat('hh:mm a').format(dt);
+    }
+
+    final String displayTime = formatTime(timeValue);
+    final String? displayImage =
+        (images != null && images.isNotEmpty) 
+            ? (flag == 0 ? images.first : images.last) 
+            : null;
+
     showDialog(
       context: context,
       barrierColor: Colors.black54,
@@ -605,7 +727,7 @@ Widget _buildTabBar() {
             borderRadius: BorderRadius.circular(20),
           ),
           child: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.6,
+            width: MediaQuery.of(context).size.width * 0.7,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -613,23 +735,50 @@ Widget _buildTabBar() {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: Image.network(
-                      "https://i.pravatar.cc/150?img=1",
-                      width: double.infinity,
-                      height: 180,
-                      fit: BoxFit.cover,
-                    ),
+                    child: displayImage != null
+                        ? Image.network(
+                            convertDriveUrl(displayImage),
+                            width: double.infinity,
+                            height: 180,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                              height: 180,
+                              color: Colors.grey.shade200,
+                              child: const Icon(Icons.broken_image, size: 50),
+                            ),
+                          )
+                        : Container(
+                            height: 180,
+                            color: Colors.grey.shade200,
+                            child: const Icon(Icons.image, size: 50),
+                          ),
                   ),
-                  SizedBox(height: 16),
-                  _buildInfoRow(Icons.access_time_filled,"08.00 AM",Color(greenPercentColor),),
-                  SizedBox(height: 8),
-                  _buildInfoRow(Icons.calendar_today,DateHelper.formatDayDate(DateTime.now()),Color(primaryColor),),
-                  SizedBox(height: 8),
-                  _buildInfoRow(Icons.map,"Sunter, Jakarta Utara",Color(primaryColor),),
-                  SizedBox(height: 8),
-                  _buildInfoRow(Icons.notes,"---",Color(primaryColor),),
-                  SizedBox(height: 20),
-      
+                  const SizedBox(height: 16),
+                  _buildInfoRow(
+                    Icons.access_time_filled,
+                    displayTime,
+                    Color(flag == 0 ? greenPercentColor : redPeriodColor),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildInfoRow(
+                    Icons.calendar_today,
+                    DateHelper.formatDayDate(DateTime.parse(item.date)),
+                    Color(primaryColor),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildInfoRow(
+                    Icons.map,
+                    location,
+                    Color(primaryColor),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildInfoRow(
+                    Icons.notes,
+                    note,
+                    Color(primaryColor),
+                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -638,6 +787,7 @@ Widget _buildTabBar() {
       },
     );
   }
+
 
   Widget _buildInfoRow(IconData icon, String text, Color color) {
     return Row(

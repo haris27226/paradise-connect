@@ -200,8 +200,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         counterText: "",
                         filled: true,
                         fillColor: Colors.grey[50],
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(grey4Color),width: 1)),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(grey4Color),width: 1)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(grey8Color),width: 1)),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(grey8Color),width: 1)),
                         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(primaryColor),width: 1.5)),
                         errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(redPeriodColor),width: 1.5)),
                         focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(redPeriodColor),width: 1.5)),
@@ -244,7 +244,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 decoration: InputDecoration(
                   hintText: '••••••••',
                   filled: true,
-                  hintStyle: TextStyle(fontSize: 14,fontWeight: FontWeight.w400,color: Color(grey3Color)),
+                  hintStyle: TextStyle(fontSize: 14,fontWeight: FontWeight.w400,color: Color(grey4Color)),
                   fillColor: Colors.grey[50],
                   suffixIcon: IconButton(
                     icon: Icon(_isObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
@@ -254,8 +254,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       });
                     },
                   ),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(grey4Color),width: 1)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(grey4Color),width: 1)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(grey8Color),width: 1)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(grey8Color),width: 1)),
                   focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(primaryColor),width: 1.5)),
                   errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(redPeriodColor),width: 1.5)),
                   focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(redPeriodColor),width: 1.5)),
@@ -282,7 +282,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 decoration: InputDecoration(
                   hintText: '••••••••',
                   filled: true,
-                  hintStyle: TextStyle(fontSize: 14,fontWeight: FontWeight.w400,color: Color(grey3Color)),
+                  hintStyle: TextStyle(fontSize: 14,fontWeight: FontWeight.w400,color: Color(grey4Color)),
                   fillColor: Colors.grey[50],
                   suffixIcon: IconButton(
                     icon: Icon(_isObscure2 ? Icons.visibility_off_outlined : Icons.visibility_outlined),
@@ -292,8 +292,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       });
                     },
                   ),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(grey4Color),width: 1)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(grey4Color),width: 1)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(grey8Color),width: 1)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(grey8Color),width: 1)),
                   focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(primaryColor),width: 1.5)),
                   errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(redPeriodColor),width: 1.5)),
                   focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),borderSide: BorderSide(color: Color(redPeriodColor),width: 1.5)),
@@ -350,7 +350,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 hintStyle: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w400,
-                  color: Color(grey3Color),
+                  color: Color(grey4Color),
                 ),
                 prefixStyle: TextStyle(
                   fontSize: 16,
@@ -361,7 +361,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 fillColor: Colors.grey[50],
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: Color(grey4Color), width: 1),
+                  borderSide: BorderSide(color: Color(grey8Color), width: 1),
                 ),
               ),
             ),

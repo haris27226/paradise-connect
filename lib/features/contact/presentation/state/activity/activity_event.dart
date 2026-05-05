@@ -45,6 +45,8 @@ class CreateVisitEvent {
   CreateVisitEvent(this.params);
 }
 
+class ResetActivityEvent extends ActivityEvent {}
+
 abstract class ActivityProspectStatusEvent {}
 
 class FetchActivityProspectStatusEvent extends ActivityProspectStatusEvent {
@@ -52,3 +54,5 @@ class FetchActivityProspectStatusEvent extends ActivityProspectStatusEvent {
 
   FetchActivityProspectStatusEvent(this.contactId);
 }
+
+class ResetActivityProspectStatusEvent extends ActivityProspectStatusEvent {}

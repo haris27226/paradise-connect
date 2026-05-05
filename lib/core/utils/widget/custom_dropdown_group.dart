@@ -101,7 +101,7 @@ class _CustomDropdownGroupInboxState extends State<CustomDropdownGroupInbox> {
                                   height: 40,
                                   padding: EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Color(grey1Color),
+                                    color: Color(grey10Color),
                                     shape: BoxShape.circle,
 
                                   ),
@@ -235,7 +235,7 @@ class _CustomDropdownGroupContactState extends State<CustomDropdownGroupContact>
               widget.onTap?.call();
             },
             child: Container(
-              color: widget.bg != null ? Colors.transparent : Color(grey10Color) ,
+              color: widget.bg != null ? Colors.transparent : Color(grey9Color) ,
               height: 50,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(

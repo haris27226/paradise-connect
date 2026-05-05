@@ -25,7 +25,7 @@ void showCustomBottomSheet({ required BuildContext context, required Widget chil
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: Color(grey11Color),
+                    color: Color(grey7Color),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),

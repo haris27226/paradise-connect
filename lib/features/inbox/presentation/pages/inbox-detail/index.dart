@@ -216,7 +216,7 @@ class _InboxDetailPageState extends State<InboxDetailPage> {
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                     decoration: BoxDecoration(
-                                      color: Color(grey1Color).withOpacity(0.3),
+                                      color: Color(grey10Color).withOpacity(0.3),
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Text(
@@ -292,7 +292,7 @@ class _InboxDetailPageState extends State<InboxDetailPage> {
           // Avatar Lingkaran Admin/Agent
           CircleAvatar(
             radius: 22,
-            backgroundColor: Color(grey1Color),
+            backgroundColor: Color(grey10Color),
             child: Icon(Icons.support_agent, color: Color(blue3Color)),
           ),
         ],
@@ -316,7 +316,7 @@ class _InboxDetailPageState extends State<InboxDetailPage> {
               ? CircleAvatar(
                   radius: 22,
                   foregroundImage: NetworkImage(contactPhoto),
-                  backgroundColor: Color(grey1Color),
+                  backgroundColor: Color(grey10Color),
                   child: widget.args.data.initials.isNotEmpty
                       ? Text(widget.args.data.initials,
                           style: TextStyle(color: Color(blue3Color), fontWeight: FontWeight.bold))
@@ -340,7 +340,7 @@ class _InboxDetailPageState extends State<InboxDetailPage> {
                 Container(
                   padding: EdgeInsets.all((msg.mediaUrl != null && msg.mediaUrl!.isNotEmpty) ? 4 : 10),
                   decoration: BoxDecoration(
-                    color: Color(grey1Color).withOpacity(0.5),
+                    color: Color(grey10Color).withOpacity(0.5),
                     borderRadius: BorderRadius.circular(12).copyWith(
                       topLeft: Radius.zero,
                       topRight: const Radius.circular(12),
@@ -381,7 +381,7 @@ class _InboxDetailPageState extends State<InboxDetailPage> {
                   errorBuilder: (context, error, stackTrace) => Container(
                     width: MediaQuery.of(context).size.width * 0.6,
                     height: 150,
-                    color: Color(grey1Color),
+                    color: Color(grey10Color),
                     child: const Center(
                       child: Icon(Icons.broken_image, color: Colors.grey, size: 40),
                     ),
@@ -436,7 +436,7 @@ class _InboxDetailPageState extends State<InboxDetailPage> {
   Widget _detailAvatarPlaceholder() {
     return CircleAvatar(
       radius: 22, // diameter 44
-      backgroundColor: Color(grey1Color),
+      backgroundColor: Color(grey10Color),
       child: widget.args.data.initials.isNotEmpty
           ? Text(widget.args.data.initials, style: TextStyle(color: Color(blue3Color), fontWeight: FontWeight.bold))
           : Icon(widget.args.icon, color: Color(blue3Color)),

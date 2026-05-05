@@ -19,9 +19,15 @@ import 'package:progress_group/features/contact/presentation/state/attachment/up
 import 'package:progress_group/features/contact/presentation/state/contact/contact_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/contact/contact_event.dart';
 
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../../core/utils/widget/custom_bg_icon.dart';
 import '../../../../../core/utils/widget/custom_buttomsheet.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:progress_group/features/contact/presentation/widgets/contact_options_sheet.dart';
+
+
+
+
+
 
 class ContactDetailPage extends StatefulWidget {
   final ContactDetailArgs args;
@@ -43,12 +49,15 @@ class _ContactDetailPageState extends State<ContactDetailPage>
   final tabs = ["Activity", "About", "Attachment"];
   late TabController _tabController;
   int currentTab = 0;
+  final ScrollController _activityScrollController = ScrollController();
+
   
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: tabs.length, vsync: this);
+    currentTab = widget.args.initialTab;
+    _tabController = TabController(length: tabs.length, vsync: this, initialIndex: currentTab);
     _tabController.addListener(() {
       if (_tabController.index != currentTab) {
         setState(() {
@@ -56,13 +65,36 @@ class _ContactDetailPageState extends State<ContactDetailPage>
         });
       }
     });
+    _activityScrollController.addListener(_onActivityScroll);
     _init();
   }
+
+  void _onActivityScroll() {
+    if (_activityScrollController.position.pixels >=
+        _activityScrollController.position.maxScrollExtent - 200) {
+      final contactId = widget.args.dataContact?.contactId;
+      if (contactId != null) {
+        context.read<ActivityBloc>().add(
+              FetchActivitiesEvent(contactId: contactId),
+            );
+      }
+    }
+  }
+
 
   void _init() async {
     await _getActivity();
     await _getAttachment();
+    await _getContactDetail();
   }
+
+  Future<void> _getContactDetail() async {
+    final contactId = widget.args.dataContact?.contactId;
+    if (contactId != null) {
+      context.read<ContactBloc>().add(FetchContactDetailEvent(contactId));
+    }
+  }
+
 
   Future<void> _getActivity() async {
     final contactId = widget.args.dataContact?.contactId;
@@ -95,9 +127,16 @@ class _ContactDetailPageState extends State<ContactDetailPage>
 
   @override
   void dispose() {
+    context.read<ActivityBloc>().add(ResetActivityEvent());
+    context.read<ActivityProspectStatusBloc>().add(ResetActivityProspectStatusEvent());
+    context.read<AttachmentCubit>().reset();
+    context.read<ContactBloc>().add(ClearContactDetailEvent());
     _tabController.dispose();
+    _activityScrollController.dispose();
     super.dispose();
+
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -254,8 +293,14 @@ class _ContactDetailPageState extends State<ContactDetailPage>
                   index: currentTab,
                   children: [
                     _buildActivityContent(),
-                    currentTab == 1? ContactFormPage(args: ContactDetailArgs(dataContact: widget.args.dataContact,page: 2),): const CircularProgressIndicator(),
+                    ContactFormPage(
+                      args: ContactDetailArgs(
+                        dataContact: widget.args.dataContact,
+                        page: 2,
+                      ),
+                    ),
                     _buildAttachmentContent(),
+
                   ],
                 ),
               ),
@@ -283,7 +328,7 @@ class _ContactDetailPageState extends State<ContactDetailPage>
             ],
           ),
           SizedBox(height: 5),
-          _buildIconLink(icContactDetailPhone, "Phone", () {
+          ContactOptionsSheet.buildIconLink(context, icContactDetailPhone, "Phone", () {
             context.pushNamed(
               'addContact',
               extra: ContactDetailArgs(
@@ -293,7 +338,7 @@ class _ContactDetailPageState extends State<ContactDetailPage>
               ),
             );
           }),
-          _buildIconLink(icContactDetailWA, "WhatsApp", () {
+          ContactOptionsSheet.buildIconLink(context, icContactDetailWA, "WhatsApp", () {
             context.pushNamed(
               'addContact',
               extra: ContactDetailArgs(
@@ -303,7 +348,7 @@ class _ContactDetailPageState extends State<ContactDetailPage>
               ),
             );
           }),
-          _buildIconLink(icContactDetailMeeting, "Meeting", () {
+          ContactOptionsSheet.buildIconLink(context, icContactDetailMeeting, "Meeting", () {
             context.pushNamed(
               'addContact',
               extra: ContactDetailArgs(
@@ -313,7 +358,7 @@ class _ContactDetailPageState extends State<ContactDetailPage>
               ),
             );
           }),
-          _buildIconLink(icContactDetailReminder, "Task", () {
+          ContactOptionsSheet.buildIconLink(context, icContactDetailReminder, "Task", () {
             context.pushNamed(
               'addContact',
               extra: ContactDetailArgs(
@@ -323,7 +368,7 @@ class _ContactDetailPageState extends State<ContactDetailPage>
               ),
             );
           }),
-          _buildIconLink(icContactDetailVisit, "Visit", () {
+          ContactOptionsSheet.buildIconLink(context, icContactDetailVisit, "Visit", () {
             context.pushNamed(
               'addContact',
               extra: ContactDetailArgs(
@@ -333,9 +378,9 @@ class _ContactDetailPageState extends State<ContactDetailPage>
               ),
             );
           }),
-          _buildIconLink(
+          ContactOptionsSheet.buildIconLink(
+            context,
             icSidebarSalesKit,
-            color: Color(primaryColor),
             "Update Status Prospect",
             () {
               context.pushNamed(
@@ -347,48 +392,109 @@ class _ContactDetailPageState extends State<ContactDetailPage>
                 ),
               );
             },
+            color: Color(primaryColor),
           ),
+
         ],
       ),
     );
   }
 
   Widget _buildTabBar() {
-    return Container(
-      height: 40,
-      margin: EdgeInsets.symmetric(horizontal: 16),
-      padding: EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Color(grey1Color),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: TabBar(
-        onTap: (index) {
-          setState(() {
-            currentTab = index;
-          });
-        },
-        indicator: BoxDecoration(
-          color: Color(primaryColor),
-          borderRadius: BorderRadius.circular(24),
-        ),
-        indicatorSize: TabBarIndicatorSize.tab,
-        labelColor: Color(whiteColor),
-        unselectedLabelColor: Color(blue2Color),
-        labelStyle: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+    const double height = 40;
 
-        // 🔥 INI KUNCINYA
-        tabs: tabs.map((e) => Tab(text: e)).toList(),
-        dividerColor: Colors.transparent,
-        indicatorColor: Colors.transparent,
-        controller: TabController(
-          length: tabs.length,
-          vsync: this,
-          initialIndex: currentTab,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: Color(grey10Color),
+          borderRadius: BorderRadius.circular(height / 2),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final tabWidth = constraints.maxWidth / 2.85;
+            final page = currentTab.toDouble();
+
+            List<int> order = [0, 1, 2];
+            order.sort((a, b) {
+              return (b - page).abs().compareTo((a - page).abs());
+            });
+
+            return Stack(
+              children: order.map((index) {
+                return _buildStackTab(
+                  index: index,
+                  left: index * (tabWidth - 25),
+                  tabWidth: tabWidth,
+                  height: height,
+                  tabs: tabs,
+                  page: page,
+                );
+              }).toList(),
+            );
+          },
         ),
       ),
     );
   }
+
+
+  Widget _buildStackTab({
+    required int index,
+    required double left,
+    required double tabWidth,
+    required double height,
+    required List<String> tabs,
+    required double page,
+  }) {
+    final isActive = (page - index).abs() < 0.5;
+
+    return Positioned(
+      left: left,
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            currentTab = index;
+            _tabController.animateTo(index);
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          width: tabWidth,
+          height: height,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isActive
+                ? Color(primaryColor)
+                : (index == 1 ? Colors.grey.shade300 : Colors.grey.shade200),
+            borderRadius: BorderRadius.circular(height / 2),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
+                : [],
+          ),
+
+
+
+          child: Text(
+            tabs[index],
+            style: TextStyle(
+              color: isActive ? Colors.white : Colors.grey[700],
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
 
 
 Widget _buildActivityContent() {
@@ -443,7 +549,9 @@ Widget _buildActivityContent() {
           }
 
           return ListView(
+            controller: _activityScrollController,
             padding: const EdgeInsets.symmetric(horizontal:  16),
+
             children: grouped.entries.map((entry) {
               final date = entry.key;
               final items = entry.value;
@@ -599,7 +707,7 @@ Widget _buildActivityContent() {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w400,
-                        color: Color(grey7Color),
+                        color: Color(grey5Color),
                       ),
                     ),
                   ],
@@ -733,7 +841,7 @@ Widget _buildActivityContent() {
                                     width: 44,
                                     alignment: Alignment.center,
                                     decoration: BoxDecoration(
-                                      color: Color(grey8Color),
+                                      color: Color(grey11Color),
                                       borderRadius: BorderRadius.circular(14),
                                     ),
                                     child: Icon(Icons.more_vert, size: 30),
@@ -802,88 +910,13 @@ Widget _buildActivityContent() {
   }
 
   Widget _buildEditBottomSheetContent(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildIconLink(icEdit, "Edit Contact", () {
-            context.pushNamed('formContact', extra: ContactDetailArgs(page: 1));
-          }),
-          _buildIconLink(icCalendar, "Add Activity", () {
-            context.pushNamed(
-              'addContact',
-              extra: ContactDetailArgs(
-                dataContact: widget.args.dataContact,
-                page: 5,
-                namePage: "Attachment",
-              ),
-            );
-          }),
-          _buildIconLink(icDelete, "Delete Contact", () {
-            showDialog(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: Text('Confirm'),
-                content: Text('Delete this contact?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: Text('Cancel'),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      if (widget.args.dataContact?.contactId != null) {
-                        context.read<ContactBloc>().add(
-                          DeleteContactEvent(
-                            widget.args.dataContact!.contactId,
-                          ),
-                        );
-                      }
-                    },
-                    child: Text('Delete'),
-                  ),
-                ],
-              ),
-            );
-          }),
-          _buildIconLink(icShare, "Share Contact", () {}),
-        ],
-      ),
+    if (widget.args.dataContact == null) return const SizedBox();
+    return ContactOptionsSheet(
+      contact: widget.args.dataContact!,
+      initialTab: currentTab,
     );
   }
 
-  Widget _buildIconLink(
-    String asset,
-    String label,
-    VoidCallback onTap, {
-    Color? color,
-  }) {
-    return InkWell(
-      onTap: () {
-        Navigator.pop(context);
-        onTap();
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Row(
-          children: [
-            BgIcon(asset: asset, onTap: null, color: color),
-            SizedBox(width: 10),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                color: Color(blue2Color),
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _showDeleteDialog(BuildContext context, item) {
     showDialog(

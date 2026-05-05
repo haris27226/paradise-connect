@@ -46,12 +46,17 @@ class ContactModel extends Contact {
     super.ownerId,
     super.dealId,
     super.propertyGroupsJson,
-    dealValue,
-    apptDate,
-    visitDate,
-    dealNote,
-    projectName,
-    blokNo,
+    super.dealValue,
+    super.apptDate,
+    super.visitDate,
+    super.dealNote,
+    super.projectName,
+    super.blokNo,
+    super.ownerName,
+    super.salesExecutiveName,
+    super.salesSupervisorName,
+    super.salesManagerName,
+
     super.createdAt,
     super.updatedAt,
     super.deletedAt,
@@ -61,8 +66,7 @@ class ContactModel extends Contact {
     return ContactModel(
       contactId: json['contact_id'],
       hubspotContactId: json['hubspot_contact_id']?.toString(),
-      isSyncHubspot:
-          json['is_sync_hubspot'] == 1 || json['is_sync_hubspot'] == true,
+      isSyncHubspot:json['is_sync_hubspot'] == 1 || json['is_sync_hubspot'] == true,
       salutation: json['salutation'],
       fullName: json['full_name'],
       primaryPhone: json['primary_phone'],
@@ -70,37 +74,25 @@ class ContactModel extends Contact {
       primaryEmail: json['primary_email'],
       noKtp: json['no_ktp']?.toString(),
       ktpAddress: json['ktp_address'],
-      firstProject: json['first_project'],
-      lastProject: json['last_project'],
-      firstProduct: json['first_product'],
-      lastProduct: json['last_product'],
-      salesChannelId: json['sales_channel_id'] != null
-          ? int.tryParse(json['sales_channel_id'].toString())
-          : null,
+      firstProject: json['first_project']?.toString(),
+      lastProject: json['last_project']?.toString(),
+      firstProduct: json['first_product']?.toString(),
+      lastProduct: json['last_product']?.toString(),
+
+      salesChannelId: json['sales_channel_id'],
       sumberInformasi2: json['sumber_informasi_2'],
       firstProjectCategory: json['first_project_category'],
       lastProjectCategory: json['last_project_category'],
-      firstBlokNo: json['first_blok_no'],
-      lastBlokNo: json['last_blok_no'],
-      salesExecutiveId: json['sales_executive_id'] != null
-          ? int.tryParse(json['sales_executive_id'].toString())
-          : null,
-      salesSupervisorId: json['sales_supervisor_id'] != null
-          ? int.tryParse(json['sales_supervisor_id'].toString())
-          : null,
-      salesManagerId: json['sales_manager_id'] != null
-          ? int.tryParse(json['sales_manager_id'].toString())
-          : null,
-      salesTeamId: json['sales_team_id'] != null
-          ? int.tryParse(json['sales_team_id'].toString())
-          : null,
-      statusProspectId: json['status_prospect_id'] != null
-          ? int.tryParse(json['status_prospect_id'].toString())
-          : null,
+      firstBlokNo: json['first_blok_no']?.toString(),
+      lastBlokNo: json['last_blok_no']?.toString(),
+
+      salesExecutiveId: json['sales_executive_id'],
+      salesSupervisorId: json['sales_supervisor_id'],
+      salesManagerId: json['sales_manager_id'],
+      salesTeamId: json['sales_team_id'],
+      statusProspectId: json['status_prospect_id'],
       volumePlan: json['volume_plan']?.toString(),
-      visitCount: json['visit_count'] != null
-          ? int.tryParse(json['visit_count'].toString())
-          : null,
+      visitCount: json['visit_count'],
       generalNotes: json['general_notes'],
       firstApptDate: json['first_appt_date'],
       lastApptDate: json['last_appt_date'],
@@ -115,21 +107,22 @@ class ContactModel extends Contact {
       firstLostDate: json['first_lost_date'],
       lastLostDate: json['last_lost_date'],
       propertiesJson: json['properties_json'],
-      ownerId: json['owner_id'] != null
-          ? int.tryParse(json['owner_id'].toString())
-          : null,
-      dealId: json['deal_id'] != null
-          ? int.tryParse(json['deal_id'].toString())
-          : null,
+      ownerId: json['owner_id'],
+      dealId: json['deal_id'],
       propertyGroupsJson: (json['property_groups'] as List<dynamic>?) ?? [],
-      dealValue: json['deal_value'] != null
-          ? json['deal_value'].toString()
-          : null,
+      dealValue: json['deal_value']?.toString(),
       apptDate: json['appt_date'],
       visitDate: json['visit_date'],
+
       dealNote: json['note'],
-      projectName: json['project_name'],
-      blokNo: json['blok_no'],
+      projectName: json['project_name']?.toString(),
+      blokNo: json['blok_no']?.toString(),
+
+      ownerName: json['owner_name'],
+      salesExecutiveName: json['sales_executive_name'],
+      salesSupervisorName: json['sales_supervisor_name'],
+      salesManagerName: json['sales_manager_name'],
+
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],
       deletedAt: json['deleted_at'],

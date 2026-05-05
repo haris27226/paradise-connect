@@ -207,8 +207,11 @@ class CreateContactParams extends Equatable {
       if (lossReasonNote != null) 'loss_reason_note': lossReasonNote,
       if (firstSPDate != null) 'first_sp_date': firstSPDate,
       if (lastSPDate != null) 'last_sp_date': lastSPDate,
+      if (reserveDate != null) 'reserve_date': reserveDate,
+      if (lastReserveDate != null) 'last_reserve_date': lastReserveDate,
       if (properties != null) 'properties': properties,
       if (propertiesJson != null) 'properties_json': propertiesJson,
+
     };
   }
 

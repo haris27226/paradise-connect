@@ -55,7 +55,7 @@ class _DropdownListContactState extends State<DropdownListContact> {
               decoration: BoxDecoration(
                 color: Color(whiteColor),
                 border: Border(
-                  bottom: BorderSide(width: 1, color: Color(grey10Color)),
+                  bottom: BorderSide(width: 1, color: Color(grey9Color)),
                 ),
               ),
               child: Row(
@@ -103,15 +103,15 @@ class _DropdownListContactState extends State<DropdownListContact> {
                   onChanged: (val) => setState(() => _searchQuery = val),
                   decoration: InputDecoration(
                     hintText: 'Search...',
-                    hintStyle: TextStyle(color: Color(grey7Color), fontSize: 14),
-                    prefixIcon: Icon(Icons.search, color: Color(grey7Color)),
+                    hintStyle: TextStyle(color: Color(grey5Color), fontSize: 14),
+                    prefixIcon: Icon(Icons.search, color: Color(grey5Color)),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? GestureDetector(
                             onTap: () {
                               _searchController.clear();
                               setState(() => _searchQuery = '');
                             },
-                            child: Icon(Icons.close, color: Color(grey7Color)),
+                            child: Icon(Icons.close, color: Color(grey5Color)),
                           )
                         : null,
                     filled: true,
@@ -133,11 +133,11 @@ class _DropdownListContactState extends State<DropdownListContact> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.search_off, size: 48, color: Color(grey7Color)),
+                          Icon(Icons.search_off, size: 48, color: Color(grey5Color)),
                           const SizedBox(height: 8),
                           Text(
                             'Tidak ditemukan',
-                            style: TextStyle(color: Color(grey7Color), fontSize: 14),
+                            style: TextStyle(color: Color(grey5Color), fontSize: 14),
                           ),
                         ],
                       ),
@@ -147,7 +147,7 @@ class _DropdownListContactState extends State<DropdownListContact> {
                       itemCount: _filteredItems.length,
                       separatorBuilder: (_, __) => Divider(
                         height: 1,
-                        color: Color(grey10Color),
+                        color: Color(grey9Color),
                         indent: 72,
                       ),
                       itemBuilder: (context, index) {
@@ -172,7 +172,7 @@ class _DropdownListContactState extends State<DropdownListContact> {
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              color: isSelected ? Color(grey1Color) : Color(whiteColor),
+                              color: isSelected ? Color(grey10Color) : Color(whiteColor),
                               child: Row(
                                 children: [
 
@@ -195,7 +195,7 @@ class _DropdownListContactState extends State<DropdownListContact> {
                                             item.subtitle!,
                                             style: TextStyle(
                                               fontSize: 12,
-                                              color: Color(grey7Color),
+                                              color: Color(grey5Color),
                                             ),
                                           ),
                                         ],

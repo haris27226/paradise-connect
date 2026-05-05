@@ -520,7 +520,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                 width: double.infinity,
                 height: 40,
                 decoration: BoxDecoration(
-                  border: Border.all(color: Color(grey4Color)),
+                  border: Border.all(color: Color(grey8Color)),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 16),
@@ -604,7 +604,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                 width: double.infinity,
                 height: 40,
                 decoration: BoxDecoration(
-                  border: Border.all(color: Color(grey4Color)),
+                  border: Border.all(color: Color(grey8Color)),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 16),
@@ -646,7 +646,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Color(grey11Color)),
+                  border: Border.all(color: Color(grey7Color)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -701,7 +701,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                 width: double.infinity,
                 height: 40,
                 decoration: BoxDecoration(
-                  border: Border.all(color: Color(grey4Color)),
+                  border: Border.all(color: Color(grey8Color)),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 16),
@@ -751,11 +751,11 @@ class _ContactAddPageState extends State<ContactAddPage> {
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(grey11Color)),
+                  borderSide: BorderSide(color: Color(grey7Color)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(grey11Color)),
+                  borderSide: BorderSide(color: Color(grey7Color)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -860,7 +860,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                 width: double.infinity,
                 height: 40,
                 decoration: BoxDecoration(
-                  border: Border.all(color: Color(grey4Color)),
+                  border: Border.all(color: Color(grey8Color)),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 16),
@@ -902,7 +902,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Color(grey11Color)),
+                  border: Border.all(color: Color(grey7Color)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -957,7 +957,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                 width: double.infinity,
                 height: 40,
                 decoration: BoxDecoration(
-                  border: Border.all(color: Color(grey4Color)),
+                  border: Border.all(color: Color(grey8Color)),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 16),
@@ -1007,11 +1007,11 @@ class _ContactAddPageState extends State<ContactAddPage> {
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(grey11Color)),
+                  borderSide: BorderSide(color: Color(grey7Color)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(grey11Color)),
+                  borderSide: BorderSide(color: Color(grey7Color)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1090,8 +1090,8 @@ class _ContactAddPageState extends State<ContactAddPage> {
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  color: Color(grey10Color),
-                  border: Border.all(color: Color(grey11Color)),
+                  color: Color(grey9Color),
+                  border: Border.all(color: Color(grey7Color)),
                 ),
                 child:
                     (selectedFile != null ||
@@ -1209,7 +1209,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                     width: double.infinity,
                     height: 40,
                     decoration: BoxDecoration(
-                      border: Border.all(color: Color(grey4Color)),
+                      border: Border.all(color: Color(grey8Color)),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     padding: EdgeInsets.symmetric(horizontal: 16),
@@ -1270,11 +1270,11 @@ class _ContactAddPageState extends State<ContactAddPage> {
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(grey11Color)),
+                  borderSide: BorderSide(color: Color(grey7Color)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(grey11Color)),
+                  borderSide: BorderSide(color: Color(grey7Color)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1363,11 +1363,11 @@ class _ContactAddPageState extends State<ContactAddPage> {
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(grey11Color)),
+                borderSide: BorderSide(color: Color(grey7Color)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Color(grey11Color)),
+                borderSide: BorderSide(color: Color(grey7Color)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1380,7 +1380,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Color(grey11Color)),
+              border: Border.all(color: Color(grey7Color)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1444,7 +1444,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Color(grey11Color)),
+                      border: Border.all(color: Color(grey7Color)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1683,9 +1683,9 @@ class _ContactAddPageState extends State<ContactAddPage> {
               width: double.infinity,
               height: 100,
               decoration: BoxDecoration(
-                color: Color(grey10Color),
+                color: Color(grey9Color),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Color(grey11Color)),
+                border: Border.all(color: Color(grey7Color)),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

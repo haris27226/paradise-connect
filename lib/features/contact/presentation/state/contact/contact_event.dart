@@ -90,3 +90,6 @@ class DeleteContactEvent extends ContactEvent {
   @override
   List<Object?> get props => [contactId];
 }
+class ClearContactDetailEvent extends ContactEvent {}
+class ClearContactsEvent extends ContactEvent {}
+

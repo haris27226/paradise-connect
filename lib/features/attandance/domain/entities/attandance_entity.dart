@@ -10,6 +10,10 @@ class AttendanceEntity {
   final String? note0;
   final String? note1;
   final String? note6;
+  final String? location0;
+  final String? location1;
+  final String? location6;
+
 
 
   AttendanceEntity({
@@ -23,6 +27,10 @@ class AttendanceEntity {
     this.fileAttchment6,
     this.note0,
     this.note1,
-    this.note6
+    this.note6,
+    this.location0,
+    this.location1,
+    this.location6,
   });
+
 }

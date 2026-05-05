@@ -145,7 +145,7 @@ class _MainLayoutState extends State<MainLayout> {
                   path: '/',
                   icon: icNavHome,
                   label: 'Home',
-                  isActive: currentIndex != 1 && currentIndex != 2 && currentIndex != 4,
+                  isActive: currentIndex == 0,
                 ),
 
                 _buildNavItem(

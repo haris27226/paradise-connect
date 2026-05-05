@@ -318,7 +318,7 @@ class _CameraPageState extends State<CameraPage> {
                   height: 50,
                   alignment: Alignment.centerRight,
                   decoration: BoxDecoration(
-                    border: Border.all(color: Color(grey4Color), width: 1),
+                    border: Border.all(color: Color(grey8Color), width: 1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: InkWell(
@@ -384,15 +384,15 @@ class _CameraPageState extends State<CameraPage> {
                     onTapOutside: (event) => notesFN.unfocus(),
                     decoration: InputDecoration(
                       hintText: "Enter notes...",
-                      hintStyle: TextStyle(fontSize: 14, color: Color(grey3Color)),
+                      hintStyle: TextStyle(fontSize: 14, color: Color(grey4Color)),
                       contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Color(grey4Color)),
+                        borderSide: BorderSide(color: Color(grey8Color)),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Color(grey4Color)),
+                        borderSide: BorderSide(color: Color(grey8Color)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),

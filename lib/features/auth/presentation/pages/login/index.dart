@@ -156,21 +156,21 @@ class _LoginPageState extends State<LoginPage> {
                           hintStyle: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w400,
-                            color: Color(grey3Color),
+                            color: Color(grey4Color),
                           ),
                           filled: true,
                           fillColor: Colors.grey[50],
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
                             borderSide: BorderSide(
-                              color: Color(grey4Color),
+                              color: Color(grey8Color),
                               width: 1,
                             ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
                             borderSide: BorderSide(
-                              color: Color(grey4Color),
+                              color: Color(grey8Color),
                               width: 1,
                             ),
                           ),
@@ -225,7 +225,7 @@ class _LoginPageState extends State<LoginPage> {
                           hintStyle: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w400,
-                            color: Color(grey3Color),
+                            color: Color(grey4Color),
                           ),
                           fillColor: Colors.grey[50],
                           suffixIcon: IconButton(
@@ -243,14 +243,14 @@ class _LoginPageState extends State<LoginPage> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
                             borderSide: BorderSide(
-                              color: Color(grey4Color),
+                              color: Color(grey8Color),
                               width: 1,
                             ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
                             borderSide: BorderSide(
-                              color: Color(grey4Color),
+                              color: Color(grey8Color),
                               width: 1,
                             ),
                           ),
@@ -339,7 +339,7 @@ class _LoginPageState extends State<LoginPage> {
                             child: Text(
                               'Forgot password?',
                               style: TextStyle(
-                                color: Color(grey5Color),
+                                color: Color(grey3Color),
                                 fontSize: 14,
                                 fontWeight: FontWeight.w400,
                               ),

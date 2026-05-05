@@ -51,6 +51,10 @@ class Contact extends Equatable {
   final String? dealNote;
   final String? projectName;
   final String? blokNo;
+  final String? ownerName;
+  final String? salesExecutiveName;
+  final String? salesSupervisorName;
+  final String? salesManagerName;
   final String? createdAt;
   final String? updatedAt;
   final String? deletedAt;
@@ -106,10 +110,15 @@ class Contact extends Equatable {
     this.dealNote,
     this.projectName,
     this.blokNo,
+    this.ownerName,
+    this.salesExecutiveName,
+    this.salesSupervisorName,
+    this.salesManagerName,
     this.createdAt,
     this.updatedAt,
     this.deletedAt,
   });
+
 
   @override
   List<Object?> get props => [
@@ -163,8 +172,13 @@ class Contact extends Equatable {
     dealNote,
     projectName,
     blokNo,
+    ownerName,
+    salesExecutiveName,
+    salesSupervisorName,
+    salesManagerName,
     createdAt,
     updatedAt,
     deletedAt,
   ];
 }
+

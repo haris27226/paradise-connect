@@ -16,6 +16,7 @@ class ActivityBloc extends Bloc<ActivityEvent, ActivityState> {
   }) : super(const ActivityState()) {
     on<FetchActivitiesEvent>(_onFetchActivities);
     on<CreateActivityEvent>(_onCreateActivity);
+    on<ResetActivityEvent>((event, emit) => emit(const ActivityState()));
   }
 
   Future<void> _onFetchActivities(
@@ -111,6 +112,7 @@ class ActivityProspectStatusBloc extends Bloc<ActivityProspectStatusEvent, Activ
   ActivityProspectStatusBloc(this.useCase)
       : super(const ActivityProspectStatusState()) {
     on<FetchActivityProspectStatusEvent>(_onFetch);
+    on<ResetActivityProspectStatusEvent>((event, emit) => emit(const ActivityProspectStatusState()));
   }
 
   Future<void> _onFetch(

@@ -6,11 +6,13 @@ class ContactDetailArgs {
   final Contact? dataContact;
   final int page;
   final String? namePage;
+  final int initialTab;
 
   ContactDetailArgs({
     this.dataAttachment,
     this.dataContact,
     this.page = 0, // 0: create 1: edit
     this.namePage,
+    this.initialTab = 0,
   });
-}
+}

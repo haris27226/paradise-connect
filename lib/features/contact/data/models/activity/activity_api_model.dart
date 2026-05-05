@@ -40,7 +40,7 @@ class ActivityApiModel extends ActivityEntity {
       phoneNumber: json['phone_number'],
       whatsappNumber: json['whatsapp_number'],
       waId: json['id'],
-      contactName: json['name'] ?? json['contact_name'],
+      contactName: json['contact_name'],
       jid: json['jid'],
       isGroup: json['isGroup'],
       initials: json['initials'],
