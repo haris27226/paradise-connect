@@ -208,18 +208,18 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    if (user.salesRoles.isNotEmpty) ...[
-                      _label("Atasan"),
-                      const SizedBox(height: 6),
-                      ...user.salesRoles.map((role) => _buildAtasanChain(role)).toList(),
-                      const SizedBox(height: 12),
-                    ],
-                    if (user.subordinates.isNotEmpty) ...[
-                      _label("Bawahan"),
-                      const SizedBox(height: 6),
-                      ...user.subordinates.map((sub) => _buildHierarchyNode(sub, isAtasan: false)).toList(),
-                      const SizedBox(height: 12),
-                    ],
+                    // if (user.salesRoles.isNotEmpty) ...[
+                    //   _label("Atasan"),
+                    //   const SizedBox(height: 6),
+                    //   ...user.salesRoles.map((role) => _buildAtasanChain(role)).toList(),
+                    //   const SizedBox(height: 12),
+                    // ],
+                    // if (user.subordinates.isNotEmpty) ...[
+                    //   _label("Bawahan"),
+                    //   const SizedBox(height: 6),
+                    //   ...user.subordinates.map((sub) => _buildHierarchyNode(sub, isAtasan: false)).toList(),
+                    //   const SizedBox(height: 12),
+                    // ],
                     const SizedBox(height: 20),
                     Row(
                       children: [

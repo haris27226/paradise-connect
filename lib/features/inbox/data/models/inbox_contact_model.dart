@@ -11,6 +11,7 @@ class InboxContactModel extends InboxContact {
     super.lastConversationDate,
     super.ownerName,
     required super.sessionCode,
+    super.unreadCount = 0,
   });
 
   factory InboxContactModel.fromJson(Map<String, dynamic> json) {
@@ -23,7 +24,8 @@ class InboxContactModel extends InboxContact {
       initials: json["initials"] ?? "",
       lastConversationDate: json["last_conversation_date"],
       ownerName: json["owner_name"],
-      sessionCode: json["session_code"]
+      sessionCode: json["session_code"] ?? "",
+      unreadCount: json["unread_count"] ?? 0,
     );
   }
 

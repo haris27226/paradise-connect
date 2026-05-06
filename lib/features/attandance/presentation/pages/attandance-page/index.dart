@@ -347,36 +347,15 @@ class _AttandancePageState extends State<AttandancePage> {
 
             /// CLOCK IN
             GestureDetector(
-              onTap: item.clockIn != null
-                  ? () => _showAttendanceDialog(item, 0)
-                  : null,
-              child: Column(
-                children: [
-                  // if (item.fileAttchment0 != null &&
-                  //     item.fileAttchment0!.isNotEmpty)
-                  //   Padding(
-                  //     padding: const EdgeInsets.only(bottom: 4),
-                  //     child: ClipRRect(
-                  //       borderRadius: BorderRadius.circular(4),
-                  //       child: Image.network(
-                  //         convertDriveUrl(item.fileAttchment0!.first),
-                  //         width: 35,
-                  //         height: 35,
-                  //         fit: BoxFit.cover,
-                  //         errorBuilder: (context, error, stackTrace) =>
-                  //             Container(
-                  //           width: 35,
-                  //           height: 35,
-                  //           color: Colors.grey.shade200,
-                  //           child: const Icon(Icons.image, size: 20),
-                  //         ),
-                  //       ),
-                  //     ),
-                  //   ),
-                  Icon(Icons.access_time_filled,
-                      size: 17, color: Color(greenPercentColor)),
-                  Text(formatTime(item.clockIn)),
-                ],
+              onTap: item.clockIn != null? () => _showAttendanceDialog(item, 0): null,
+              child: Container(
+                width: 100,
+                child: Column(
+                  children: [
+                    Icon(Icons.access_time_filled,size: 17, color: Color(greenPercentColor)),
+                    Text(formatTime(item.clockIn)),
+                  ],
+                ),
               ),
             ),
 
@@ -384,16 +363,15 @@ class _AttandancePageState extends State<AttandancePage> {
 
             /// CLOCK OUT
             GestureDetector(
-              onTap: item.clockOut != null
-                  ? () => _showAttendanceDialog(item, 1)
-                  : null,
-              child: Column(
-                children: [
-                 
-                  Icon(Icons.access_time_filled,
-                      size: 17, color: Color(redPeriodColor)),
-                  Text(formatTime(item.clockOut)),
-                ],
+              onTap: item.clockOut != null? () => _showAttendanceDialog(item, 1): null,
+              child: Container(
+                width: 100,
+                child: Column(
+                  children: [
+                    Icon(Icons.access_time_filled,size: 17, color: Color(redPeriodColor)),
+                    Text(formatTime(item.clockOut)),
+                  ],
+                ),
               ),
             ),
 
@@ -485,7 +463,7 @@ class _AttandancePageState extends State<AttandancePage> {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final tabWidth = constraints.maxWidth / 2.7;
+            final tabWidth = constraints.maxWidth / 2.6;
 
             final page = _pageController.hasClients? (_pageController.page ?? 0): selectedIndex.toDouble();
 
@@ -574,114 +552,113 @@ class _AttandancePageState extends State<AttandancePage> {
     return _buildCheckForm(
       title: "Check In",
       flagParam: 6,
-      image: (today?.fileAttchment6 != null && today!.fileAttchment6!.isNotEmpty)
-          ? today.fileAttchment6!.first
-          : null,
+      image: (today?.fileAttchment6 != null && today!.fileAttchment6!.isNotEmpty)? today.fileAttchment6!.first: null,
+      attendance: today,
     );
   }
 
-  
-  Widget _buildCheckForm({
-    required String title,
-    required int flagParam,
-    String? image,
-  }) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (image != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                convertDriveUrl(image),
-                width: 50,
-                height: 50,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 50,
-                  height: 50,
-                  color: Colors.grey.shade200,
-                  child: const Icon(Icons.broken_image, size: 20),
+  Widget _buildCheckForm({required String title, required int flagParam, String? image,AttendanceEntity? attendance}) {
+  return Expanded(
+    child: image != null
+        ? Padding(
+            padding: const EdgeInsets.symmetric(horizontal:70, vertical: 5),
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(convertDriveUrl(image), width: 200, height: 200, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => Container(width: 200, height: 200, color: Colors.grey.shade200, child: const Icon(Icons.broken_image, size: 40))),
                 ),
-              ),
-            ),
-          ),
-        Text(
-          DateHelper.formatTime(DateTime.now()),
-
-          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-        ),
-        Text(
-          DateHelper.formatDayDate(DateTime.now()),
-          style: TextStyle(fontSize: 11, color: Color(grey6Color)),
-        ),
-        SizedBox(height: 8),
-
-    
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(100),
-            onTap: () async {
-             _handleMoveCamera(title, flagParam);
-            },
-            child: Container(
-              height: 90,
-              width: 90,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(primaryColor).withOpacity(0.1),
-              ),
-              child: Container(
-                height: 80,
-                width: 80,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(primaryColor).withOpacity(0.2),
-                ),
-                child: Container(
-                  height: 70,
-                  width: 70,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Color(primaryColor),
+                Positioned.fill(
+                  top: 123,
+                  bottom: 0,
+                  child: Container(
+                    height: 20,
+                    padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.rectangle,
+                      color: Color(blue2Color).withOpacity(0.5),
+                      borderRadius: BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8)),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.access_time_filled, color:flagParam == 0? Color(greenPercentColor): Color(redPeriodColor), size: 10),
+                            SizedBox(width: 10),
+                            Text("${flagParam == 0? attendance?.clockIn :attendance?.clockOut}" , style: TextStyle(color: Colors.white, fontSize: 10)),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_today_sharp, color: Color(primaryColor), size: 10),
+                            SizedBox(width: 10),
+                            Text(DateHelper.formatDayDate(DateTime.now()), style: TextStyle(color: Colors.white, fontSize: 10)),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Icon(Icons.location_on, color: Color(primaryColor), size: 10),
+                            SizedBox(width: 10),
+                            SizedBox(
+                              width: 150,
+                              child: Text("${flagParam == 0? attendance?.location0 :attendance?.location1}", style: TextStyle(color: Colors.white, fontSize: 10), overflow: TextOverflow.ellipsis),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Color(whiteColor),
+                ),
+              ],
+            ),
+          )
+        : Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(DateHelper.formatTime(DateTime.now()), style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+              Text(DateHelper.formatDayDate(DateTime.now()), style: TextStyle(fontSize: 11, color: Color(grey6Color))),
+              SizedBox(height: 8),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(100),
+                  onTap: () async { _handleMoveCamera(title, flagParam); },
+                  child: Container(
+                    height: 90,
+                    width: 90,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: Color(primaryColor).withOpacity(0.1)),
+                    child: Container(
+                      height: 80,
+                      width: 80,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(shape: BoxShape.circle, color: Color(primaryColor).withOpacity(0.2)),
+                      child: Container(
+                        height: 70,
+                        width: 70,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(shape: BoxShape.circle, color: Color(primaryColor)),
+                        child: Text(title, textAlign: TextAlign.center, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(whiteColor))),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
+              SizedBox(height: 12),
+              Text("Please $title!", style: TextStyle(fontSize: 12, color: Color(grey6Color))),
+            ],
           ),
-        ),
+  );
+}  
 
-        SizedBox(height: 12),
-        Text(
-          "Please $title!",
-          style: TextStyle(fontSize: 12, color: Color(grey6Color)),
-        ),
-      ],
-    );
-  }  
-
-  Widget _buildClockOut(AttendanceEntity? today) {
+Widget _buildClockOut(AttendanceEntity? today) {
     return _buildCheckForm(
       title: "Clock Out",
       flagParam: 1,
       image: (today?.fileAttchment1 != null && today!.fileAttchment1!.isNotEmpty)
           ? today.fileAttchment1!.last
           : null,
+      attendance: today,  
     );
   }
 
@@ -692,6 +669,7 @@ class _AttandancePageState extends State<AttandancePage> {
       image: (today?.fileAttchment0 != null && today!.fileAttchment0!.isNotEmpty)
           ? today.fileAttchment0!.first
           : null,
+      attendance: today,
     );
   }
 

@@ -44,6 +44,7 @@ class _CameraPageState extends State<CameraPage> {
     context.read<AttendanceBloc>().add(GetLocationsEvent());
   }
 
+
   Future<void> _initCamera() async {
     try {
       _cameras = await availableCameras();
@@ -56,6 +57,14 @@ class _CameraPageState extends State<CameraPage> {
         }
         return;
       }
+
+      // cari kamera depan
+      final frontCameraIndex = _cameras!.indexWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.front,
+      );
+
+      // kalau ada pakai depan, kalau tidak fallback ke 0
+      _cameraIndex = frontCameraIndex != -1 ? frontCameraIndex : 0;
 
       _controller = CameraController(
         _cameras![_cameraIndex],
@@ -83,6 +92,12 @@ class _CameraPageState extends State<CameraPage> {
 
     try {
       final file = await _controller!.takePicture();
+      if (widget.args.skipPreview == true) {
+        if (mounted) {
+          context.pop(file.path);
+        }
+        return;
+      }
       setState(() {
         _imageFile = file;
       });
@@ -91,38 +106,32 @@ class _CameraPageState extends State<CameraPage> {
     }
   }
 
-  // Future<void> _switchCamera() async {
-  //   if (_cameras == null || _cameras!.isEmpty) return;
 
-  //   setState(() => _isSwitching = true);
-
-  //   _cameraIndex = (_cameraIndex + 1) % _cameras!.length;
-
-  //   await _controller?.dispose();
-
-  //   _controller = CameraController(
-  //     _cameras![_cameraIndex],
-  //     ResolutionPreset.medium,
-  //     enableAudio: false,
-  //   );
-
-  //   await _controller!.initialize();
-
-  //   if (!mounted) return;
-
-  //   setState(() => _isSwitching = false);
-  // }
 
   void _handleSubmit() {
     if (_imageFile == null) return;
+
+    if (widget.args.isReturnImage == true) {
+      context.pop(_imageFile!.path);
+      return;
+    }
 
     final flag = widget.args.flag;
 
     final datetime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
     final location = pameranTC.text.isNotEmpty ? pameranTC.text : (widget.args.location ?? "Unknown");
 
-    context.read<AttendanceBloc>().add(SubmitAttendanceEvent(datetime: datetime,flag: flag!,location: location,note: notesTC.text,filePath: _imageFile!.path,));
+    context.read<AttendanceBloc>().add(SubmitAttendanceEvent(
+          datetime: datetime,
+          flag: flag!,
+          location: location,
+          note: notesTC.text,
+          filePath: _imageFile!.path,
+        ));
   }
+
+
+
 
   @override
   void dispose() {
@@ -242,180 +251,184 @@ class _CameraPageState extends State<CameraPage> {
       ),
     );
   }
-
   Widget _buildPreview() {
-    return SingleChildScrollView(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Column(
-        children: [
-          Stack(
-            children: [
-              Container(
-                height: 330,
-                width: double.infinity,
-                child: Image.file(File(_imageFile!.path), fit: BoxFit.cover),
-              ),
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  color: Color(blue2Color).withOpacity(0.5),
-                  padding: EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.access_time_filled, color: Color(greenPercentColor), size: 25),
-                          SizedBox(width: 10),
-                          Text(widget.args.time ?? "-", style: TextStyle(color: Colors.white)),
-                        ],
-                      ),
-                      SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Icon(Icons.calendar_today_sharp, color: Color(primaryColor), size: 25),
-                          SizedBox(width: 10),
-                          Text(
-                            DateHelper.formatDayDate(DateTime.now()),
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Icon(Icons.location_on, color: Color(primaryColor), size: 25),
-                          SizedBox(width: 10),
-                          SizedBox(
-                            width: 250,
-                            child: Text(
-                              widget.args.location ?? "-",
-                              style: TextStyle(color: Colors.white),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(height: 10),
-                Text("Pameran/ Open Table (optional)", style: TextStyle(fontSize: 14, color: Color(grey2Color))),
-                SizedBox(height: 5),
-                Container(
-                  width: double.infinity,
-                  height: 50,
-                  alignment: Alignment.centerRight,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Color(grey8Color), width: 1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: InkWell(
-                    onTap: () async {
-                      final state = context.read<AttendanceBloc>().state;
-                      if (state is AttendanceLoaded && state.locations != null) {
-                        final items = state.locations!.map((e) => OwnerDropdownItem(
-                          id: e.id,
-                          name: e.name,
-                        )).toList();
+    return BlocBuilder<AttendanceBloc, AttendanceState>(
+      builder: (context, state) {
+        final isLoading = state is AttendanceSubmitLoading;
 
-                        final result = await context.pushNamed(
-                          'detailContactDropdown',
-                          extra: ContactDropdownArgs(
-                            title: 'Select Pameran',
-                            items: items,
-                            selectedId: _selectedLocationId,
-                            isMultiSelect: false,
-                          ),
-                        );
-
-                        if (result != null) {
-                          final selected = result as OwnerDropdownItem;
-                          setState(() {
-                            _selectedLocationId = selected.id;
-                            pameranTC.text = selected.name;
-                          });
-                        }
-                      }
-                    },
-                    child: Row(
+        return Stack(
+          children: [
+            SingleChildScrollView(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: Container(
+                color: Color(whiteColor),
+                child: Column(
+                  children: [
+                    Stack(
                       children: [
-                        Expanded(
-                          child: TextField(
-                            enabled: false,
-                            maxLines: 1,
-                            minLines: 1,
-                            controller: pameranTC,
-                            decoration: InputDecoration(
-                              hintText: "Select Pameran",
-                              hintStyle: TextStyle(color: Color(grey2Color), fontSize: 14),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              border: InputBorder.none,
+                        Container(
+                          height: 330,
+                          width: double.infinity,
+                          child: Image.file(File(_imageFile!.path), fit: BoxFit.cover),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            color: Color(blue2Color).withOpacity(0.5),
+                            padding: EdgeInsets.all(16),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.access_time_filled, color: Color(greenPercentColor), size: 25),
+                                    SizedBox(width: 10),
+                                    Text(widget.args.time ?? "-", style: TextStyle(color: Colors.white)),
+                                  ],
+                                ),
+                                SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    Icon(Icons.calendar_today_sharp, color: Color(primaryColor), size: 25),
+                                    SizedBox(width: 10),
+                                    Text(DateHelper.formatDayDate(DateTime.now()), style: TextStyle(color: Colors.white)),
+                                  ],
+                                ),
+                                SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    Icon(Icons.location_on, color: Color(primaryColor), size: 25),
+                                    SizedBox(width: 10),
+                                    SizedBox(
+                                      width: 250,
+                                      child: Text(widget.args.location ?? "-", style: TextStyle(color: Colors.white), overflow: TextOverflow.ellipsis),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                        Icon(Icons.keyboard_arrow_up),
-                        SizedBox(width: 5)
                       ],
                     ),
-                  ),
-                ),
-                SizedBox(height: 20),
-                Text("Notes", style: TextStyle(fontSize: 14, color: Color(grey2Color))),
-                SizedBox(height: 5),
-                Container(
-                  height: 80,
-                  child: TextFormField(
-                    maxLines: null,
-                    minLines: 3,
-                    controller: notesTC,
-                    focusNode: notesFN,
-                    onTapOutside: (event) => notesFN.unfocus(),
-                    decoration: InputDecoration(
-                      hintText: "Enter notes...",
-                      hintStyle: TextStyle(fontSize: 14, color: Color(grey4Color)),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Color(grey8Color)),
+
+                    if (widget.args.isReturnImage != true)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(height: 10),
+                            Text("Pameran/ Open Table (optional)", style: TextStyle(fontSize: 14, color: Color(grey2Color))),
+                            SizedBox(height: 5),
+
+                            Container(
+                              width: double.infinity,
+                              height: 50,
+                              alignment: Alignment.centerRight,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Color(grey8Color), width: 1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: InkWell(
+                                onTap: () async {
+                                  final state = context.read<AttendanceBloc>().state;
+                                  if (state is AttendanceLoaded && state.locations != null) {
+                                    final items = state.locations!.map((e) => OwnerDropdownItem(id: e.id, name: e.name)).toList();
+
+                                    final result = await context.pushNamed(
+                                      'detailContactDropdown',
+                                      extra: ContactDropdownArgs(
+                                        title: 'Select Pameran',
+                                        items: items,
+                                        selectedId: _selectedLocationId,
+                                        isMultiSelect: false,
+                                      ),
+                                    );
+
+                                    if (result != null) {
+                                      final selected = result as OwnerDropdownItem;
+                                      setState(() {
+                                        _selectedLocationId = selected.id;
+                                        pameranTC.text = selected.name;
+                                      });
+                                    }
+                                  }
+                                },
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        enabled: false,
+                                        maxLines: 1,
+                                        minLines: 1,
+                                        controller: pameranTC,
+                                        decoration: InputDecoration(
+                                          hintText: "Select Pameran",
+                                          hintStyle: TextStyle(color: Color(grey2Color), fontSize: 14),
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                          border: InputBorder.none,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(Icons.keyboard_arrow_up),
+                                    SizedBox(width: 5),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            SizedBox(height: 20),
+                            Text("Notes", style: TextStyle(fontSize: 14, color: Color(grey2Color))),
+                            SizedBox(height: 5),
+
+                            Container(
+                              height: 80,
+                              child: TextFormField(
+                                maxLines: null,
+                                minLines: 3,
+                                controller: notesTC,
+                                focusNode: notesFN,
+                                onTapOutside: (event) => notesFN.unfocus(),
+                                decoration: InputDecoration(
+                                  hintText: "Enter notes...",
+                                  hintStyle: TextStyle(fontSize: 14, color: Color(grey4Color)),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Color(grey8Color))),
+                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Color(grey8Color))),
+                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Color(primaryColor))),
+                                ),
+                              ),
+                            ),
+
+                            SizedBox(height: 40),
+                            customButton(_handleSubmit, "Submit"),
+                            SizedBox(height: 20),
+                          ],
+                        ),
+                      )
+                    else
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: customButton(_handleSubmit, "Confirm Photo"),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Color(grey8Color)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Color(primaryColor)),
-                      ),
-                    ),
-                  ),
+
+                  ],
                 ),
-                SizedBox(height: 40),
-                BlocBuilder<AttendanceBloc, AttendanceState>(
-                  builder: (context, state) {
-                    if (state is AttendanceSubmitLoading) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    return customButton(_handleSubmit, "Submit");
-                  },
-                ),
-                SizedBox(height: 20),
-              ],
+              ),
             ),
-          ),
-        ],
-      ),
+
+            if (isLoading)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withOpacity(0.4),
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

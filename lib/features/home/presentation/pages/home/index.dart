@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:progress_group/core/constants/colors.dart';
 import 'package:progress_group/core/constants/assets.dart';
 import 'package:progress_group/core/utils/helpers/date_helper.dart';
-import 'package:progress_group/features/home/data/datasource/chart_service.dart';
 import 'package:progress_group/features/home/presentation/state/report-whatsapp/report_bloc.dart';
 import 'package:progress_group/features/home/presentation/state/report-whatsapp/report_event.dart';
 import 'package:progress_group/features/home/presentation/state/report-whatsapp/report_state.dart';
@@ -19,7 +18,7 @@ import 'package:progress_group/features/inbox/data/arguments/inbox_detail_args.d
 import 'package:progress_group/features/inbox/domain/entities/inbox_contact_entity.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../core/utils/widget/custom_header.dart';
+import '../../../../../core/utils/widget/custom_header.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -29,7 +28,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final ChartService _chartService = ChartService();
 
 
   DateTime _chartEndDate = DateTime.now();
@@ -44,7 +42,6 @@ class _HomePageState extends State<HomePage> {
     day = _chartEndDate.difference(_chartStartDate).inDays + 1;
     _loadData();
   }
-
 
   Future<void> _selectDateRange() async {
     final DateTimeRange? picked = await showDateRangePicker(
@@ -99,44 +96,18 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _loadData() async {
-    await _getTask();
-    if (mounted) {
-      context.read<ReportBloc>().add(
-        GetVolumeReportEvent(
-          startDate: DateFormat('yyyy-MM-dd').format(_chartStartDate),
-          endDate: DateFormat('yyyy-MM-dd').format(_chartEndDate),
-          groupBy: "Annual",
-        ),
-      );
-    }
-
-    if (mounted) {
-      context.read<ProfileBloc>().add(GetProfileEvent());
-    }
-
-    if (mounted) {
-      final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      context.read<ActivityBloc>().add(
-            FetchActivitiesEvent(
-              followUpStartDate: todayStr,
-              followUpEndDate: todayStr,
-              isRefresh: true,
-            ),
-          );
-    }
-
-    try {
-      await _chartService.fetchChartData();
-      setState(() {
-      });
-    } catch (e) {
-    }
-  }
-
-
-  Future<void> _getTask() async {
+ Future<void> _loadData() async {
     final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    context.read<ReportBloc>().add(GetVolumeReportEvent(
+      startDate: DateFormat('yyyy-MM-dd').format(_chartStartDate),
+      endDate: DateFormat('yyyy-MM-dd').format(_chartEndDate),
+      groupBy: "Annual",
+    ));
+
+    context.read<ProfileBloc>().add(GetProfileEvent());
+
+    print("todayyyyyyyyy: ${todayStr}");
     context.read<ActivityBloc>().add(
       FetchActivitiesEvent(
         followUpStartDate: todayStr,
@@ -144,6 +115,10 @@ class _HomePageState extends State<HomePage> {
         isRefresh: true,
       ),
     );
+
+    try {
+      if (mounted) setState(() {});
+    } catch (e) {}
   }
 
   @override
@@ -157,7 +132,9 @@ class _HomePageState extends State<HomePage> {
           SizedBox(height: 16),
           Expanded(
             child: RefreshIndicator(
-              onRefresh: _loadData,
+              onRefresh: () async {
+                await _loadData();
+              },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -210,30 +187,33 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
- Widget _buildComingTask(){
+  
+  Widget _buildComingTask() {
   return BlocBuilder<ActivityBloc, ActivityState>(
     builder: (context, state) {
-      if (state.status == ActivityStatus.loading) {
+      final activities = state.activities;
+
+      if (state.status == ActivityStatus.loading && activities.isEmpty) {
         return const Center(child: CircularProgressIndicator());
       }
-
-      final activities = state.activities;
 
       return Column(
         children: [
           Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Upcoming Task",style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                GestureDetector(
-                  onTap: () {
-                    // context.pushNamed('activities'); // TODO: navigate to all activities
-                  },
-                  child: Text("See All",style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold,color: Color(primaryColor))),
-                ),
-              ],
-            ),
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Upcoming Task", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              GestureDetector(
+                onTap: () {
+                  context.pushNamed("taskHome");
+                },
+                child: Text("See All", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(primaryColor))),
+              ),
+            ],
+          ),
+
           SizedBox(height: 8),
+
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -247,103 +227,127 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
+
             child: activities.isEmpty
                 ? SizedBox(
-                  height: 240,
-                  width: double.infinity,
-                  child: Center(child: Text("No upcoming tasks for today")),
-                )
+                    height: 240,
+                    width: double.infinity,
+                    child: Center(child: Text("No upcoming tasks for today")),
+                  )
                 : SizedBox(
                     height: 240,
-                    child: ListView.builder(
-                      itemCount: activities.length,
-                      itemBuilder: (context, index) {
-                        final activity = activities[index];
-                        final bool isCompleted = _completedActivityIds.contains(activity.activityId);
-                        final bool isWhatsApp = activity.activityType.toLowerCase().contains('whatsapp');
-                        final bool isCall = activity.activityType.toLowerCase().contains('call');
+                    child: RefreshIndicator(
+                      onRefresh: _loadData,
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: activities.length,
+                        itemBuilder: (context, index) {
+                          final activity = activities[index];
+                          final isCompleted = _completedActivityIds.contains(activity.activityId);
+                          final isWhatsApp = activity.activityType.toLowerCase().contains('whatsapp');
+                          final isCall = activity.activityType.toLowerCase().contains('call');
 
-                        return GestureDetector(
-                          onTap: () async {
-                            if (isWhatsApp) {
-                              if (activity.waId != null && activity.jid != null && activity.sessionCode != null) {
-                                context.pushNamed('detailInbox',
-                                  extra: InboxDetailArgs(
-                                    data: InboxContact(
-                                      id: activity.waId!,
-                                      name: activity.contactName ?? 'Unknown',
-                                      jid: activity.jid!,
-                                      isGroup: activity.isGroup ?? false,
-                                      initials: activity.initials ?? '?',
-                                      sessionCode: activity.sessionCode!,
+                          return GestureDetector(
+                            onTap: () async {
+                              if (isWhatsApp) {
+                                if (activity.waId != null && activity.jid != null && activity.sessionCode != null) {
+                                  context.pushNamed('detailInbox',
+                                    extra: InboxDetailArgs(
+                                      data: InboxContact(
+                                        id: activity.waId!,
+                                        name: activity.contactName ?? 'Unknown',
+                                        jid: activity.jid!,
+                                        isGroup: activity.isGroup ?? false,
+                                        initials: activity.initials ?? '?',
+                                        sessionCode: activity.sessionCode!,
+                                      ),
+                                      icon: Icons.person,
                                     ),
-                                    icon: Icons.person,
-                                  ),
-                                );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Missing message history'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  } else if (isCall) {
-                    final Uri telLaunchUri = Uri(
-                      scheme: 'tel',
-                      path: activity.phoneNumber,
-                    );
-                    if (await canLaunchUrl(telLaunchUri)) {
-                      await launchUrl(telLaunchUri);
-                    }
-                  }
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Missing message history'), backgroundColor: Colors.red),
+                                  );
+                                }
+                              } else if (isCall) {
+                                final Uri telLaunchUri = Uri(scheme: 'tel', path: activity.phoneNumber);
+                                if (await canLaunchUrl(telLaunchUri)) {
+                                  await launchUrl(telLaunchUri);
+                                }
+                              }
 
-                  setState(() {
-                    if (isCompleted) {
-                      _completedActivityIds.remove(activity.activityId);
-                    } else {
-                      _completedActivityIds.add(activity.activityId);
-                    }
-                  });
-                },
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
-                  decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Color(grey10Color)))),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(isCompleted ? Icons.check_circle : Icons.check_circle_outline_rounded,
-                            color: isCompleted ? Colors.green : Color(primaryColor),
-                            size: 40,
-                          ),
-                          const SizedBox(width: 10),
-                          Column(
-                            crossAxisAlignment:CrossAxisAlignment.start,
-                            children: [
-                              Text(activity.activityType, style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold,color: Color(blackColor),decoration: isCompleted ? TextDecoration.lineThrough : null)),
-                              Text(activity.contactName ?? "Unknown",style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold,color: Color(grey2Color))),
-                              Text(activity.nextFollowUpDate != null ? DateHelper.formatToIndonesian(DateTime.parse(activity.nextFollowUpDate!)) : "No follow-up date",style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold,color: Color(grey2Color))),
-                            ],
-                          ),
-                        ],
+                              setState(() {
+                                if (isCompleted) {
+                                  _completedActivityIds.remove(activity.activityId);
+                                } else {
+                                  _completedActivityIds.add(activity.activityId);
+                                }
+                              });
+                            },
+
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Color(grey10Color)))),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        isCompleted ? Icons.check_circle : Icons.check_circle_outline_rounded,
+                                        color: isCompleted ? Colors.green : Color(primaryColor),
+                                        size: 40,
+                                      ),
+
+                                      const SizedBox(width: 10),
+
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            activity.activityType,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(blackColor),
+                                              decoration: isCompleted ? TextDecoration.lineThrough : null,
+                                            ),
+                                          ),
+
+                                          Text(
+                                            activity.contactName ?? "Unknown",
+                                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(grey2Color)),
+                                          ),
+
+                                          Text(
+                                            activity.nextFollowUpDate != null
+                                                ? DateHelper.formatToIndonesian(DateTime.parse(activity.nextFollowUpDate!))
+                                                : "No follow-up date",
+                                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(grey2Color)),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+
+                                  isWhatsApp
+                                      ? Image.asset(icContactDetailWA)
+                                      : Icon(isCall ? Icons.phone_outlined : Icons.event_note_outlined, color: Color(primaryColor), size: 30),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                      isWhatsApp? Image.asset(icContactDetailWA): Icon(isCall? Icons.phone_outlined: Icons.event_note_outlined,color: Color(primaryColor),size: 30,),
-                    ],
+                    ),
                   ),
-                ),
-              );
-            },
           ),
-        ),
-        ) ],
+        ],
       );
     },
   );
- }
-
+}
 
   // Widget _buildFunnel(){
   //   return Column(
@@ -596,7 +600,7 @@ class _HomePageState extends State<HomePage> {
 
                                     
                                       Positioned.fill(
-                                        top: 10,
+                                        top: 3,
                                         child: CustomPaint(
                                           painter: TrendLinePainter(
                                             values: values,

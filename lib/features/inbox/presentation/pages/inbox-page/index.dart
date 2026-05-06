@@ -575,14 +575,15 @@ class _InboxPageState extends State<InboxPage> {
               final item = items[index];
 
               return InkWell(
-                onTap: () {
-                  context.pushNamed(
+                onTap: () async {
+                  await context.pushNamed(
                     'detailInbox',
                     extra: InboxDetailArgs(
                       data: item,
                       icon: icon,
                     ),
                   );
+                  _fetchInbox();
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(10),
@@ -640,7 +641,38 @@ class _InboxPageState extends State<InboxPage> {
                                       color: Colors.grey,
                                     ),
                                   ),
+                                  Text(
+                                        '${item.unreadCount}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                 const SizedBox(height: 4),
+
+                                if (item.unreadCount > 0)
+                                  Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Color(primaryColor),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 18,
+                                      minHeight: 18,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '${item.unreadCount}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                               ],
                             )
                           ],

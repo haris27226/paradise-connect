@@ -6,6 +6,7 @@ import 'package:progress_group/features/contact/data/arguments/contact_dropdown_
 import 'package:progress_group/features/contact/presentation/pages/attachment-view/index.dart';
 import 'package:progress_group/features/contact/presentation/pages/contact-dropdown/index.dart';
 import 'package:progress_group/features/contact/presentation/pages/date-selection/index.dart';
+import 'package:progress_group/features/home/presentation/pages/task/index.dart';
 import 'package:progress_group/features/inbox/presentation/pages/qr/index.dart';
 
 import '../features/attandance/data/arguments/attandance_args.dart';
@@ -19,7 +20,7 @@ import '../features/contact/presentation/pages/contact-add/index.dart';
 import '../features/contact/presentation/pages/contact-detail/index.dart';
 import '../features/contact/presentation/pages/contact-form/index.dart';
 import '../features/contact/presentation/pages/contact-page/index.dart';
-import '../features/home/presentation/pages/index.dart';
+import '../features/home/presentation/pages/home/index.dart';
 import '../features/inbox/data/arguments/inbox_detail_args.dart';
 import '../features/inbox/presentation/pages/inbox-detail/index.dart';
 import '../features/inbox/presentation/pages/inbox-page/index.dart';
@@ -62,6 +63,15 @@ class AppRouter {
           GoRoute(
             path: '/',
             builder: (context, state) => const HomePage(),
+            routes: [
+              GoRoute(
+                name: 'taskHome',
+                path: 'task-home',
+                builder: (context, state) {
+                  return const TaskPage();
+                },
+              ),
+            ]
           ),
           GoRoute(
             path: '/contact',

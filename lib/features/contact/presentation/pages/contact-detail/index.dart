@@ -413,7 +413,7 @@ class _ContactDetailPageState extends State<ContactDetailPage>
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final tabWidth = constraints.maxWidth / 2.85;
+            final tabWidth = constraints.maxWidth / 2.6;
             final page = currentTab.toDouble();
 
             List<int> order = [0, 1, 2];
@@ -440,14 +440,7 @@ class _ContactDetailPageState extends State<ContactDetailPage>
   }
 
 
-  Widget _buildStackTab({
-    required int index,
-    required double left,
-    required double tabWidth,
-    required double height,
-    required List<String> tabs,
-    required double page,
-  }) {
+  Widget _buildStackTab({required int index,required double left,required double tabWidth,required double height,required List<String> tabs,required double page,}) {
     final isActive = (page - index).abs() < 0.5;
 
     return Positioned(
@@ -467,7 +460,7 @@ class _ContactDetailPageState extends State<ContactDetailPage>
           decoration: BoxDecoration(
             color: isActive
                 ? Color(primaryColor)
-                : (index == 1 ? Colors.grey.shade300 : Colors.grey.shade200),
+                : (index == 1 ? Color(grey8Color) : Color(grey10Color)),
             borderRadius: BorderRadius.circular(height / 2),
             boxShadow: isActive
                 ? [
@@ -750,33 +743,35 @@ Widget _buildActivityContent() {
                         itemCount: list.length,
                         itemBuilder: (context, index) {
                           final item = list[index];
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 15,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Color(whiteColor),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
-                                  blurRadius: 12,
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                InkWell(
-                                  onTap: () {
-                                    context.pushNamed(
-                                      'attachmentWebView',
-                                      extra: item.attachmentUrl,
-                                    );
-                                  },
-                                  child: Container(
+                          return GestureDetector(
+                            onTap: () {
+                              // final isPdf = item.attachmentUrl.toLowerCase().contains('.pdf') || item.attachmentTypeName.toLowerCase().contains('pdf');
+                              // if (isPdf) {
+                                context.pushNamed('attachmentWebView', extra: item.attachmentUrl);
+                              // } else {
+                              //   _showImagePreview(context, item.attachmentUrl);
+                              // }
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 15,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Color(whiteColor),
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.08),
+                                    blurRadius: 12,
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Container(
                                   width: 44,
                                   height: 44,
                                   decoration: BoxDecoration(
@@ -795,8 +790,7 @@ Widget _buildActivityContent() {
                                               height: 44,
                                               decoration: BoxDecoration(
                                                 color: Color(whiteColor),
-                                                borderRadius:
-                                                    BorderRadius.circular(14),
+                                                borderRadius: BorderRadius.circular(14),
                                                 border: Border.all(
                                                   color: Color(primaryColor),
                                                 ),
@@ -809,87 +803,88 @@ Widget _buildActivityContent() {
                                           },
                                     ),
                                   ),
-                                )),
-                                SizedBox(width: 10),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      item.attachmentTypeName,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    Text(
-                                      item.createDatetime.toString(),
-                                      style: TextStyle(fontSize: 10),
-                                    ),
-                                    Text(
-                                      item.attachmentNote,
-                                      style: TextStyle(fontSize: 10),
-                                    ),
-                                  ],
-                                ),
-
-                                Spacer(),
-                                PopupMenuButton<String>(
-                                  icon: Container(
-                                    height: 44,
-                                    width: 44,
-                                    alignment: Alignment.center,
-                                    decoration: BoxDecoration(
-                                      color: Color(grey11Color),
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    child: Icon(Icons.more_vert, size: 30),
-                                  ),
-
-                                  onSelected: (value) {
-                                    if (value == 'edit') {
-                                      context.pushNamed(
-                                        'addContact',
-                                        extra: ContactDetailArgs(
-                                          dataContact: widget.args.dataContact,
-                                          dataAttachment: item,
-                                          page: 6,
-                                          namePage: "Attachment",
+                                                                    ),
+                                  SizedBox(width: 10),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        item.attachmentTypeName,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
                                         ),
-                                      );
-                                    } else if (value == 'delete') {
-                                      _showDeleteDialog(context, item);
-                                    }
-                                  },
-                                  itemBuilder: (context) => [
-                                    PopupMenuItem(
-                                      value: 'edit',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.edit, size: 18),
-                                          SizedBox(width: 8),
-                                          Text('Edit'),
-                                        ],
                                       ),
+                                      Text(
+                                        item.createDatetime.toString(),
+                                        style: TextStyle(fontSize: 10),
+                                      ),
+                                      Text(
+                                        item.attachmentNote,
+                                        style: TextStyle(fontSize: 10),
+                                      ),
+                                    ],
+                                  ),
+                            
+                                  Spacer(),
+                                  PopupMenuButton<String>(
+                                    icon: Container(
+                                      height: 44,
+                                      width: 44,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color: Color(grey11Color),
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: Icon(Icons.more_vert, size: 30),
                                     ),
-                                    PopupMenuItem(
-                                      value: 'delete',
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.delete,
-                                            size: 18,
-                                            color: Colors.red,
+                            
+                                    onSelected: (value) {
+                                      if (value == 'edit') {
+                                        context.pushNamed(
+                                          'addContact',
+                                          extra: ContactDetailArgs(
+                                            dataContact: widget.args.dataContact,
+                                            dataAttachment: item,
+                                            page: 6,
+                                            namePage: "Attachment",
                                           ),
-                                          SizedBox(width: 8),
-                                          Text('Delete'),
-                                        ],
+                                        );
+                                      } else if (value == 'delete') {
+                                        _showDeleteDialog(context, item);
+                                      }
+                                    },
+                                    itemBuilder: (context) => [
+                                      PopupMenuItem(
+                                        value: 'edit',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.edit, size: 18),
+                                            SizedBox(width: 8),
+                                            Text('Edit'),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                                      PopupMenuItem(
+                                        value: 'delete',
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.delete,
+                                              size: 18,
+                                              color: Colors.red,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text('Delete'),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -918,6 +913,44 @@ Widget _buildActivityContent() {
   }
 
 
+  void _showImagePreview(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.8),
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(10),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: InteractiveViewer(
+                child: Image.network(
+                  convertDriveUrl(imageUrl),
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.all(20),
+                    child: const Icon(Icons.broken_image, size: 100, color: Colors.grey),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showDeleteDialog(BuildContext context, item) {
     showDialog(
       context: context,
@@ -941,6 +974,7 @@ Widget _buildActivityContent() {
     );
   }
 }
+
 
 
 String convertDriveUrl(String url) {
@@ -1100,31 +1134,40 @@ class _ActivityItemState extends State<ActivityItem> {
                     itemBuilder: (context, index) {
                       return Container(
                         margin: const EdgeInsets.only(right: 10),
-                        child: ClipRRect(
-                          child: Image.network(
-                            convertDriveUrl(item.imagePaths![index]),
-                            fit: BoxFit.fill,
-                            loadingBuilder: (context, child, progress) {
-                              if (progress == null) return child;
-                              return Container(
-                                color: Colors.grey.shade200,
-                                alignment: Alignment.center,
-                                child: const CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey.shade200,
-                                alignment: Alignment.center,
-                                child: const Icon(
-                                  Icons.broken_image,
-                                  size: 30,
-                                  color: Colors.grey,
-                                ),
-                              );
-                            },
+                        child: GestureDetector(
+                          onTap: () {
+                            // Find the parent state to call _showImagePreview
+                            final parentState = context.findAncestorStateOfType<_ContactDetailPageState>();
+                            if (parentState != null) {
+                              parentState._showImagePreview(context, item.imagePaths![index]);
+                            }
+                          },
+                          child: ClipRRect(
+                            child: Image.network(
+                              convertDriveUrl(item.imagePaths![index]),
+                              fit: BoxFit.fill,
+                              loadingBuilder: (context, child, progress) {
+                                if (progress == null) return child;
+                                return Container(
+                                  color: Colors.grey.shade200,
+                                  alignment: Alignment.center,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey.shade200,
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    Icons.broken_image,
+                                    size: 30,
+                                    color: Colors.grey,
+                                  ),
+                                );
+                              },
+                            ),
                           ),
                         ),
                       );

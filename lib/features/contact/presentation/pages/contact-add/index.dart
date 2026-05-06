@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:progress_group/core/constants/assets.dart';
 import 'package:progress_group/core/utils/widget/custom_button.dart';
+import 'package:progress_group/features/attandance/data/arguments/attandance_args.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_dropdown_args.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_params.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_visit_params.dart';
@@ -30,6 +31,8 @@ import 'package:progress_group/features/contact/presentation/state/prospect_stat
 import 'package:progress_group/features/contact/presentation/state/prospect_status/prospect_status_state.dart';
 import 'package:progress_group/features/contact/presentation/state/contact/contact_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/contact/contact_event.dart';
+import 'package:progress_group/features/contact/presentation/state/attachment/attachment_cubit.dart';
+
 
 import '../../../../../core/constants/colors.dart';
 import '../../../../../core/utils/helpers/date_helper.dart';
@@ -78,8 +81,6 @@ class _ContactAddPageState extends State<ContactAddPage> {
 
 
   List<OwnerDropdownItem> itemsProject = [OwnerDropdownItem(name: "Paradise Serpong City 1"), OwnerDropdownItem(name:"Paradise Serpong City 2" ), OwnerDropdownItem(name: "Paradise Resort City")];
-
-  final ImagePicker _picker = ImagePicker();
 
 
   @override
@@ -144,12 +145,20 @@ class _ContactAddPageState extends State<ContactAddPage> {
   }
 
   Future<void> _openCamera() async {
-    final XFile? photo = await _picker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 70,
+    final result = await context.pushNamed(
+      'camera',
+      extra: AttandanceArgs(
+        type: widget.args.page == 4 ? "Visit" : "Attachment",
+        location: "-", // or fetch location if needed
+        time: DateFormat('HH:mm').format(DateTime.now()),
+        isReturnImage: true,
+        skipPreview: widget.args.page == 4,
+      ),
     );
-    if (photo != null) {
-      final file = File(photo.path);
+
+
+    if (result != null) {
+      final file = File(result as String);
       setState(() {
         if (widget.args.page == 4) {
           selectedImages.add(file);
@@ -161,16 +170,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
     }
   }
 
-  Future<void> _pickImages() async {
-    final List<XFile> photos = await _picker.pickMultiImage(
-      imageQuality: 70,
-    );
-    if (photos.isNotEmpty) {
-      setState(() {
-        selectedImages.addAll(photos.map((e) => File(e.path)));
-      });
-    }
-  }
+
 
   Future<void> pickDateTime(BuildContext context) async {
     final now = DateTime.now();
@@ -403,7 +403,43 @@ class _ContactAddPageState extends State<ContactAddPage> {
             }
           },
         ),
+        BlocListener<ActivityVisitBloc, VisitState>(
+          listener: (context, state) {
+            if (state is VisitSuccess) {
+              final contactId = widget.args.dataContact?.contactId;
+              final dealId = widget.args.dataContact?.dealId;
+
+              if (contactId != null) {
+                // Refresh Activities
+                context.read<ActivityBloc>().add(FetchActivitiesEvent(contactId: contactId, isRefresh: true));
+                
+                // Refresh Attachments
+                context.read<AttachmentCubit>().fetch(contactId, dealId);
+                
+                // Refresh Prospect Status & Detail
+                context.read<ActivityProspectStatusBloc>().add(FetchActivityProspectStatusEvent(contactId));
+                context.read<ContactBloc>().add(FetchContactDetailEvent(contactId));
+              }
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Visit berhasil ditambahkan'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+              context.pop();
+            } else if (state is VisitError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+        ),
       ],
+
       child: Scaffold(
         body: SafeArea(
           child: BlocBuilder<UploadAttachmentBloc, UploadAttachmentState>(
@@ -1589,6 +1625,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                 color: Color(grey2Color),
               ),
             ),
+            if (selectedImages.isNotEmpty)
             Row(
               children: [
                 IconButton(
@@ -1596,11 +1633,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                   icon: Icon(Icons.camera_alt, color: Color(primaryColor)),
                   tooltip: 'Take Photo',
                 ),
-                IconButton(
-                  onPressed: _pickImages,
-                  icon: Icon(Icons.photo_library, color: Color(primaryColor)),
-                  tooltip: 'Pick from Gallery',
-                ),
+                
               ],
             ),
           ],
@@ -1652,32 +1685,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
         else
           GestureDetector(
             onTap: () {
-              showModalBottomSheet(
-                context: context,
-                builder: (context) => SafeArea(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ListTile(
-                        leading: Icon(Icons.camera_alt),
-                        title: Text('Camera'),
-                        onTap: () {
-                          Navigator.pop(context);
-                          _openCamera();
-                        },
-                      ),
-                      ListTile(
-                        leading: Icon(Icons.photo_library),
-                        title: Text('Gallery'),
-                        onTap: () {
-                          Navigator.pop(context);
-                          _pickImages();
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              );
+              _openCamera();
             },
             child: Container(
               width: double.infinity,

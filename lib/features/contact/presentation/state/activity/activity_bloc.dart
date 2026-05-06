@@ -87,6 +87,14 @@ class ActivityBloc extends Bloc<ActivityEvent, ActivityState> {
   }
 }
 
+class NotifActivityBloc extends ActivityBloc {
+  NotifActivityBloc({
+    required super.getActivitiesUseCase,
+    required super.createActivityUseCase,
+  });
+}
+
+
 
 class ActivityVisitBloc extends Bloc<CreateVisitEvent, VisitState> {
   final CreateActivityVisitUseCase createVisit;

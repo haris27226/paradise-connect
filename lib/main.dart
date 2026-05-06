@@ -153,6 +153,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => ProspectStatusBloc(getProspectStatusesUseCase: getProspectStatusesUseCase)),
         BlocProvider(create: (_) => ContactPropertiesBloc(getContactPropertiesUseCase: getContactPropertiesUseCase)),
         BlocProvider(create: (_) => ActivityBloc(getActivitiesUseCase: getActivitiesUseCase,createActivityUseCase: createActivityUseCase)),
+        BlocProvider(create: (_) => NotifActivityBloc(getActivitiesUseCase: getActivitiesUseCase,createActivityUseCase: createActivityUseCase)),
         BlocProvider(create: (_) => ActivityVisitBloc(createActivityVisitUseCase)),
         BlocProvider(create: (_) => AttachmentTypeBloc(getAttachmentTypesUseCase)),
         BlocProvider(create: (_) => UploadAttachmentBloc(uploadAttachmentUseCase,updateAttachmentUseCase )),

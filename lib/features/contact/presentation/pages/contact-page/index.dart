@@ -119,8 +119,7 @@ class _ContactPageState extends State<ContactPage> {
                                         if (profileState.profile.salesPersonId ==
                                             id) {
                                           label =
-                                              profileState.profile.fullName ??
-                                              'Owner';
+                                              profileState.profile.fullName;
                                         } else {
                                           HierarchyNodeEntity? found;
                                           void search(
@@ -138,7 +137,7 @@ class _ContactPageState extends State<ContactPage> {
                                             profileState.profile.subordinates,
                                           );
                                           if (found != null) {
-                                            label = found!.fullName ?? 'Owner';
+                                            label = found!.fullName;
                                           }
                                         }
                                       } else {
@@ -329,7 +328,7 @@ class _ContactPageState extends State<ContactPage> {
                                           selectedDateLabel = null;
                                         });
                                       } else {
-                                        /// 🔥 APPLY FILTER
+                                        
                                         context.read<ContactBloc>().add(
                                           FetchContactsEvent(
                                             startDate: result.startDate,
@@ -456,7 +455,7 @@ Widget _buildListContacts(BuildContext context, Contact contact) {
                     style: TextStyle(
                       color: Color(primaryColor),
                       fontWeight: FontWeight.bold,
-                      fontSize: 16, // Sesuaikan ukuran font sesuai kebutuhan
+                      fontSize: 16, 
                     ),
                   ),
                 ),

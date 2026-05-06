@@ -22,184 +22,216 @@ class NotifPage extends StatefulWidget {
 
 class _NotifPageState extends State<NotifPage> {
   final Set<int> _completedActivityIds = {};
+  String _selectedActivityType = 'All';
+  final List<String> _activityTypes = ['All', 'WhatsApp', 'Call', 'Visit', 'Meeting', 'Task'];
 
   @override
   void initState() {
     super.initState();
-    // Memanggil semua aktivitas tanpa filter tanggal
-    context.read<ActivityBloc>().add(const FetchActivitiesEvent(isRefresh: true));
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    context.read<NotifActivityBloc>().add(
+      FetchActivitiesEvent(
+        activityType: _selectedActivityType == 'All' ? null : _selectedActivityType.toLowerCase(),
+        isRefresh: true,
+      ),
+    );
   }
 
   Future<void> _onRefresh() async {
-    context.read<ActivityBloc>().add(const FetchActivitiesEvent(isRefresh: true));
+    await _loadData();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            customHeader(context, "Notifikasi", isBack: true, colorBack: Color(primaryColor)),
-            SizedBox(height: 16),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildListNotif(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+        child: BlocBuilder<NotifActivityBloc, ActivityState>(
+          builder: (context, state) {
+            final isLoading = state.status == ActivityStatus.loading;
+            final activities = state.activities;
 
-  Widget _buildListNotif() {
-    return BlocBuilder<ActivityBloc, ActivityState>(
-      builder: (context, state) {
-        if (state.status == ActivityStatus.loading && state.activities.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
+            return Stack(
+              children: [
+                Column(
+                  children: [
+                    customHeader(context, "Notifikasi", isBack: true, colorBack: Color(primaryColor)),
+                    SizedBox(height: 16),
 
-        final activities = state.activities;
+                    /// 🔥 FILTER
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: _activityTypes.map((type) {
+                          final isSelected = _selectedActivityType == type;
 
-        if (activities.isEmpty) {
-          return RefreshIndicator(
-            onRefresh: _onRefresh,
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: const [
-                Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Center(child: Text("Tidak ada notifikasi aktivitas")),
-                )
-              ],
-            ),
-          );
-        }
-
-        return RefreshIndicator(
-          onRefresh: _onRefresh,
-          child: ListView.builder(
-            physics: const AlwaysScrollableScrollPhysics(),
-            itemCount: activities.length,
-            itemBuilder: (context, index) {
-              final activity = activities[index];
-              final bool isCompleted = _completedActivityIds.contains(activity.activityId);
-              final bool isWhatsApp = activity.activityType.toLowerCase().contains('whatsapp');
-              final bool isCall = activity.activityType.toLowerCase().contains('call');
-
-              return GestureDetector(
-                onTap: () async {
-                  if (isWhatsApp) {
-                    if (activity.waId != null && activity.jid != null && activity.sessionCode != null) {
-                      context.pushNamed(
-                        'detailInbox',
-                        extra: InboxDetailArgs(
-                          data: InboxContact(
-                            id: activity.waId!,
-                            name: activity.contactName ?? 'Unknown',
-                            jid: activity.jid!,
-                            isGroup: activity.isGroup ?? false,
-                            initials: activity.initials ?? '?',
-                            sessionCode: activity.sessionCode!,
-                          ),
-                          icon: Icons.person,
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Missing message history'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  } else if (isCall) {
-                    if (activity.phoneNumber != null) {
-                      final Uri telLaunchUri = Uri(
-                        scheme: 'tel',
-                        path: activity.phoneNumber,
-                      );
-                      if (await canLaunchUrl(telLaunchUri)) {
-                        await launchUrl(telLaunchUri);
-                      }
-                    }
-                  }
-
-                  setState(() {
-                    if (isCompleted) {
-                      _completedActivityIds.remove(activity.activityId);
-                    } else {
-                      _completedActivityIds.add(activity.activityId);
-                    }
-                  });
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1,
-                        blurRadius: 3,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            isCompleted ? Icons.check_circle : Icons.check_circle_outline_rounded,
-                            color: isCompleted ? Colors.green : Color(primaryColor),
-                            size: 40,
-                          ),
-                          const SizedBox(width: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                activity.activityType,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(blackColor),
-                                  decoration: isCompleted ? TextDecoration.lineThrough : null,
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: GestureDetector(
+                              onTap: () {
+                                if (_selectedActivityType != type) {
+                                  setState(() {
+                                    _selectedActivityType = type;
+                                  });
+                                  _loadData();
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? Color(primaryColor) : Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: Color(primaryColor)),
+                                ),
+                                child: Text(
+                                  type,
+                                  style: TextStyle(color: isSelected ? Colors.white : Color(primaryColor), fontWeight: FontWeight.bold, fontSize: 12),
                                 ),
                               ),
-                              Text(
-                                activity.nextFollowUpDate != null
-                                    ? DateHelper.formatToIndonesian(DateTime.parse(activity.nextFollowUpDate!))
-                                    : "No follow-up date",
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(grey2Color)),
-                              ),
-                            ],
-                          ),
-                        ],
+                            ),
+                          );
+                        }).toList(),
                       ),
-                      Container(
-                        child: isWhatsApp
-                            ? Image.asset(icContactDetailWA)
-                            : Icon(
-                                isCall ? Icons.phone_outlined : Icons.event_note_outlined,
-                                color: Color(primaryColor),
-                                size: 30,
+                    ),
+
+                    SizedBox(height: 12),
+
+                    /// 🔥 LIST
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: activities.isEmpty
+                            ? RefreshIndicator(
+                                onRefresh: _onRefresh,
+                                child: ListView(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  children: const [
+                                    Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Center(child: Text("Tidak ada notifikasi aktivitas")),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : RefreshIndicator(
+                                onRefresh: _onRefresh,
+                                child: ListView.builder(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  itemCount: activities.length,
+                                  itemBuilder: (context, index) {
+                                    final activity = activities[index];
+                                    final isCompleted = _completedActivityIds.contains(activity.activityId);
+                                    final isWhatsApp = activity.activityType.toLowerCase().contains('whatsapp');
+                                    final isCall = activity.activityType.toLowerCase().contains('call');
+
+                                    return GestureDetector(
+                                      onTap: () async {
+                                        if (isWhatsApp) {
+                                          if (activity.waId != null && activity.jid != null && activity.sessionCode != null) {
+                                            context.pushNamed(
+                                              'detailInbox',
+                                              extra: InboxDetailArgs(
+                                                data: InboxContact(
+                                                  id: activity.waId!,
+                                                  name: activity.contactName ?? 'Unknown',
+                                                  jid: activity.jid!,
+                                                  isGroup: activity.isGroup ?? false,
+                                                  initials: activity.initials ?? '?',
+                                                  sessionCode: activity.sessionCode!,
+                                                ),
+                                                icon: Icons.person,
+                                              ),
+                                            );
+                                          } else {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Missing message history'), backgroundColor: Colors.red),
+                                            );
+                                          }
+                                        } else if (isCall) {
+                                          if (activity.phoneNumber != null) {
+                                            final Uri telLaunchUri = Uri(scheme: 'tel', path: activity.phoneNumber);
+                                            if (await canLaunchUrl(telLaunchUri)) {
+                                              await launchUrl(telLaunchUri);
+                                            }
+                                          }
+                                        }
+
+                                        setState(() {
+                                          if (isCompleted) {
+                                            _completedActivityIds.remove(activity.activityId);
+                                          } else {
+                                            _completedActivityIds.add(activity.activityId);
+                                          }
+                                        });
+                                      },
+
+                                      child: Container(
+                                        margin: const EdgeInsets.only(bottom: 10),
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(10),
+                                          boxShadow: [
+                                            BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 1)),
+                                          ],
+                                        ),
+
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  isCompleted ? Icons.check_circle : Icons.check_circle_outline_rounded,
+                                                  color: isCompleted ? Colors.green : Color(primaryColor),
+                                                  size: 40,
+                                                ),
+                                                const SizedBox(width: 10),
+
+                                                Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(activity.activityType, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(blackColor), decoration: isCompleted ? TextDecoration.lineThrough : null)),
+                                                    Text("${activity.contactName}", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(grey2Color))),
+                                                    Text(activity.nextFollowUpDate != null ? DateHelper.formatToIndonesian(DateTime.parse(activity.nextFollowUpDate!)) : "No follow-up date", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(grey2Color))),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+
+                                            isWhatsApp ? Image.asset(icContactDetailWA) : Icon(isCall ? Icons.phone_outlined : Icons.event_note_outlined, color: Color(primaryColor), size: 30),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
-                      )
-                    ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                /// 🔥 GLOBAL LOADING
+                AnimatedOpacity(
+                  duration: Duration(milliseconds: 200),
+                  opacity: isLoading ? 1 : 0,
+                  child: IgnorePointer(
+                    ignoring: !isLoading,
+                    child: Container(
+                      color: Colors.black.withOpacity(0.3),
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
                   ),
                 ),
-              );
-            },
-          ),
-        );
-      },
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 }

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:progress_group/core/constants/colors.dart';
-
+import 'package:local_auth/local_auth.dart';
 import '../../../../../core/utils/widget/custom_loading.dart';
 import '../../../../../core/utils/widget/custom_snackbar.dart';
 import '../../state/auth/auth_bloc.dart';
@@ -29,6 +29,7 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordFN = FocusNode();
 
   StreamSubscription<AuthState>? _authSubscription;
+  final LocalAuthentication _auth = LocalAuthentication();
 
 
   @override
@@ -38,6 +39,48 @@ class _LoginPageState extends State<LoginPage> {
   }
 
 
+  Future<void> _loginWithBiometric() async {
+    try {
+      final isSupported = await _auth.isDeviceSupported();
+      final canCheck = await _auth.canCheckBiometrics;
+
+      if (!isSupported || !canCheck) {
+        showSnackbar(context, "Device tidak support biometrik", isError: true);
+        return;
+      }
+
+      final didAuthenticate = await _auth.authenticate(
+        localizedReason: 'Scan fingerprint untuk login',
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          stickyAuth: true,
+        ),
+      );
+
+      if (!didAuthenticate) return;
+
+      /// 🔥 AMBIL DATA REMEMBER ME
+      final state = context.read<AuthBloc>().state;
+
+      if (state is RememberMeLoaded) {
+        final email = state.username;
+        final password = state.password;
+
+        if (email.isEmpty || password.isEmpty) {
+          showSnackbar(context, "Tidak ada data login tersimpan", isError: true);
+          return;
+        }
+
+        context.read<AuthBloc>().add(
+          LoginEvent(email, password, rememberMe: true),
+        );
+      } else {
+        showSnackbar(context, "Aktifkan Remember Me dulu", isError: true);
+      }
+    } catch (e) {
+      print("Biometric gagal: $e");
+    }
+  }
 
   void _login() {
     final email = _emailController.text.trim();
@@ -386,7 +429,9 @@ class _LoginPageState extends State<LoginPage> {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: IconButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  _loginWithBiometric();
+                                },
                                 icon: const Icon(
                                   Icons.fingerprint,
                                   color: Colors.white,
