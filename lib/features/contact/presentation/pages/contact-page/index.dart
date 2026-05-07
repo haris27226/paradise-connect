@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:progress_group/core/constants/assets.dart';
+import 'package:progress_group/core/utils/widget/custom_bg_icon.dart';
 import 'package:progress_group/features/contact/presentation/widgets/contact_options_sheet.dart';
 import 'package:progress_group/core/constants/colors.dart';
 
@@ -503,7 +505,79 @@ Widget _buildListContacts(BuildContext context, Contact contact) {
   );
 }
 
+
 Widget _buildContactOptions(BuildContext context, Contact contact) {
-  return ContactOptionsSheet(contact: contact);
+  return Container(
+    width: double.infinity,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildIconLink(context, icEdit, "Edit Contact", () {
+          context.pushNamed(
+            'formContact',
+            extra: ContactDetailArgs(dataContact: contact, page: 1),
+          );
+        }),
+        _buildIconLink(context, icDelete, "Delete Contact", () {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: Text('Confirm'),
+              content: Text('Delete this contact?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    context.read<ContactBloc>().add(
+                      DeleteContactEvent(contact.contactId),
+                    );
+                  },
+                  child: Text('Delete'),
+                ),
+              ],
+            ),
+          );
+        }),
+        _buildIconLink(context, icShare, "Share Contact", () {
+          // TODO: Implement share
+        }),
+      ],
+    ),
+  );
 }
 
+Widget _buildIconLink(
+  BuildContext context,
+  String asset,
+  String label,
+  VoidCallback onTap, {
+  Color? color,
+}) {
+  return InkWell(
+    onTap: () {
+      Navigator.pop(context);
+      onTap();
+    },
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          BgIcon(asset: asset, onTap: null, color: color),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              color: Color(blue2Color),
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}

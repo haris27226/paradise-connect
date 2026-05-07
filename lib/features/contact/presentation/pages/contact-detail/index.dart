@@ -6,6 +6,7 @@ import 'package:progress_group/core/utils/widget/custom_search_field.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_detail_args.dart';
 import 'package:progress_group/features/contact/data/models/activity/activity_dashboard.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/activity_entity.dart';
+import 'package:progress_group/features/contact/domain/entities/contact/contact.dart';
 import 'package:progress_group/features/contact/presentation/pages/contact-form/index.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -38,8 +39,7 @@ class ContactDetailPage extends StatefulWidget {
   State<ContactDetailPage> createState() => _ContactDetailPageState();
 }
 
-class _ContactDetailPageState extends State<ContactDetailPage>
-    with TickerProviderStateMixin {
+class _ContactDetailPageState extends State<ContactDetailPage> with TickerProviderStateMixin {
   TextEditingController searchTC = TextEditingController();
 
   FocusNode searchFN = FocusNode();
@@ -262,9 +262,7 @@ class _ContactDetailPageState extends State<ContactDetailPage>
                                   onTap: () {
                                     showCustomBottomSheet(
                                       context: context,
-                                      child: _buildEditBottomSheetContent(
-                                        context,
-                                      ),
+                                      child:_buildContactOptions(context, widget.args.dataContact!)
                                     );
                                   },
                                 ),
@@ -904,13 +902,82 @@ Widget _buildActivityContent() {
     );
   }
 
-  Widget _buildEditBottomSheetContent(BuildContext context) {
-    if (widget.args.dataContact == null) return const SizedBox();
-    return ContactOptionsSheet(
-      contact: widget.args.dataContact!,
-      initialTab: currentTab,
-    );
-  }
+Widget _buildContactOptions(BuildContext context, Contact contact) {
+  return Container(
+    width: double.infinity,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildIconLink(context, icEdit, "Edit Contact", () {
+          context.pushNamed(
+            'formContact',
+            extra: ContactDetailArgs(dataContact: contact, page: 1),
+          );
+        }),
+        _buildIconLink(context, icDelete, "Delete Contact", () {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: Text('Confirm'),
+              content: Text('Delete this contact?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    context.replace("/contact");
+                    context.pop();
+                    context.read<ContactBloc>().add(
+                      DeleteContactEvent(contact.contactId),
+                    );
+                  },
+                  child: Text('Delete'),
+                ),
+              ],
+            ),
+          );
+        }),
+        _buildIconLink(context, icShare, "Share Contact", () {
+          // TODO: Implement share
+        }),
+      ],
+    ),
+  );
+}
+
+Widget _buildIconLink(
+  BuildContext context,
+  String asset,
+  String label,
+  VoidCallback onTap, {
+  Color? color,
+}) {
+  return InkWell(
+    onTap: () {
+      Navigator.pop(context);
+      onTap();
+    },
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          BgIcon(asset: asset, onTap: null, color: color),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              color: Color(blue2Color),
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
 
   void _showImagePreview(BuildContext context, String imageUrl) {

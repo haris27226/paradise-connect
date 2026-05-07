@@ -29,59 +29,7 @@ class ContactOptionsSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          buildIconLink(
-            context,
-            icEdit,
-            "Edit Contact",
-            () {
-              context.pushNamed(
-                'formContact',
-                extra: ContactDetailArgs(
-                  dataContact: contact,
-                  page: 1,
-                  initialTab: initialTab,
-                ),
-              );
-            },
-          ),
-
-          buildIconLink(
-            context,
-            icDelete,
-            "Delete Contact",
-            () {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Confirm'),
-                  content: const Text('Delete this contact?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        context.read<ContactBloc>().add(
-                              DeleteContactEvent(contact.contactId),
-                            );
-                      },
-                      child: const Text('Delete'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          buildIconLink(
-            context,
-            icShare,
-            "Share Contact",
-            () {
-              ShareHelper.shareContact(contact);
-            },
-          ),
+          
         ],
       ),
     );

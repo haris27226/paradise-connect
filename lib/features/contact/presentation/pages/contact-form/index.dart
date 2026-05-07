@@ -110,7 +110,9 @@ class _ContactFormPageState extends State<ContactFormPage> {
   FocusNode fspFN = FocusNode();
   FocusNode lspFN = FocusNode();
   FocusNode sumberInformationFN = FocusNode();
-
+  
+  bool _showValidation = false;
+  
   List<OwnerDropdownItem> itemsProject = [OwnerDropdownItem(name: "Paradise Serpong City 1"), OwnerDropdownItem(name:"Paradise Serpong City 2" ), OwnerDropdownItem(name: "Paradise Resort City")];
   List<OwnerDropdownItem> itemsProjectCategory = [OwnerDropdownItem(name: "Residential"), OwnerDropdownItem(name:"Commercial" )];
   final Map<String, Map<String, List<String>>> projectData = {
@@ -348,8 +350,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
         // ignore parsing errors
       }
 
-      // Fallback: some APIs return properties in `properties_json` instead of `property_groups`.
-      // Try parsing that and populate controllers as well.
       try {
         final pj = contact.propertiesJson;
         if (pj != null) {
@@ -594,7 +594,28 @@ class _ContactFormPageState extends State<ContactFormPage> {
 
   Future<void> _handleSave() async {
     final today = DateHelper.formatNumericCompact(DateTime.now());
+    final isCreate = widget.args.page == 0;
 
+    setState(() {
+      _showValidation = true;
+    });
+
+    if (
+      isCreate &&
+      (
+        selectedOwnerId == null ||
+        (selectedSalutation?.isEmpty ?? true) ||
+        fullNameTC.text.isEmpty ||
+        phoneTC.text.isEmpty ||
+        waTC.text.isEmpty ||
+        (selectFirstProject?.isEmpty ?? true) ||
+        (selectFirstProjectCategory?.isEmpty ?? true) ||
+        (selectFirstProjectProduct?.isEmpty ?? true) ||
+        selectedStatusId == null
+      )
+    ) {
+      return;
+    }
     // Auto-fill first-date fields for new contacts
     if (widget.args.page == 0 || widget.args.dataContact == null) {
       if (firstApptDateTC.text.isEmpty) firstApptDateTC.text = today;
@@ -610,6 +631,8 @@ class _ContactFormPageState extends State<ContactFormPage> {
       }
     });
 
+    final isUpdate = widget.args.page == 1;
+
     final params = CreateContactParams(
       salutation: selectedSalutation ?? '',
       salesExecutiveId: selectedSalesExecutiveId,
@@ -621,38 +644,38 @@ class _ContactFormPageState extends State<ContactFormPage> {
       sumberInformasi2: selectedSumberInformasi,
       generalNotes: generalNotesTC.text.isNotEmpty ? generalNotesTC.text : null,
       propertiesJson: propertiesJson.isNotEmpty ? propertiesJson : null,
-
-      fullName: fullNameTC.text,
-      primaryEmail: emailTC.text,
-      primaryPhone: phoneTC.text,
-      whatsappNumber: waTC.text,
-      firstBlokNo: fBlockNoTC.text,
-      firstProduct: selectFirstProjectProduct,
-      firstProjectCategory: selectFirstProjectCategory,
-      firstProject: selectFirstProject,
+      fullName: fullNameTC.text.isNotEmpty ? fullNameTC.text : null,
+      primaryEmail: emailTC.text.isNotEmpty ? emailTC.text : null,
+      primaryPhone: phoneTC.text.isNotEmpty ? phoneTC.text : null,
+      whatsappNumber: waTC.text.isNotEmpty ? waTC.text : null,
       lastProject: selectLastProject,
       lastProduct: selectLastProjectProduct,
       lastProjectCategory: selectLastProjectCategory,
-      lastBlokNo: lBlockNoTC.text,
-      noKtp: noKTPTC.text,
-      ktpAddress: ktpAddressTC.text,
-      volumePlan: volumePlanTC.text,
+      lastBlokNo: lBlockNoTC.text.isNotEmpty ? lBlockNoTC.text : null,
+      noKtp: noKTPTC.text.isNotEmpty ? noKTPTC.text : null,
+      ktpAddress: ktpAddressTC.text.isNotEmpty ? ktpAddressTC.text : null,
+      volumePlan: volumePlanTC.text.isNotEmpty ? volumePlanTC.text : null,
       visitCount: vCountTC.text.isNotEmpty ? int.tryParse(vCountTC.text) : null,
-      firstVisitDate: firstVisitorDateTC.text,
-      lastVisitDate: lastVisitorDateTC.text,
-      firstApptDate: firstApptDateTC.text,
-      lastApptDate: lastApptDateTC.text,
-      dealValue: dealValueTC.text,
-      reserveDate: reserveDateTC.text,
-      lossReasonNote: lossReasonNoteTC.text,
-      firstSPDate: fspTC.text,
-      lastSPDate: lspTC.text,
+      lastVisitDate: lastVisitorDateTC.text.isNotEmpty ? lastVisitorDateTC.text : null,
+      lastApptDate: lastApptDateTC.text.isNotEmpty ? lastApptDateTC.text : null,
+      dealValue: dealValueTC.text.isNotEmpty ? dealValueTC.text : null,
+      reserveDate: reserveDateTC.text.isNotEmpty ? reserveDateTC.text : null,
+      lossReasonNote: lossReasonNoteTC.text.isNotEmpty ? lossReasonNoteTC.text : null,
+
+      // jangan kirim saat update
+      lastSPDate: isUpdate ? null : (lspTC.text.isNotEmpty ? lspTC.text : null),
+      firstBlokNo: isUpdate ? null : (fBlockNoTC.text.isNotEmpty ? fBlockNoTC.text : null),
+      firstProduct: isUpdate ? null : selectFirstProjectProduct,
+      firstProjectCategory: isUpdate ? null : selectFirstProjectCategory,
+      firstProject: isUpdate ? null : selectFirstProject,
+      firstVisitDate: isUpdate ? null : (firstVisitorDateTC.text.isNotEmpty ? firstVisitorDateTC.text : null),
+      firstApptDate: isUpdate ? null : (firstApptDateTC.text.isNotEmpty ? firstApptDateTC.text : null),
+      firstSPDate: isUpdate ? null : (fspTC.text.isNotEmpty ? fspTC.text : null),
     );
 
     if (widget.args.page == 1) {
-      context.read<ContactBloc>().add(
-        UpdateContactEvent(widget.args.dataContact!.contactId, params),
-      );
+      print("data update contact:${widget.args.dataContact!.contactId} $params");
+      context.read<ContactBloc>().add(UpdateContactEvent(widget.args.dataContact!.contactId, params));
     } else {
       context.read<ContactBloc>().add(CreateContactEvent(params));
     }
@@ -660,11 +683,9 @@ class _ContactFormPageState extends State<ContactFormPage> {
 
   DateTime _parseDateOrToday(String? value) {
     if (value == null || value.isEmpty) return DateTime.now();
-    // Try ISO parse first
     try {
       return DateTime.parse(value);
     } catch (_) {}
-    // Try dd/MM/yyyy
     try {
       return DateFormat('dd/MM/yyyy').parse(value);
     } catch (_) {}
@@ -675,12 +696,10 @@ class _ContactFormPageState extends State<ContactFormPage> {
     if (v == null) return '';
     if (v is DateTime) return DateHelper.formatNumericCompact(v);
     if (v is String) {
-      // try ISO
       try {
         final dt = DateTime.parse(v);
         return DateHelper.formatNumericCompact(dt);
       } catch (_) {}
-      // try dd/MM/yyyy
       try {
         final dt = DateFormat('dd/MM/yyyy').parse(v);
         return DateHelper.formatNumericCompact(dt);
@@ -702,8 +721,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
           showDialog(
             context: context,
             barrierDismissible: false,
-            builder: (context) =>
-                const Center(child: CircularProgressIndicator()),
+            builder: (context) =>const Center(child: CircularProgressIndicator()),
           );
         } else if (state.status == ContactStatus.createSuccess) {
           context.pop(); // Close loading
@@ -760,9 +778,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
                 }
 
                 if (widget.args.page != 0) {
-                  final contact =
-                      context.read<ContactBloc>().state.contactDetail ??
-                      widget.args.dataContact;
+                  final contact =context.read<ContactBloc>().state.contactDetail ??widget.args.dataContact;
                   if (contact != null) _fillForm(contact);
                 }
               }
@@ -882,9 +898,10 @@ class _ContactFormPageState extends State<ContactFormPage> {
                   hint: "Contact Information",
                   child: Column(
                     children: [
-                     _buildFieldDown(
+                      _buildFieldDown(
                         label: "Owner",
                         value: selectedOwnerName,
+                        isError: _showValidation && selectedOwnerId == null,
                         onTap: () async {
                           if (profileState is ProfileLoaded) {
                             final user = profileState.profile;
@@ -947,6 +964,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
                       _buildFieldDown(
                         label: "Salutation",
                         value: selectedSalutation ?? "Select Salutation",
+                        isError: _showValidation && (selectedSalutation?.isEmpty ?? true),
                         onTap: () async {
                           final items = [
                             OwnerDropdownItem(id: 1, name: 'Mr.'),
@@ -976,18 +994,20 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         label: "Full Name",
                         controller: fullNameTC,
                         focusNode: fullNameFN,
+                        isError: _showValidation && fullNameTC.text.isEmpty,
                       ),
-                       _buildField(
+                      _buildField(
                         label: "Phone",
                         controller: phoneTC,
                         focusNode: phoneFN,
+                        isError: _showValidation && phoneTC.text.isEmpty,
                         fieldType: 'int',
                       ),
-
                       _buildField(
                         label: "Whatsapp",
                         controller: waTC,
                         focusNode: waFN,
+                        isError: _showValidation && waTC.text.isEmpty,
                         fieldType: 'int',
                       ),
 
@@ -996,6 +1016,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         controller: emailTC,
                         focusNode: emailFN,
                         fieldType: 'text',
+                        isError: _showValidation && emailTC.text.isEmpty,
                       ),
                      
                       _buildField(
@@ -1003,11 +1024,13 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         controller: noKTPTC,
                         focusNode: noKTPFN,
                         fieldType: 'int',
+                        isError: _showValidation && noKTPTC.text.isEmpty,
                       ),
                       _buildField(
                         label: "KTP Address",
                         controller: ktpAddressTC,
                         focusNode: ktpAddressFN,
+                        isError: _showValidation && ktpAddressTC.text.isEmpty,
                       ),
                       _buildFieldDown(
                         label: "First Project",
@@ -1076,6 +1099,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         label: "Sumber Informasi",
                         controller: sumberInfoTC,
                         focusNode: sumberInfoFN,
+                        isError: _showValidation && sumberInfoTC.text.isEmpty,
                       ),
                       _buildField(
                         label: "General Notes",
@@ -1086,7 +1110,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         label: "First Block No",
                         controller: fBlockNoTC,
                         focusNode: fBlockNoFN,
-                        fieldType: 'int',
+                        isError: _showValidation && fBlockNoTC.text.isEmpty,
                       ),
                       
                       _buildField(
@@ -1094,12 +1118,14 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         controller: vCountTC,
                         focusNode: vCountFN,
                         fieldType: 'int',
+                        isError: _showValidation && vCountTC.text.isEmpty,
                       ),
                       _buildField(
                         label: "First Appt Date",
                         controller: firstApptDateTC,
                         focusNode: firstApptDateFN,
                         fieldType: 'date',
+                        isError: _showValidation && firstApptDateTC.text.isEmpty,
                       ),
                       _buildField(
                         label: "First Visitor Date",
@@ -1133,6 +1159,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
                       _buildFieldDown(
                         label: "Status Prospect",
                         value: selectedStatusProspectName,
+                        isError: _showValidation && selectedStatusId ==null,
                         onTap: () async {
                           final statusState = context.read<ProspectStatusBloc>().state;
                           if (statusState.status == ProspectStatusEnum.loaded) {
@@ -1190,7 +1217,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
 
                       
                       _buildFieldDown(
-                        label: "Las Project Product",
+                        label: "Last Project Product",
                         value: selectLastProjectProduct,
                          onTap: () async{ 
                           
@@ -1225,7 +1252,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         label: "Last Block No",
                         controller: lBlockNoTC,
                         focusNode: lBlockNoFN,
-                        fieldType: 'int',
                       ),
 
                       _buildField(
@@ -1363,11 +1389,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
     );
   }
 
-  Widget _buildFieldDown({
-    required String label,
-    String? value,
-    VoidCallback? onTap,
-  }) {
+  Widget _buildFieldDown({  required String label,  String? value,  bool isError = false,  VoidCallback? onTap,}) {
     final isEmpty = value == null || value.isEmpty;
     final bool isReadOnly = widget.args.page == 2;
 
@@ -1380,7 +1402,10 @@ class _ContactFormPageState extends State<ContactFormPage> {
         decoration: BoxDecoration(
           color: Color(whiteColor),
           border: Border(
-            bottom: BorderSide(width: 1, color: Color(grey9Color)),
+            bottom: BorderSide(
+              width: 1, 
+              color: isError ? Color(redColor) : Color(grey9Color)
+            ),
           ),
         ),
         child: Row(
@@ -1395,7 +1420,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
                     Text(
                       label,
                       style: TextStyle(
-                        color: Color(grey2Color),
+                        color: isError ? Color(redColor) : Color(grey2Color),
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                       ),
@@ -1406,7 +1431,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: isEmpty ? Color(grey2Color) : Color(blackColor),
+                      color:isError?Color(redColor): isEmpty ? Color(grey2Color) : Color(blackColor),
                     ),
                   ),
                 ],
@@ -1435,7 +1460,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
     }
   }
 
-  Widget _buildField({  required String label,  required TextEditingController controller,  required FocusNode focusNode,  String fieldType = 'text',}) {
+  Widget _buildField({  required String label,  required TextEditingController controller,  required FocusNode focusNode,  String fieldType = 'text', bool isError = false,}) {
     final bool isReadOnly = widget.args.page == 2;
 
     return GestureDetector(
@@ -1446,7 +1471,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
 
         decoration: BoxDecoration(
           color: Color(whiteColor),
-          border:Border(bottom: BorderSide(width: 1, color: Color(grey9Color))),
+          border:Border(bottom: BorderSide(width: 1, color: isError ? Color(redColor) : Color(grey9Color))),
         ),
         child: Row(
           children: [
@@ -1486,7 +1511,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
                               maxLines: null,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Color(blackColor),
+                                color:isError?Color(redColor): Color(blackColor),
                                 fontWeight: FontWeight.w700,
                               ),
                               decoration: InputDecoration(
@@ -1496,13 +1521,13 @@ class _ContactFormPageState extends State<ContactFormPage> {
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(grey2Color),
+                                    color:isError?Color(redColor): Color(grey2Color),
                                   ),
                                 ),
                                 floatingLabelStyle: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(grey2Color),
+                                  color:isError?Color(redColor): Color(grey2Color),
                                 ),
                                 border: InputBorder.none,
                                 enabledBorder: InputBorder.none,
@@ -1541,13 +1566,13 @@ class _ContactFormPageState extends State<ContactFormPage> {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color: Color(grey2Color),
+                                color:isError?Color(redColor): Color(grey2Color),
                               ),
                             ),
                             floatingLabelStyle: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: Color(grey2Color),
+                              color:isError?Color(redColor): Color(grey2Color),
                             ),
 
 
@@ -1582,13 +1607,13 @@ class _ContactFormPageState extends State<ContactFormPage> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: Color(grey2Color),
+                              color:isError?Color(redColor): Color(grey2Color),
                             ),
                           ),
                           floatingLabelStyle: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: Color(grey2Color),
+                            color:isError?Color(redColor): Color(grey2Color),
                           ),
 
 
