@@ -3,11 +3,7 @@ import '../../features/contact/domain/entities/contact/contact.dart';
 
 class ShareHelper {
   static void shareContact(Contact contact) {
-    final String text = "Contact Info:\n"
-        "Name: ${contact.fullName}\n"
-        "Phone: ${contact.primaryPhone ?? '-'}\n"
-        "Email: ${contact.primaryEmail ?? '-'}\n"
-        "Address: ${contact.ktpAddress ?? '-'}";
+    final String text = "Name: ${contact.fullName}\nWhatsapp: https://wa.me/${contact.whatsappNumber ?? '-'}";
     
     Share.share(text);
   }

@@ -22,12 +22,14 @@ import 'package:progress_group/features/auth/presentation/state/auth/auth_bloc.d
 import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
 import 'package:progress_group/features/contact/domain/usecases/activity/create_activity_visit_usecase.dart';
 import 'package:progress_group/features/contact/domain/usecases/activity/get_activity_prospect_status_usecase.dart';
+import 'package:progress_group/features/contact/domain/usecases/activity/get_whatsapp_activity_usecase.dart';
 import 'package:progress_group/features/contact/domain/usecases/attachment/delete_attachment_usecase.dart';
 import 'package:progress_group/features/contact/domain/usecases/attachment/get_attachments.dart';
 import 'package:progress_group/features/contact/domain/usecases/attachment/update_attachment_usecase.dart';
 import 'package:progress_group/features/contact/domain/usecases/contact/delete_contact_usecase.dart';
 import 'package:progress_group/features/contact/domain/usecases/contact/update_contact_usecase.dart';
 import 'package:progress_group/features/contact/presentation/state/attachment/attachment_cubit.dart';
+import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_bloc.dart';
 import 'package:progress_group/features/home/domain/usecases/get_report_whatsapp_usecase.dart';
 import 'package:progress_group/features/home/presentation/state/report-whatsapp/report_bloc.dart';
 import 'package:progress_group/features/inbox/data/datasources/inbox_remote_datasource.dart';
@@ -132,6 +134,7 @@ class MyApp extends StatelessWidget {
     final updateAttachmentUseCase = UpdateAttachmentUseCase(contactRepository);
     final createActivityVisitUseCase = CreateActivityVisitUseCase(contactRepository);
     final getActivityProspectStatusUseCase = GetActivityProspectStatusUseCase(contactRepository);
+    final getWhatsappActivityUseCase =  GetWhatsappUnreadSummaryUseCase(contactRepository);
 
     final attendanceRemoteDataSource = AttendanceRemoteDataSourceImpl(dioClient.dio);
     final attendanceRepository = AttendanceRepositoryImpl(attendanceRemoteDataSource);
@@ -159,12 +162,8 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => UploadAttachmentBloc(uploadAttachmentUseCase,updateAttachmentUseCase )),
         BlocProvider(create: (_) => AttachmentCubit(getAttachmentsUseCase, deleteAttachmentUseCase)),
         BlocProvider(create: (_) => ActivityProspectStatusBloc(getActivityProspectStatusUseCase)),
-        BlocProvider(create: (_) => AttendanceBloc(
-          getAttendanceUseCase: getAttendanceUseCase,
-          getLocationsUseCase: getLocationsUseCase,
-          submitAttendanceUseCase: submitAttendanceUseCase,
-          submitAttendanceActivityUseCase: submitAttendanceActivityUseCase,
-        )),
+        BlocProvider(create: (_) => AttendanceBloc(getAttendanceUseCase: getAttendanceUseCase,getLocationsUseCase: getLocationsUseCase,submitAttendanceUseCase: submitAttendanceUseCase,submitAttendanceActivityUseCase: submitAttendanceActivityUseCase,)),
+        BlocProvider(create: (_) => WhatsappActivityBloc(getWhatsappActivityUseCase)),
       ],
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,

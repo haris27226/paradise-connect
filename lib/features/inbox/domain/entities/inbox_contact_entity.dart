@@ -1,5 +1,6 @@
 class InboxContact {
   final int id;
+  final int? crmContactId;
   final String name;
   final String? photo;
   final String jid;
@@ -9,9 +10,13 @@ class InboxContact {
   final String? ownerName;
   final String sessionCode;
   final int unreadCount;
+  final String? crmContactName;
+  final String? lastMessageReceiver;
+  final String? lastMessageSender;
 
   InboxContact({
     required this.id,
+    this.crmContactId,
     required this.name,
     this.photo,
     required this.jid,
@@ -21,5 +26,8 @@ class InboxContact {
     this.ownerName,
     required this.sessionCode,
     this.unreadCount = 0,
+    this.crmContactName,
+    this.lastMessageReceiver,
+    this.lastMessageSender,
   });
 }

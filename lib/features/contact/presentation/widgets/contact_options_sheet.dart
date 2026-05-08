@@ -1,14 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:progress_group/core/constants/assets.dart';
 import 'package:progress_group/core/constants/colors.dart';
-import 'package:progress_group/core/utils/share_helper.dart';
 import 'package:progress_group/core/utils/widget/custom_bg_icon.dart';
 import 'package:progress_group/features/contact/domain/entities/contact/contact.dart';
-import 'package:progress_group/features/contact/data/arguments/contact_detail_args.dart';
-import 'package:progress_group/features/contact/presentation/state/contact/contact_bloc.dart';
-import 'package:progress_group/features/contact/presentation/state/contact/contact_event.dart';
+
 
 
 class ContactOptionsSheet extends StatelessWidget {

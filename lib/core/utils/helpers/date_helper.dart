@@ -53,4 +53,25 @@ class DateHelper {
   static String nowDay() {
     return formatDay(DateTime.now());
   }
+
+  String formatInboxDate(String? value) {
+  if (value == null || value.isEmpty) return '-';
+
+  final date = DateTime.tryParse(value);
+
+  if (date == null) return value;
+
+  final now = DateTime.now();
+
+  final isToday =
+      date.year == now.year &&
+      date.month == now.month &&
+      date.day == now.day;
+
+  if (isToday) {
+    return DateFormat('HH:mm').format(date);
+  }
+
+  return DateFormat('dd MMM yyyy').format(date);
+}
 }

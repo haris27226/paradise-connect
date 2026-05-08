@@ -2,15 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 abstract class InboxContactRemoteDataSource {
-  Future<Map<String, dynamic>> getInboxContacts({
-    String? search,
-    int? cPage,
-    int? gPage,
-    int? salesExecutiveId,
-    int? statusProspectId,
-    String? startDate,
-    String? endDate,
-  });
+  Future<Map<String, dynamic>> getInboxContacts({  String? search,  int? cPage,  int? gPage,  int? salesExecutiveId,  int? statusProspectId,  String? startDate,  String? endDate,});
   Future<Map<String, dynamic>> getWhatsappDevices();
   Future<Map<String, dynamic>> getQrSession({required String session});
 }

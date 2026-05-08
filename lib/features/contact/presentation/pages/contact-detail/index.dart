@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:progress_group/app/router.dart';
 import 'package:progress_group/core/constants/assets.dart';
 import 'package:progress_group/core/constants/colors.dart';
+import 'package:progress_group/core/utils/share_helper.dart';
 import 'package:progress_group/core/utils/widget/custom_search_field.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_detail_args.dart';
 import 'package:progress_group/features/contact/data/models/activity/activity_dashboard.dart';
@@ -19,6 +21,14 @@ import 'package:progress_group/features/contact/presentation/state/attachment/up
 import 'package:progress_group/features/contact/presentation/state/attachment/upload_attachment_state.dart';
 import 'package:progress_group/features/contact/presentation/state/contact/contact_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/contact/contact_event.dart';
+import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_bloc.dart';
+import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_event.dart';
+import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_state.dart';
+import 'package:progress_group/features/inbox/data/arguments/inbox_detail_args.dart';
+import 'package:progress_group/features/inbox/domain/entities/inbox_contact_entity.dart';
+import 'package:progress_group/features/inbox/presentation/state/inbox/inbox_block.dart';
+import 'package:progress_group/features/inbox/presentation/state/inbox/inbox_event.dart';
+import 'package:progress_group/features/inbox/presentation/state/inbox/inbox_statte.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../../core/utils/widget/custom_bg_icon.dart';
@@ -49,6 +59,8 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
   final tabs = ["Activity", "About", "Attachment"];
   late TabController _tabController;
   int currentTab = 0;
+  int _cPage = 1;
+  int _gPage = 1;
   final ScrollController _activityScrollController = ScrollController();
 
   
@@ -86,6 +98,35 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
     await _getActivity();
     await _getAttachment();
     await _getContactDetail();
+    // await _getWhatsappUnreadSummary();
+    await _fetchInbox();
+  }
+
+    Future<void> _fetchInbox({String? search, bool isLoadMore = false}) async {
+    if (!isLoadMore) {
+      _cPage = 1;
+      _gPage = 1;
+    }
+
+    final contactState = context.read<ContactBloc>().state;
+
+    context.read<InboxContactBloc>().add(GetInboxContactsEvent(
+      search: search ?? searchTC.text,
+      cPage: _cPage,
+      gPage: _gPage,
+      salesExecutiveId: (contactState.ownerIds != null && contactState.ownerIds!.isNotEmpty) ? contactState.ownerIds!.first : null,
+      statusProspectId: (contactState.statusProspectIds != null && contactState.statusProspectIds!.isNotEmpty) ? contactState.statusProspectIds!.first : null,
+      startDate: contactState.startDate,
+      endDate: contactState.endDate,
+      isLoadMore: isLoadMore,
+    ));
+  }
+
+  Future<void> _getWhatsappUnreadSummary() async {
+    final contactId = widget.args.dataContact?.contactId;
+    if (contactId != null) {
+      context.read<WhatsappActivityBloc>().add(FetchWhatsappUnreadSummaryEvent(contactId));
+    }
   }
 
   Future<void> _getContactDetail() async {
@@ -485,98 +526,371 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
       ),
     );
   }
+  Widget _buildActivityContent() {
+    return BlocBuilder<ActivityBloc, ActivityState>(
+      builder: (context, activityState) {
+        return BlocBuilder<ActivityProspectStatusBloc, ActivityProspectStatusState>(
+          builder: (context, prospectState) {
+            return BlocBuilder<WhatsappActivityBloc, WhatsappActivityState>(
+              builder: (context, whatsappState) {
 
+                return BlocBuilder<InboxContactBloc, InboxContactState>(
+                  builder: (context, inboxState) {
 
+                    // =========================
+                    // LOADING
+                    // =========================
+                    if (activityState.status == ActivityStatus.loading &&
+                        activityState.activities.isEmpty) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
 
-Widget _buildActivityContent() {
-  return BlocBuilder<ActivityBloc, ActivityState>(
-    builder: (context, activityState) {
-      return BlocBuilder<ActivityProspectStatusBloc,
-          ActivityProspectStatusState>(
-        builder: (context, prospectState) {
-          // 🔥 LOADING
-          if (activityState.status == ActivityStatus.loading &&
-              activityState.activities.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
+                    // =========================
+                    // MERGE TIMELINE
+                    // =========================
+                    List<ActivityTimelineItem> timeline = [];
 
-          // 🔥 MERGE DATA
-          List<ActivityTimelineItem> timeline = [];
+                    // =========================
+                    // ACTIVITY
+                    // =========================
+                    for (var item in activityState.activities) {
 
-          // activity
-          for (var item in activityState.activities) {
-            final date = DateTime.tryParse(item.activityDate);
-            if (date != null) {
-              timeline.add(ActivityTimelineItem(
-                date: date,
-                type: 'activity',
-                data: item,
-              ));
-            }
-          }
+                      final date = DateTime.tryParse(
+                        item.activityDate,
+                      );
 
-          // prospect
-          for (var item in prospectState.data) {
-            final date = DateTime.tryParse(item.createdAt);
-            if (date != null) {
-              timeline.add(ActivityTimelineItem(
-                date: date,
-                type: 'prospect',
-                data: item,
-              ));
-            }
-          }
+                      if (date != null) {
+                        timeline.add(
+                          ActivityTimelineItem(
+                            date: date,
+                            type: 'activity',
+                            data: item,
+                          ),
+                        );
+                      }
+                    }
 
-          // 🔥 SORT
-          timeline.sort((a, b) => b.date.compareTo(a.date));
+                    // =========================
+                    // PROSPECT
+                    // =========================
+                    for (var item in prospectState.data) {
 
-          // 🔥 GROUP BY TANGGAL
-          final Map<String, List<ActivityTimelineItem>> grouped = {};
+                      final date = DateTime.tryParse(
+                        item.createdAt,
+                      );
 
-          for (var item in timeline) {
-            final key = DateFormat('dd MMM yyyy').format(item.date);
-            grouped.putIfAbsent(key, () => []);
-            grouped[key]!.add(item);
-          }
+                      if (date != null) {
+                        timeline.add(
+                          ActivityTimelineItem(
+                            date: date,
+                            type: 'prospect',
+                            data: item,
+                          ),
+                        );
+                      }
+                    }
 
-          return ListView(
-            controller: _activityScrollController,
-            padding: const EdgeInsets.symmetric(horizontal:  16),
+                    // =========================
+                    // WHATSAPP
+                    // =========================
+                    for (var item in whatsappState.data) {
 
-            children: grouped.entries.map((entry) {
-              final date = entry.key;
-              final items = entry.value;
+                      final date = DateTime.tryParse(
+                        item.lastMessageAt,
+                      );
 
-              return Column(
+                      if (date != null) {
+                        timeline.add(
+                          ActivityTimelineItem(
+                            date: date,
+                            type: 'whatsapp',
+                            data: item,
+                          ),
+                        );
+                      }
+                    }
+
+                    // =========================
+                    // INBOX CONTACT
+                    // =========================
+                    if (inboxState is InboxContactLoaded) {
+
+                      for (var item in inboxState.contacts) {
+
+                        final date = DateTime.tryParse(
+                          item.lastConversationDate ?? '',
+                        );
+
+                        if (date != null) {
+                          timeline.add(
+                            ActivityTimelineItem(
+                              date: date,
+                              type: 'inbox_contact',
+                              data: item,
+                            ),
+                          );
+                        }
+                      }
+                    }
+
+                    // =========================
+                    // SORT DESC
+                    // =========================
+                    timeline.sort(
+                      (a, b) => b.date.compareTo(a.date),
+                    );
+
+                    // =========================
+                    // GROUP BY DATE
+                    // =========================
+                    final Map<String, List<ActivityTimelineItem>> grouped = {};
+
+                    for (var item in timeline) {
+
+                      final key = DateFormat(
+                        'dd MMM yyyy',
+                      ).format(item.date);
+
+                      grouped.putIfAbsent(key, () => []);
+
+                      grouped[key]!.add(item);
+                    }
+
+                    // =========================
+                    // UI
+                    // =========================
+                    return ListView(
+                      controller: _activityScrollController,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ),
+                    children: grouped.entries.map((entry) {
+
+                      final date = entry.key;
+
+                      // FILTER ITEM VALID
+                      final items = entry.value.where((e) {
+
+                        // inbox contact
+                        if (e.type == 'inbox_contact') {
+
+                          final item = e.data;
+
+                          return item.crmContactId ==
+                              widget.args.dataContact?.contactId;
+                        }
+
+                        return true;
+
+                      }).toList();
+
+                      // JIKA KOSONG JANGAN TAMPILKAN TITLE DATE
+                      if (items.isEmpty) {
+                        return const SizedBox();
+                      }
+
+                        return Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+
+                            // =========================
+                            // DATE TITLE
+                            // =========================
+                            Text(
+                              date,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            // =========================
+                            // ITEMS
+                            // =========================
+                            Column(
+                              children: items.map((item) {
+
+                                // ACTIVITY
+                                if (item.type == 'activity') {
+                                  return ActivityItem(
+                                    item: item.data,
+                                    activityColor:
+                                        Color(purpleColor),
+                                  );
+                                }
+
+                                // PROSPECT
+                                else if (item.type == 'prospect') {
+                                  return _prospectItem(
+                                    item.data,
+                                  );
+                                }
+
+                                // WHATSAPP
+                                // else if (item.type == 'whatsapp') {
+                                //   return _whatsappUnreadItem(
+                                //     item.data,
+                                //   );
+                                // }
+
+                                // INBOX CONTACT
+                                else if (item.type == 'inbox_contact') {
+                                  return _inboxContactItem(
+                                    item.data,
+                                  );
+                                }
+
+                                return const SizedBox();
+                              }).toList(),
+                            ),
+
+                            const SizedBox(height: 16),
+                          ],
+                        );
+                      }).toList(),
+                    );
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _inboxContactItem(InboxContact item) {
+
+    if (item.crmContactId != widget.args.dataContact?.contactId) {
+      return const SizedBox();
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: EdgeInsets.only(left: 12),
+              decoration: BoxDecoration(
+                border: Border(left: BorderSide(color: Colors.green, width: 5)),
+              ),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    date,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    "${item.crmContactName??'-'} - WhatsApp Integration",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const SizedBox(height: 10),
-
-                  Column(
-                    children: items.map((item) {
-
-                      if (item.type == 'activity') {
-                        return ActivityItem(item: item.data,  activityColor: Color(purpleColor));
-                      } else {
-                        return _prospectItem(item.data);
-                      }
-                    }).toList(),
+                  const SizedBox(height: 4),
+                  Text(
+                    item.lastConversationDate ?? '-',
+                    style: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontSize: 11,
+                    ),
                   ),
-
-                  const SizedBox(height: 16),
+              
+                  Text(
+                    "Status Message \nDelivered: ${item.lastMessageReceiver ?? '-'}, Sender: ${item.lastMessageSender ?? '-'}",
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 12,
+                    ),
+                  ),
+              
+                  const SizedBox(height: 4),
                 ],
-              );
-            }).toList(),
-          );
-        },
-      );
-    },
-  );
-}
+              ),
+            ),
+          ),
+
+          
+        ],
+      ),
+    );
+  }
+
+  Widget _whatsappUnreadItem(dynamic item) {
+    return GestureDetector(
+      onTap: () {
+        print("POINDAHHHHH");
+        AppRouter.rootNavigatorKey.currentContext!.pushNamed(
+          'detailInbox',
+          extra: InboxDetailArgs(
+            data: InboxContact(
+              id: item.waId!,
+              name: item.contactName ?? 'Unknown',
+              jid: item.jid!,
+              isGroup: item.isGroup ?? false,
+              initials: item.initials ?? '?',
+              sessionCode: item.sessionCode!,
+            ),
+            icon: Icons.person,
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Color(whiteColor),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 50,
+              width: 5,
+              decoration: BoxDecoration(
+                color: Colors.green,
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+      
+            const SizedBox(width: 10),
+      
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  style: const TextStyle(color: Colors.black, fontSize: 13),
+                  children: [
+                    TextSpan(
+                      text: item.contactName,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+      
+                    const TextSpan(text: " mengirim "),
+      
+                    TextSpan(
+                      text: "${item.unreadCount} pesan belum dibaca",
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                    ),
+      
+                    const TextSpan(text: "."),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _prospectItem(dynamic item) {
     final bool isUpdate = item.previousStatusName != null;
@@ -591,52 +905,49 @@ Widget _buildActivityContent() {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            height: 50,
-            width: 5,
-            decoration: BoxDecoration(
-              color: Color(purpleColor),
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          const SizedBox(width: 10),
           Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 13,
+            child: Container(
+            padding: EdgeInsets.only(left: 12),
+            decoration: BoxDecoration(
+              border: Border(left: BorderSide(color: Color(purpleColor), width: 5)),
+            ),
+              child: RichText(
+                text: TextSpan(
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 13,
+                  ),
+                  children: isUpdate
+                      ? [
+                          TextSpan(
+                              text: "${item.projectName} — Status berubah dari "),
+                          TextSpan(
+                            text: item.previousStatusName,
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                          const TextSpan(text: " ke "),
+                          TextSpan(
+                            text: item.statusName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          ),
+                          const TextSpan(text: "."),
+                        ]
+                      : [
+                          TextSpan(
+                              text: "${item.projectName} — Status awal "),
+                          TextSpan(
+                            text: item.statusName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          ),
+                          const TextSpan(text: "."),
+                        ],
                 ),
-                children: isUpdate
-                    ? [
-                        TextSpan(
-                            text: "${item.projectName} — Status berubah dari "),
-                        TextSpan(
-                          text: item.previousStatusName,
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                        const TextSpan(text: " ke "),
-                        TextSpan(
-                          text: item.statusName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
-                        ),
-                        const TextSpan(text: "."),
-                      ]
-                    : [
-                        TextSpan(
-                            text: "${item.projectName} — Status awal "),
-                        TextSpan(
-                          text: item.statusName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
-                        ),
-                        const TextSpan(text: "."),
-                      ],
               ),
             ),
           ),
@@ -940,7 +1251,7 @@ Widget _buildContactOptions(BuildContext context, Contact contact) {
           );
         }),
         _buildIconLink(context, icShare, "Share Contact", () {
-          // TODO: Implement share
+          ShareHelper.shareContact(contact);
         }),
       ],
     ),
@@ -1158,30 +1469,26 @@ class _ActivityItemState extends State<ActivityItem> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                height: 50,
-                width: 5,
-                decoration: BoxDecoration(
-                  color: widget.activityColor,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              const SizedBox(width: 10),
-
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.activityType,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      DateFormat('HH:mm')
-                          .format(DateTime.parse(item.activityDate)),
-                    ),
-                    if (item.notes != null) Text(item.notes!),
-                  ],
+               child: Container(
+                  padding: EdgeInsets.only(left: 12),
+                  decoration: BoxDecoration(
+                    border: Border(left: BorderSide(color: Color(purpleColor), width: 5)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.activityType,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        DateFormat('HH:mm')
+                            .format(DateTime.parse(item.activityDate)),
+                      ),
+                      if (item.notes != null) Text(item.notes!),
+                    ],
+                  ),
                 ),
               ),
             ],

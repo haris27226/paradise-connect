@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:progress_group/core/constants/colors.dart';
+import 'package:progress_group/core/utils/helpers/date_helper.dart';
 import 'package:progress_group/core/utils/widget/custom_filter_button.dart';
 import 'package:progress_group/core/utils/widget/custom_header.dart';
 import 'package:progress_group/core/utils/widget/custom_search_field.dart';
@@ -100,12 +101,8 @@ class _InboxPageState extends State<InboxPage> {
       search: search ?? searchTC.text,
       cPage: _cPage,
       gPage: _gPage,
-      salesExecutiveId: (contactState.ownerIds != null && contactState.ownerIds!.isNotEmpty) 
-          ? contactState.ownerIds!.first 
-          : null,
-      statusProspectId: (contactState.statusProspectIds != null && contactState.statusProspectIds!.isNotEmpty) 
-          ? contactState.statusProspectIds!.first 
-          : null,
+      salesExecutiveId: (contactState.ownerIds != null && contactState.ownerIds!.isNotEmpty) ? contactState.ownerIds!.first : null,
+      statusProspectId: (contactState.statusProspectIds != null && contactState.statusProspectIds!.isNotEmpty) ? contactState.statusProspectIds!.first : null,
       startDate: contactState.startDate,
       endDate: contactState.endDate,
       isLoadMore: isLoadMore,
@@ -621,11 +618,16 @@ class _InboxPageState extends State<InboxPage> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                Text(
-                                  item.ownerName ?? item.jid,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey,
+                                Container(
+                                  width: 150,
+                                  child: Text(
+                                    item.ownerName ?? item.jid,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -635,7 +637,7 @@ class _InboxPageState extends State<InboxPage> {
                               children: [
                                 if (item.lastConversationDate != null)
                                   Text(
-                                    item.lastConversationDate!,
+                                    DateHelper().formatInboxDate(item.lastConversationDate),
                                     style: const TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey,

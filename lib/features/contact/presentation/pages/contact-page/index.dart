@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:progress_group/core/constants/assets.dart';
+import 'package:progress_group/core/utils/share_helper.dart';
 import 'package:progress_group/core/utils/widget/custom_bg_icon.dart';
-import 'package:progress_group/features/contact/presentation/widgets/contact_options_sheet.dart';
 import 'package:progress_group/core/constants/colors.dart';
 
 import 'package:progress_group/core/utils/helpers/initial_name_helper.dart';
@@ -543,7 +543,7 @@ Widget _buildContactOptions(BuildContext context, Contact contact) {
           );
         }),
         _buildIconLink(context, icShare, "Share Contact", () {
-          // TODO: Implement share
+         ShareHelper.shareContact(contact);
         }),
       ],
     ),

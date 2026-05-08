@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/activity_prospect_status.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_visit_params.dart';
+import 'package:progress_group/features/contact/domain/entities/activity/whatsapp_activity_entity.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/attachment_entity.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/attachment_type.dart';
 import '../entities/activity/activity_entity.dart';
@@ -138,6 +139,17 @@ class ContactRepositoryImpl implements ContactRepository {
   Future<Either<String, List<ActivityProspectStatusEntity>>> getActivityProspectStatus(int contactId) async {
     try {
       final result = await remoteDataSource.getActivityProspectStatus(contactId);
+
+      return Right(result.map((e) => e.toEntity()).toList());
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, List<WhatsappUnreadSummaryEntity>>> getWhatsappUnreadSummary(int contactId) async {
+    try {
+      final result = await remoteDataSource.getWhatsappUnreadSummary(contactId);
 
       return Right(result.map((e) => e.toEntity()).toList());
     } catch (e) {

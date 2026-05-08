@@ -7,10 +7,14 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:progress_group/core/constants/colors.dart';
 import 'package:progress_group/core/utils/helpers/image_url.dart';
+import 'package:progress_group/core/utils/helpers/initial_name_helper.dart';
 import 'package:progress_group/features/attandance/domain/entities/attandance_entity.dart';
 import 'package:progress_group/features/attandance/presentation/state/attandance/attendance_bloc.dart';
 import 'package:progress_group/features/attandance/presentation/state/attandance/attendance_event.dart';
 import 'package:progress_group/features/attandance/presentation/state/attandance/attendance_state.dart';
+import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
+import 'package:progress_group/features/auth/presentation/state/profile/profile_event.dart';
+import 'package:progress_group/features/auth/presentation/state/profile/profile_state.dart';
 import '../../../../../core/utils/helpers/date_helper.dart';
 import '../../../../../core/utils/widget/custom_header.dart';
 import '../../../data/arguments/attandance_args.dart';
@@ -31,10 +35,11 @@ class _AttandancePageState extends State<AttandancePage> {
   StreamSubscription<Position>? _positionStream;
   
   int selectedIndex = 0;
-  
+  String selectedMenu = 'attendance';
   String? _address;
   bool _isProcessing = false;
   DateTime? _lastGeocodeTime;
+
 
   @override
   void initState() {
@@ -43,6 +48,8 @@ class _AttandancePageState extends State<AttandancePage> {
     Future.microtask(() {
       _initLocation();
       _getLog();
+      context.read<ProfileBloc>().add(GetProfileEvent());
+
     });
   }
 
@@ -240,6 +247,8 @@ class _AttandancePageState extends State<AttandancePage> {
     return Scaffold(
       body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
             customHeader(context,'Attendance', colorBg: Color(primaryColor),colorBack: Color(whiteColor),colorTitle: Color(whiteColor), iconRight: Icons.arrow_back, iconRightOnTap: (){ context.go('/');}, colorIconRight: Color(whiteColor)),
             SizedBox(
@@ -252,15 +261,102 @@ class _AttandancePageState extends State<AttandancePage> {
                 ],
               ),
             ),
-            SizedBox(height: 60,),
-            _buildLog()
+            SizedBox(height: 30,),
+            _buildButtonLog(),
+            if(selectedMenu == 'attendance')_buildAttendanceLog(),
+            if(selectedMenu == 'activity')_buildActivityLog()
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLog() {
+  Widget _buildButtonLog(){
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SizedBox(
+        width: 300,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+        
+            // ATTENDANCE LOG
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedMenu = 'attendance';
+                  });
+                },
+                child: Container(
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: selectedMenu == 'attendance'
+                        ? Colors.blue
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.blue,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'Attendance Log',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: selectedMenu == 'attendance'
+                          ? Colors.white
+                          : Colors.blue,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        
+            const SizedBox(width: 8),
+        
+            // MY ACTIVITY
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedMenu = 'activity';
+                  });
+                },
+                child: Container(
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: selectedMenu == 'activity'
+                        ? Colors.blue
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.blue,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'My Activity',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: selectedMenu == 'activity'
+                          ? Colors.white
+                          : Colors.blue,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttendanceLog() {
     return Expanded(
       child: Container(
         width: double.infinity,
@@ -273,7 +369,7 @@ class _AttandancePageState extends State<AttandancePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Log", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text("Attendance Log", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             SizedBox(height: 5),
 
             Expanded(
@@ -291,7 +387,7 @@ class _AttandancePageState extends State<AttandancePage> {
                       onRefresh: _getLog,
                       child: ListView.builder(
                         itemCount: data.length,
-                        itemBuilder: (_, i) => _buildCard(data[i]),
+                        itemBuilder: (_, i) => _buildCardAttendance(data[i]),
                       ),
                     );
                   }
@@ -310,7 +406,56 @@ class _AttandancePageState extends State<AttandancePage> {
     );
   }
 
-  Widget _buildCard(AttendanceEntity item) {
+  Widget _buildActivityLog() {
+    return Expanded(
+      child: Container(
+        width: double.infinity,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Color(whiteColor),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("My Activity", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            SizedBox(height: 5),
+
+            Expanded(
+              child: BlocBuilder<AttendanceBloc, AttendanceState>(
+                builder: (context, state) {
+
+                  if (state is AttendanceLoading) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+
+                  if (state is AttendanceLoaded) {
+                      final data = state.data.where((e) =>e.checkInActivity != null &&e.checkInActivity!.toString().trim().isNotEmpty).toList();
+                    return RefreshIndicator(
+                      onRefresh: _getLog,
+                      child: ListView.builder(
+                        itemCount: data.length,
+                        itemBuilder: (_, i) => _buildCardAktivity(data[i]),
+                      ),
+                    );
+                  }
+
+                  if (state is AttendanceError) {
+                    return Center(child: Text(state.message));
+                  }
+
+                  return SizedBox();
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardAttendance(AttendanceEntity item) {
     final date = DateTime.parse(item.date);
 
     String formatTime(String? value) {
@@ -382,6 +527,250 @@ class _AttandancePageState extends State<AttandancePage> {
     );
   }
 
+
+Widget _buildProfileName(bool img) {
+   return BlocBuilder<ProfileBloc, ProfileState>(
+      builder: (context, state) {
+        if (state is! ProfileLoaded) {
+          return const SizedBox();
+        }
+
+        final user = state.profile;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+           if(!img)
+            Container(
+              width: 100,
+              child: Text(
+                user.fullName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+            if(img)
+            Container(
+              width: 30,
+              height: 30,
+              
+              decoration: BoxDecoration(
+                color: Color(primaryColor),
+                shape: BoxShape.circle
+              ),
+              child: Center(
+                child: Text(
+                  getInitials(user.fullName),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(whiteColor)
+                  ),
+                ),
+              ),
+            ),
+           
+          ],
+        );
+      },
+    );
+  }
+
+Widget _buildCardAktivity(AttendanceEntity item) {
+  final images = item.fileAttchment6 ?? [];
+
+  return StatefulBuilder(
+    builder: (context, setStateSB) {
+      final ScrollController scrollController = ScrollController();
+
+      bool isAtStart = true;
+      bool isAtEnd = false;
+
+      void updateScrollState() {
+        if (!scrollController.hasClients) return;
+
+        final maxScroll = scrollController.position.maxScrollExtent;
+        final offset = scrollController.offset;
+
+        setStateSB(() {
+          isAtStart = offset <= 0;
+          isAtEnd = offset >= maxScroll;
+        });
+      }
+
+      scrollController.addListener(updateScrollState);
+
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(whiteColor),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// ================= HEADER =================
+            Container(
+              padding: const EdgeInsets.only(left: 12),
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(
+                    color: Color(purpleColor),
+                    width: 5,
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      _buildProfileName(true),
+                      SizedBox(width: 5),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildProfileName(false),
+                          Text(item.location6 ?? '', style: TextStyle(fontSize: 11),),
+                        ],
+                      ),
+                    ],
+                  ),
+                  
+                 Text(item.checkInActivity != null && item.checkInActivity!.isNotEmpty? DateFormat('dd/MM/yyyy').format(DateTime.parse(item.checkInActivity!)): '-',style: const TextStyle(fontSize: 11)),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 10),
+            Text(
+              item.note6 ?? '',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            /// ================= IMAGES =================
+            if (images.isNotEmpty)
+              SizedBox(
+                height: 200,
+                child: Stack(
+                  children: [
+                    ListView.builder(
+                      controller: scrollController,
+                      scrollDirection: Axis.horizontal,
+                      itemCount: images.length,
+                      itemBuilder: (context, index) {
+                        return Container(
+                          margin: const EdgeInsets.only(right: 10),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              convertDriveUrl(images[index]),
+                              width: 200,
+                              height: 200,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                width: 200,
+                                height: 200,
+                                color: Colors.grey.shade200,
+                                child: const Icon(Icons.broken_image, size: 40),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
+                    /// ================= LEFT ARROW =================
+                    if (images.length > 1 && !isAtStart)
+                      Positioned(
+                        left: 5,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: GestureDetector(
+                            onTap: () {
+                              final newOffset =
+                                  (scrollController.offset - 250).clamp(
+                                0.0,
+                                scrollController.position.maxScrollExtent,
+                              );
+
+                              scrollController.animateTo(
+                                newOffset,
+                                duration: const Duration(milliseconds: 250),
+                                curve: Curves.easeInOut,
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.4),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.arrow_back_ios,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    /// ================= RIGHT ARROW =================
+                    if (images.length > 1 && !isAtEnd)
+                      Positioned(
+                        right: 5,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: GestureDetector(
+                            onTap: () {
+                              final newOffset =
+                                  (scrollController.offset + 250).clamp(
+                                0.0,
+                                scrollController.position.maxScrollExtent,
+                              );
+
+                              scrollController.animateTo(
+                                newOffset,
+                                duration: const Duration(milliseconds: 250),
+                                curve: Curves.easeInOut,
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.4),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.arrow_forward_ios,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+           
+          ],
+        ),
+      );
+    },
+  );
+}
+
   Widget _buildHeaderProfile() {
     return Container(
       height: 160,
@@ -392,18 +781,8 @@ class _AttandancePageState extends State<AttandancePage> {
         children: [
           Row(
             children: [
-              ClipOval(
-                child: Image.network( "https://i.pravatar.cc/150?img=1", width: 50, height: 50, fit: BoxFit.cover),
-              ),
               const SizedBox(width: 16),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Haris",style: TextStyle(color: Color(whiteColor),fontSize: 14,fontWeight: FontWeight.bold)),
-                  Text("Mobile Developer",style: TextStyle(color: Color(whiteColor),fontSize: 12)),
-                ],
-              ),
+              
             ],
           ),
         ],
@@ -413,7 +792,7 @@ class _AttandancePageState extends State<AttandancePage> {
 
   Widget _buildFloatingCard() {
     return Positioned(
-      top: 55,
+      top: 0,
       left: 16,
       right: 16,
       child: Container(
@@ -559,7 +938,7 @@ class _AttandancePageState extends State<AttandancePage> {
 
   Widget _buildCheckForm({required String title, required int flagParam, String? image,AttendanceEntity? attendance}) {
   return Expanded(
-    child: image != null
+    child: image != null && flagParam != 6
         ? Padding(
             padding: const EdgeInsets.symmetric(horizontal:70, vertical: 5),
             child: Stack(
@@ -677,11 +1056,9 @@ Widget _buildClockOut(AttendanceEntity? today) {
     
   void _showAttendanceDialog(AttendanceEntity item, int flag) {
     final String timeValue = flag == 0 ? item.clockIn ?? "-" : item.clockOut ?? "-";
-    final List<String>? images =
-        flag == 0 ? item.fileAttchment0 : item.fileAttchment1;
+    final List<String>? images =flag == 0 ? item.fileAttchment0 : item.fileAttchment1;
     final String note = flag == 0 ? item.note0 ?? "-" : item.note1 ?? "-";
-    final String location =
-        flag == 0 ? item.location0 ?? "-" : item.location1 ?? "-";
+    final String location =flag == 0 ? item.location0 ?? "-" : item.location1 ?? "-";
 
     String formatTime(String? value) {
       if (value == null || value == "-") return "-";
