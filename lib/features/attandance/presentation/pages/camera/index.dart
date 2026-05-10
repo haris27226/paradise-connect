@@ -30,11 +30,13 @@ class _CameraPageState extends State<CameraPage> {
   FocusNode notesFN = FocusNode();
   FocusNode pameranFN = FocusNode();
   CameraController? _controller;
-  XFile? _imageFile;
+  List<XFile> _imageFiles = [];
   int _cameraIndex = 0;
   bool get _isCameraReady => _controller != null && _controller!.value.isInitialized;
+  bool get _isMultiplePhotosSupported => widget.args.type?.toLowerCase() == 'checkin' || widget.args.flag == 6;
   List<CameraDescription>? _cameras;
   bool _isSwitching = false;
+  bool _isAddingMore = false;
   int? _selectedLocationId;
 
   @override
@@ -99,35 +101,51 @@ class _CameraPageState extends State<CameraPage> {
         return;
       }
       setState(() {
-        _imageFile = file;
+        _imageFiles.add(file);
+        _isAddingMore = false;
       });
     } catch (e) {
       debugPrint("ERROR TAKE PICTURE: $e");
     }
   }
 
+  void _takeMorePhotos() {
+    setState(() {
+      _isAddingMore = true;
+    });
+  }
+
 
 
   void _handleSubmit() {
-    if (_imageFile == null) return;
+    if (_imageFiles.isEmpty) return;
 
     if (widget.args.isReturnImage == true) {
-      context.pop(_imageFile!.path);
+      context.pop(_imageFiles.first.path);
       return;
     }
 
     final flag = widget.args.flag;
-
     final datetime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
     final location = pameranTC.text.isNotEmpty ? pameranTC.text : (widget.args.location ?? "Unknown");
 
-    context.read<AttendanceBloc>().add(SubmitAttendanceEvent(
-          datetime: datetime,
-          flag: flag!,
-          location: location,
-          note: notesTC.text,
-          filePath: _imageFile!.path,
-        ));
+    if (_isMultiplePhotosSupported) {
+      context.read<AttendanceBloc>().add(SubmitAttendanceActivityEvent(
+            datetime: datetime,
+            flag: flag!,
+            location: location,
+            note: notesTC.text,
+            filePaths: _imageFiles.map((e) => e.path).toList(),
+          ));
+    } else {
+      context.read<AttendanceBloc>().add(SubmitAttendanceEvent(
+            datetime: datetime,
+            flag: flag!,
+            location: location,
+            note: notesTC.text,
+            filePath: _imageFiles.first.path,
+          ));
+    }
   }
 
 
@@ -167,10 +185,10 @@ class _CameraPageState extends State<CameraPage> {
                 colorBack: Color(whiteColor),
                 colorTitle: Color(whiteColor),
                 isBack: true,
-                iconLeft: _imageFile != null ? Icons.history : null,
+                iconLeft: _imageFiles.isNotEmpty ? Icons.history : null,
                 iconLeftOnTap: () {
                   setState(() {
-                    _imageFile = null;
+                    _imageFiles.clear();
                   });
                 },
                 colorIconLeft: Color(whiteColor),
@@ -187,7 +205,7 @@ class _CameraPageState extends State<CameraPage> {
     if (!_isCameraReady || _isSwitching) {
       return Center(child: CircularProgressIndicator());
     }
-    if (_imageFile != null) {
+    if (_imageFiles.isNotEmpty && !_isAddingMore) {
       return _buildPreview();
     }
     return _buildCameraView();
@@ -202,6 +220,23 @@ class _CameraPageState extends State<CameraPage> {
             child: CameraPreview(_controller!),
           ),
         ),
+        if (_imageFiles.isNotEmpty)
+          Positioned(
+            top: 20,
+            left: 20,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isAddingMore = false;
+                });
+              },
+              child: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(color: Colors.black.withOpacity(0.5), shape: BoxShape.circle),
+                child: Icon(Icons.close, color: Colors.white, size: 25),
+              ),
+            ),
+          ),
         _buildBottomOverlay(),
       ],
     );
@@ -266,11 +301,80 @@ class _CameraPageState extends State<CameraPage> {
                   children: [
                     Stack(
                       children: [
-                        Container(
-                          height: 330,
-                          width: double.infinity,
-                          child: Image.file(File(_imageFile!.path), fit: BoxFit.cover),
-                        ),
+                        if (!_isMultiplePhotosSupported)
+                          Container(
+                            height: 330,
+                            width: double.infinity,
+                            child: Image.file(File(_imageFiles.first.path), fit: BoxFit.cover),
+                          )
+                        else
+                          Container(
+                            height: 330,
+                            width: double.infinity,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: _imageFiles.length + 1,
+                              itemBuilder: (context, index) {
+                                if (index == _imageFiles.length) {
+                                  return GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        // Trick to show camera again
+                                        // We might need a separate state if we want to add more
+                                        // But for now, let's just use a special flag or null check
+                                      });
+                                      _takeMorePhotos();
+                                    },
+                                    child: Container(
+                                      width: 200,
+                                      margin: EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[200],
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Color(primaryColor), width: 2, style: BorderStyle.none),
+                                      ),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.add_a_photo, color: Color(primaryColor), size: 40),
+                                          SizedBox(height: 10),
+                                          Text("Add Photo", style: TextStyle(color: Color(primaryColor), fontWeight: FontWeight.bold)),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }
+                                return Stack(
+                                  children: [
+                                    Container(
+                                      width: 250,
+                                      margin: EdgeInsets.all(5),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Image.file(File(_imageFiles[index].path), fit: BoxFit.cover),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 10,
+                                      right: 10,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _imageFiles.removeAt(index);
+                                          });
+                                        },
+                                        child: Container(
+                                          padding: EdgeInsets.all(4),
+                                          decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                          child: Icon(Icons.close, color: Colors.white, size: 20),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
                         Positioned(
                           bottom: 0,
                           left: 0,

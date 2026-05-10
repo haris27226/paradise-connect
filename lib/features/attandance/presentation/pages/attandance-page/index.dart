@@ -35,7 +35,7 @@ class _AttandancePageState extends State<AttandancePage> {
   StreamSubscription<Position>? _positionStream;
   
   int selectedIndex = 0;
-  String selectedMenu = 'attendance';
+  String selectedMenu ='activity';
   String? _address;
   bool _isProcessing = false;
   DateTime? _lastGeocodeTime;
@@ -263,8 +263,9 @@ class _AttandancePageState extends State<AttandancePage> {
             ),
             SizedBox(height: 30,),
             _buildButtonLog(),
+            if(selectedMenu == 'activity')_buildActivityLog(),
             if(selectedMenu == 'attendance')_buildAttendanceLog(),
-            if(selectedMenu == 'activity')_buildActivityLog()
+
           ],
         ),
       ),
@@ -280,7 +281,41 @@ class _AttandancePageState extends State<AttandancePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-        
+        // MY ACTIVITY
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedMenu = 'activity';
+                  });
+                },
+                child: Container(
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: selectedMenu == 'activity'
+                        ? Colors.blue
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.blue,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'My Activity',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: selectedMenu == 'activity'
+                          ? Colors.white
+                          : Colors.blue,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+
             // ATTENDANCE LOG
             Expanded(
               child: GestureDetector(
@@ -315,41 +350,8 @@ class _AttandancePageState extends State<AttandancePage> {
               ),
             ),
         
-            const SizedBox(width: 8),
         
-            // MY ACTIVITY
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    selectedMenu = 'activity';
-                  });
-                },
-                child: Container(
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: selectedMenu == 'activity'
-                        ? Colors.blue
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.blue,
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'My Activity',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: selectedMenu == 'activity'
-                          ? Colors.white
-                          : Colors.blue,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            
           ],
         ),
       ),
