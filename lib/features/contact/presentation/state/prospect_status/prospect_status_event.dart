@@ -7,4 +7,11 @@ abstract class ProspectStatusEvent extends Equatable {
   List<Object> get props => [];
 }
 
-class FetchProspectStatusesEvent extends ProspectStatusEvent {}
+class FetchProspectStatusesEvent extends ProspectStatusEvent {
+  final String? type;
+
+  const FetchProspectStatusesEvent({this.type});
+
+  @override
+  List<Object> get props => [type ?? ''];
+}

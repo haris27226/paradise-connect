@@ -26,6 +26,7 @@ import 'package:progress_group/features/contact/presentation/state/whatsapp_acti
 import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_state.dart';
 import 'package:progress_group/features/inbox/data/arguments/inbox_detail_args.dart';
 import 'package:progress_group/features/inbox/domain/entities/inbox_contact_entity.dart';
+import 'package:progress_group/features/contact/domain/entities/activity/whatsapp_activity_entity.dart';
 import 'package:progress_group/features/inbox/presentation/state/inbox/inbox_block.dart';
 import 'package:progress_group/features/inbox/presentation/state/inbox/inbox_event.dart';
 import 'package:progress_group/features/inbox/presentation/state/inbox/inbox_statte.dart';
@@ -34,6 +35,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../../core/utils/widget/custom_bg_icon.dart';
 import '../../../../../core/utils/widget/custom_buttomsheet.dart';
 import 'package:progress_group/features/contact/presentation/widgets/contact_options_sheet.dart';
+import 'package:progress_group/core/utils/helpers/image_url.dart';
 
 
 
@@ -526,6 +528,7 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
       ),
     );
   }
+  
   Widget _buildActivityContent() {
     return BlocBuilder<ActivityBloc, ActivityState>(
       builder: (context, activityState) {
@@ -536,6 +539,8 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
 
                 return BlocBuilder<InboxContactBloc, InboxContactState>(
                   builder: (context, inboxState) {
+                    return BlocBuilder<WhatsappActivityBloc, WhatsappActivityState>(
+                      builder: (context, unreadState) {
 
                     // =========================
                     // LOADING
@@ -661,98 +666,56 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                     // =========================
                     // UI
                     // =========================
-                    return ListView(
-                      controller: _activityScrollController,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                      ),
-                    children: grouped.entries.map((entry) {
-
-                      final date = entry.key;
-
-                      // FILTER ITEM VALID
-                      final items = entry.value.where((e) {
-
-                        // inbox contact
-                        if (e.type == 'inbox_contact') {
-
-                          final item = e.data;
-
-                          return item.crmContactId ==
-                              widget.args.dataContact?.contactId;
-                        }
-
-                        return true;
-
-                      }).toList();
-
-                      // JIKA KOSONG JANGAN TAMPILKAN TITLE DATE
-                      if (items.isEmpty) {
-                        return const SizedBox();
-                      }
-
-                        return Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                        // =========================
+                        // UI
+                        // =========================
+                        return ListView(
+                          controller: _activityScrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                           children: [
-
-                            // =========================
-                            // DATE TITLE
-                            // =========================
-                            Text(
-                              date,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                            // UNREAD WHATSAPP SUMMARY
+                            if (unreadState.status == WhatsappUnreadSummaryStatus.loaded && unreadState.data.isNotEmpty)
+                              Column(
+                                children: unreadState.data.map((item) => _whatsappUnreadItem(item)).toList(),
                               ),
-                            ),
 
-                            const SizedBox(height: 10),
-
-                            // =========================
-                            // ITEMS
-                            // =========================
-                            Column(
-                              children: items.map((item) {
-
-                                // ACTIVITY
-                                if (item.type == 'activity') {
-                                  return ActivityItem(
-                                    item: item.data,
-                                    activityColor:
-                                        Color(purpleColor),
-                                  );
+                            // TIMELINE ITEMS
+                            ...grouped.entries.map((entry) {
+                              final date = entry.key;
+                              final items = entry.value.where((e) {
+                                if (e.type == 'inbox_contact') {
+                                  final item = e.data;
+                                  return item.crmContactId == widget.args.dataContact?.contactId;
                                 }
+                                return true;
+                              }).toList();
 
-                                // PROSPECT
-                                else if (item.type == 'prospect') {
-                                  return _prospectItem(
-                                    item.data,
-                                  );
-                                }
+                              if (items.isEmpty) return const SizedBox();
 
-                                // WHATSAPP
-                                // else if (item.type == 'whatsapp') {
-                                //   return _whatsappUnreadItem(
-                                //     item.data,
-                                //   );
-                                // }
-
-                                // INBOX CONTACT
-                                else if (item.type == 'inbox_contact') {
-                                  return _inboxContactItem(
-                                    item.data,
-                                  );
-                                }
-
-                                return const SizedBox();
-                              }).toList(),
-                            ),
-
-                            const SizedBox(height: 16),
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(date, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                  const SizedBox(height: 10),
+                                  Column(
+                                    children: items.map((item) {
+                                      if (item.type == 'activity') {
+                                        return ActivityItem(item: item.data, activityColor: Color(purpleColor));
+                                      } else if (item.type == 'prospect') {
+                                        return _prospectItem(item.data);
+                                      } else if (item.type == 'inbox_contact') {
+                                        return _inboxContactItem(item.data);
+                                      }
+                                      return const SizedBox();
+                                    }).toList(),
+                                  ),
+                                  const SizedBox(height: 16),
+                                ],
+                              );
+                            }).toList(),
                           ],
                         );
-                      }).toList(),
+                      },
                     );
                   },
                 );
@@ -770,76 +733,12 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
       return const SizedBox();
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: EdgeInsets.only(left: 12),
-              decoration: BoxDecoration(
-                border: Border(left: BorderSide(color: Colors.green, width: 5)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "${item.crmContactName??'-'} - WhatsApp Integration",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.lastConversationDate ?? '-',
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 11,
-                    ),
-                  ),
-              
-                  Text(
-                    "Status Message \nDelivered: ${item.lastMessageReceiver ?? '-'}, Sender: ${item.lastMessageSender ?? '-'}",
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 12,
-                    ),
-                  ),
-              
-                  const SizedBox(height: 4),
-                ],
-              ),
-            ),
-          ),
-
-          
-        ],
-      ),
-    );
-  }
-
-  Widget _whatsappUnreadItem(dynamic item) {
     return GestureDetector(
       onTap: () {
-        print("POINDAHHHHH");
-        AppRouter.rootNavigatorKey.currentContext!.pushNamed(
+        context.pushNamed(
           'detailInbox',
           extra: InboxDetailArgs(
-            data: InboxContact(
-              id: item.waId!,
-              name: item.contactName ?? 'Unknown',
-              jid: item.jid!,
-              isGroup: item.isGroup ?? false,
-              initials: item.initials ?? '?',
-              sessionCode: item.sessionCode!,
-            ),
-            icon: Icons.person,
+            data: item,
           ),
         );
       },
@@ -847,50 +746,57 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Color(whiteColor),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 50,
-              width: 5,
-              decoration: BoxDecoration(
-                color: Colors.green,
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-      
-            const SizedBox(width: 10),
-      
             Expanded(
-              child: RichText(
-                text: TextSpan(
-                  style: const TextStyle(color: Colors.black, fontSize: 13),
+              child: Container(
+                padding: EdgeInsets.only(left: 12),
+                decoration: BoxDecoration(
+                  border: Border(left: BorderSide(color: Colors.green, width: 5)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextSpan(
-                      text: item.contactName,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    Text(
+                      "${item.crmContactName??'-'} - WhatsApp Integration",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-      
-                    const TextSpan(text: " mengirim "),
-      
-                    TextSpan(
-                      text: "${item.unreadCount} pesan belum dibaca",
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.lastConversationDate ?? '-',
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 11,
+                      ),
                     ),
-      
-                    const TextSpan(text: "."),
+                
+                    Text(
+                      "Status Message \nDelivered: ${item.lastMessageReceiver ?? '-'}, Sender: ${item.lastMessageSender ?? '-'}",
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
+                      ),
+                    ),
+                
+                    const SizedBox(height: 4),
                   ],
                 ),
               ),
             ),
+      
+            
           ],
         ),
       ),
     );
   }
+
 
   Widget _prospectItem(dynamic item) {
     final bool isUpdate = item.previousStatusName != null;
@@ -1054,12 +960,20 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                           final item = list[index];
                           return GestureDetector(
                             onTap: () {
-                              // final isPdf = item.attachmentUrl.toLowerCase().contains('.pdf') || item.attachmentTypeName.toLowerCase().contains('pdf');
-                              // if (isPdf) {
+                              if (item.attachmentUrl != null && item.attachmentUrl!.isNotEmpty) {
                                 context.pushNamed('attachmentWebView', extra: item.attachmentUrl);
-                              // } else {
-                              //   _showImagePreview(context, item.attachmentUrl);
-                              // }
+                              } else {
+                                context.pushNamed(
+                                  'addContact',
+                                  extra: ContactDetailArgs(
+                                    page: 6,
+                                    dataContact: Contact(
+                                      contactId: widget.args.dataContact!.contactId,
+                                      fullName: widget.args.dataContact?.fullName,
+                                    ),
+                                  ),
+                                );
+                              }
                             },
                             child: Container(
                               margin: const EdgeInsets.only(bottom: 8),
@@ -1351,6 +1265,74 @@ Widget _buildIconLink(
       ),
     );
   }
+
+  Widget _whatsappUnreadItem(WhatsappUnreadSummaryEntity item) {
+    return GestureDetector(
+      onTap: () {
+        print("POINDAHHHHH");
+        AppRouter.rootNavigatorKey.currentContext!.pushNamed(
+          'detailInbox',
+          extra: InboxDetailArgs(
+            data: InboxContact(
+              id: item!.contactId??0, // Use contactId from entity
+              name: item.contactName ?? 'Unknown',
+              jid: item.jid,
+              isGroup: false, // Default or fetch if available
+              initials: item.contactName.isNotEmpty ? item.contactName[0] : '?',
+              sessionCode: item.sessionId,
+            ),
+            icon: Icons.person,
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Color(whiteColor),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 50,
+              width: 5,
+              decoration: BoxDecoration(
+                color: Colors.green,
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+      
+            const SizedBox(width: 10),
+      
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  style: const TextStyle(color: Colors.black, fontSize: 13),
+                  children: [
+                    TextSpan(
+                      text: item.contactName,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+      
+                    const TextSpan(text: " mengirim "),
+      
+                    TextSpan(
+                      text: "${item.unreadCount} pesan belum dibaca",
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                    ),
+      
+                    const TextSpan(text: "."),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 
@@ -1455,16 +1437,52 @@ class _ActivityItemState extends State<ActivityItem> {
   Widget build(BuildContext context) {
     final item = widget.item;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(whiteColor),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return GestureDetector(
+      onTap: () {
+        final type = item.activityType.toLowerCase();
+        int page = 6;
+        String namePage = "Update Status Prospect";
+
+        if (type.contains('call')) {
+          page = 0;
+          namePage = "Call";
+        } else if (type.contains('whatsapp')) {
+          page = 1;
+          namePage = "WhatsApp";
+        } else if (type.contains('meeting')) {
+          page = 2;
+          namePage = "Meeting";
+        } else if (type.contains('task')) {
+          page = 3;
+          namePage = "Task";
+        } else if (type.contains('visit')) {
+          page = 4;
+          namePage = "Visit";
+        }
+
+        // Find the parent state to get dataContact
+        final parentState = context.findAncestorStateOfType<_ContactDetailPageState>();
+        if (parentState != null) {
+          context.pushNamed(
+            'addContact',
+            extra: ContactDetailArgs(
+              page: page,
+              namePage: namePage,
+              dataContact: parentState.widget.args.dataContact,
+            ),
+          );
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(whiteColor),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           /// ================= HEADER =================
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1580,6 +1598,6 @@ class _ActivityItemState extends State<ActivityItem> {
             ),
         ],
       ),
-    );
+    ));
   }
 }

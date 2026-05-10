@@ -10,6 +10,7 @@ class ActivityState extends Equatable {
   final String? errorMessage;
   final int currentPage;
   final bool hasReachedMax;
+  final Set<int> seenActivityIds;
 
   const ActivityState({
     this.status = ActivityStatus.initial,
@@ -17,6 +18,7 @@ class ActivityState extends Equatable {
     this.errorMessage,
     this.currentPage = 1,
     this.hasReachedMax = false,
+    this.seenActivityIds = const {},
   });
 
   ActivityState copyWith({
@@ -25,6 +27,7 @@ class ActivityState extends Equatable {
     String? errorMessage,
     int? currentPage,
     bool? hasReachedMax,
+    Set<int>? seenActivityIds,
   }) {
     return ActivityState(
       status: status ?? this.status,
@@ -32,11 +35,12 @@ class ActivityState extends Equatable {
       errorMessage: errorMessage ?? this.errorMessage,
       currentPage: currentPage ?? this.currentPage,
       hasReachedMax: hasReachedMax ?? this.hasReachedMax,
+      seenActivityIds: seenActivityIds ?? this.seenActivityIds,
     );
   }
 
   @override
-  List<Object?> get props => [status, activities, errorMessage, currentPage, hasReachedMax];
+  List<Object?> get props => [status, activities, errorMessage, currentPage, hasReachedMax, seenActivityIds];
 }
 
 

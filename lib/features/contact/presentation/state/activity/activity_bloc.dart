@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:progress_group/features/contact/domain/usecases/activity/create_activity_visit_usecase.dart';
 import 'package:progress_group/features/contact/domain/usecases/activity/get_activity_prospect_status_usecase.dart';
 import '../../../domain/usecases/activity/create_activity_usecase.dart';
@@ -17,6 +18,11 @@ class ActivityBloc extends Bloc<ActivityEvent, ActivityState> {
     on<FetchActivitiesEvent>(_onFetchActivities);
     on<CreateActivityEvent>(_onCreateActivity);
     on<ResetActivityEvent>((event, emit) => emit(const ActivityState()));
+    on<MarkActivitiesAsSeenEvent>(_onMarkAsSeen);
+    on<LoadSeenActivitiesEvent>(_onLoadSeen);
+    
+    // Auto load when created
+    add(LoadSeenActivitiesEvent());
   }
 
   Future<void> _onFetchActivities(
@@ -84,6 +90,29 @@ class ActivityBloc extends Bloc<ActivityEvent, ActivityState> {
       )),
       (_) => emit(state.copyWith(status: ActivityStatus.createSuccess)),
     );
+  }
+
+  Future<void> _onMarkAsSeen(MarkActivitiesAsSeenEvent event, Emitter<ActivityState> emit) async {
+    final newSeen = Set<int>.from(state.seenActivityIds)..addAll(event.activityIds);
+    emit(state.copyWith(seenActivityIds: newSeen));
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('seen_activity_ids', newSeen.map((id) => id.toString()).toList());
+    } catch (e) {
+      print("Error saving seen activities: $e");
+    }
+  }
+
+  Future<void> _onLoadSeen(LoadSeenActivitiesEvent event, Emitter<ActivityState> emit) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final seenList = prefs.getStringList('seen_activity_ids') ?? [];
+      final seenSet = seenList.map((id) => int.tryParse(id)).whereType<int>().toSet();
+      emit(state.copyWith(seenActivityIds: seenSet));
+    } catch (e) {
+      print("Error loading seen activities: $e");
+    }
   }
 }
 

@@ -5,7 +5,7 @@ class WhatsappUnreadSummaryModel {
   final String sessionId;
   final String contactName;
   final String? photoProfile;
-  final int contactId;
+  final int? contactId;
   final bool hasContact;
   final int unreadCount;
   final String lastMessageAt;
@@ -15,7 +15,7 @@ class WhatsappUnreadSummaryModel {
     required this.sessionId,
     required this.contactName,
     this.photoProfile,
-    required this.contactId,
+    this.contactId,
     required this.hasContact,
     required this.unreadCount,
     required this.lastMessageAt,

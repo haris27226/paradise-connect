@@ -8,6 +8,9 @@ import 'package:progress_group/features/auth/presentation/state/auth/auth_bloc.d
 import 'package:progress_group/features/auth/presentation/state/auth/auth_event.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_state.dart';
+import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_bloc.dart';
+import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_state.dart';
+import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_event.dart';
 
 class MainLayout extends StatefulWidget {
   final Widget child;
@@ -22,6 +25,12 @@ class _MainLayoutState extends State<MainLayout> {
   DateTime? _lastPressedAt;
   String? _currentUri;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<WhatsappActivityBloc>().add(const FetchWhatsappUnreadSummaryEvent(0));
+  }
 
   int get _currentIndex {
     final location = GoRouterState.of(context).uri.path;
@@ -158,13 +167,19 @@ class _MainLayoutState extends State<MainLayout> {
                 ),
 
                 const SizedBox(width: 60), // 🔥 space untuk tombol tengah
-
-                _buildNavItem(
-                  context,
-                  path: '/inbox',
-                  icon: icSidebarInbox,
-                  label: 'Inbox',
-                  isActive: currentIndex == 2,
+                
+                BlocBuilder<WhatsappActivityBloc, WhatsappActivityState>(
+                  builder: (context, state) {
+                    final totalUnread = state.data.fold<int>(0, (sum, item) => sum + item.unreadCount);
+                    return _buildNavItem(
+                      context,
+                      path: '/inbox',
+                      icon: icSidebarInbox,
+                      label: 'Inbox',
+                      isActive: currentIndex == 2,
+                      badgeCount: totalUnread,
+                    );
+                  },
                 ),
 
                 _buildNavItem(
@@ -381,35 +396,54 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 
-  Widget _buildNavItem(BuildContext context, {required String path, required String icon, required String label, required bool isActive}) {
-
+  Widget _buildNavItem(BuildContext context, {required String path, required String icon, required String label, required bool isActive, int badgeCount = 0}) {
     return GestureDetector(
       onTap: () => context.go(path),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.linearToEaseOut,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            // color: isActive ? Color(grey6Color) : Colors.transparent,
-            borderRadius: BorderRadius.circular(20)
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.linearToEaseOut,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    icon,
+                    width: 24,
+                    height: 24,
+                    color: isActive ? Color(primaryColor) : Color(grey2Color),
+                  ),
+                ],
+              ),
+            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-               Image.asset(
-                 icon,
-                 width: 24,
-                 height: 24,
-                 color: isActive ? Color(primaryColor) : Color(grey2Color),
-               ),
-              // if (isActive) ...[
-              //   const SizedBox(width: 10),
-              //   Text(label,style: TextStyle(color: Color(primaryColor),fontWeight: FontWeight.w500,fontSize: 12,)),
-              // ],
-            ],
-          ),
-        ),
+          if (badgeCount > 0)
+            Positioned(
+              right: 8,
+              top: 5,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  '$badgeCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

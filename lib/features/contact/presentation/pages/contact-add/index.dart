@@ -2,11 +2,13 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:progress_group/core/constants/assets.dart';
+import 'package:progress_group/core/utils/helpers/image_url.dart';
 import 'package:progress_group/core/utils/widget/custom_button.dart';
 import 'package:progress_group/features/attandance/data/arguments/attandance_args.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_dropdown_args.dart';
@@ -14,7 +16,6 @@ import 'package:progress_group/features/contact/domain/entities/activity/create_
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_visit_params.dart';
 import 'package:progress_group/features/contact/domain/entities/contact/create_contact_params.dart';
 import 'package:progress_group/features/contact/domain/entities/prospect/prospect_status.dart';
-import 'package:progress_group/features/contact/presentation/pages/contact-detail/index.dart';
 import 'package:progress_group/features/contact/presentation/state/activity/activity_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/activity/activity_event.dart';
 import 'package:progress_group/features/contact/presentation/state/activity/activity_state.dart';
@@ -49,7 +50,9 @@ class ContactAddPage extends StatefulWidget {
 
 class _ContactAddPageState extends State<ContactAddPage> {
   TextEditingController descTC = TextEditingController();
+  TextEditingController lBlockNoTC = TextEditingController();
   FocusNode descFN = FocusNode();
+  FocusNode lBlockNoFN = FocusNode();
 
   bool isFollowUp = false;
   DateTime? selectedDate;
@@ -64,7 +67,10 @@ class _ContactAddPageState extends State<ContactAddPage> {
   int? selectedTypeId;
   int? selectedStatusId;
   String? selectedProject;
+  String? selectedProduct;
   String jmlDatang = "1";
+  String? selectedBlockNo;
+  String? selectedProjectCategory;
 
   File? selectedFile;
   String? selectedFileName;
@@ -80,8 +86,25 @@ class _ContactAddPageState extends State<ContactAddPage> {
   ];
 
 
-  List<OwnerDropdownItem> itemsProject = [OwnerDropdownItem(name: "Paradise Serpong City 1"), OwnerDropdownItem(name:"Paradise Serpong City 2" ), OwnerDropdownItem(name: "Paradise Resort City")];
 
+  List<OwnerDropdownItem> itemsProject = [
+    OwnerDropdownItem(id: 1, name: "Paradise Serpong City 1"),
+    OwnerDropdownItem(id: 2, name: "Paradise Serpong City 2"),
+    OwnerDropdownItem(id: 3, name: "Paradise Resort City")
+  ];
+
+  List<OwnerDropdownItem> itemsProjectCategory = [
+    OwnerDropdownItem(id: 1, name: "Residential"),
+    OwnerDropdownItem(id: 2, name: "Commercial")
+  ];
+
+  List<OwnerDropdownItem> itemsProduct = [
+    OwnerDropdownItem(id: 1, name: "Evanto"),
+    OwnerDropdownItem(id: 2, name: "Aris"),
+    OwnerDropdownItem(id: 3, name: "Vireo"),
+    OwnerDropdownItem(id: 4, name: "The Althea"),
+  ];
+  
 
   @override
   void initState() {
@@ -91,13 +114,34 @@ class _ContactAddPageState extends State<ContactAddPage> {
   }
 
   void _init() async {
+    if (widget.args.dataActivity != null) {
+      final activity = widget.args.dataActivity!;
+      setState(() {
+        descTC.text = activity.notes ?? "";
+        if (activity.nextFollowUpDate != null && activity.nextFollowUpDate!.isNotEmpty) {
+          try {
+            isFollowUp = true;
+            selectedDate = DateTime.parse(activity.nextFollowUpDate!);
+          } catch (_) {}
+        } else if (activity.activityDate.isNotEmpty) {
+          try {
+            selectedDate = DateTime.parse(activity.activityDate);
+          } catch (_) {}
+        }
+      });
+    }
+
     if (widget.args.page == 6 && widget.args.dataContact != null) {
       final data = widget.args.dataContact!;
 
       setState(() {
-        selectedProject = data.projectName ?? data.firstProject;
+        selectedProject = data.lastProject ?? data.firstProject;
+        selectedProduct = data.lastProduct;
         selectedStatusId = data.statusProspectId;
-        selectedStatusName = "Current status";
+        selectedStatusName = "Update Status Prospect";
+        selectedBlockNo = data.lastBlokNo;
+        selectedProjectCategory = data.lastProjectCategory;
+        lBlockNoTC.text = data.lastBlokNo ?? '';
         jmlDatang = data.visitCount?.toString() ?? "1";
         descTC.text = data.generalNotes ?? "";
         if (data.lastApptDate != null) {
@@ -108,9 +152,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
       });
 
       // Fetch latest detail to ensure data is fresh
-      context.read<ContactBloc>().add(
-            FetchContactDetailEvent(data.contactId),
-          );
+      context.read<ContactBloc>().add(FetchContactDetailEvent(data.contactId),);
     }
 
     if (widget.args.page == 5 && widget.args.dataAttachment != null) {
@@ -125,6 +167,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
     }
 
     context.read<AttachmentTypeBloc>().add(FetchAttachmentTypesEvent());
+    context.read<ProspectStatusBloc>().add(const FetchProspectStatusesEvent(type: 'plan'));
   }
 
   Future<void> pickFile() async {
@@ -268,12 +311,16 @@ class _ContactAddPageState extends State<ContactAddPage> {
     if (contact == null) return;
 
     final params = CreateContactParams(
-      firstProject: selectedProject,
       statusProspectId: selectedStatusId,
       visitCount: int.tryParse(jmlDatang),
       lastApptDate: selectedDate != null ? DateFormat('yyyy-MM-dd').format(selectedDate!) : null,
+      lastBlokNo: lBlockNoTC.text,
+      lastProject: selectedProject,
+      lastProduct: selectedProduct,
+      lastProjectCategory: selectedProjectCategory,
       generalNotes: descTC.text,
     );
+
 
     print("data update: ${params.toString()}");
 
@@ -287,6 +334,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
       ).showSnackBar(SnackBar(content: Text('Status wajib dipilih')));
       return;
     }
+
 
     final params = CreateVisitParams(
       contactId: widget.args.dataContact!.contactId,
@@ -385,6 +433,11 @@ class _ContactAddPageState extends State<ContactAddPage> {
                   }
                 }
                 
+                selectedBlockNo = data.lastBlokNo;
+                selectedProject = data.lastProject ?? data.firstProject;
+                selectedProduct = data.lastProduct;
+                selectedProjectCategory = data.lastProjectCategory;
+                lBlockNoTC.text = data.lastBlokNo ?? '';
                 jmlDatang = data.visitCount?.toString() ?? "1";
                 descTC.text = data.generalNotes ?? "";
                 if (data.lastApptDate != null) {
@@ -463,7 +516,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                             ? "Visit"
                             : widget.args.page == 5
                             ? "Attachment"
-                            : "Update Status Prospect",
+                            : selectedStatusName,
                         isBack: true,
                         colorBack: Color(primaryColor),
                       ),
@@ -518,69 +571,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "Project",
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Color(grey2Color),
-              ),
-            ),
-            SizedBox(height: 6),
-            GestureDetector(
-              onTap: () async {
-                // final result = await context.pushNamed(
-                //   'detailContactDropdown',
-                //   extra: ContactDropdownArgs(
-                //     title: 'Project',
-                //     items: projectData,
-                //     selectedId: null,
-                //   ),
-                // );
-                // if (result != null) {
-                //   final selected = result as OwnerDropdownItem;
-                //   setState(() {
-                //     selectedProject = selected.name;
-                //   });
-                // }
-                final result =await  context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Project',items:itemsProject,selectedId: selectedStatusId,));
-                  if (result != null) {
-                    final selected = result as OwnerDropdownItem;
-
-                    setState(() {
-                      selectedProject = selected.name;
-                    });
-                  }
-              },
-              child: Container(
-                width: double.infinity,
-                height: 40,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Color(grey8Color)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                alignment: Alignment.centerLeft,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      selectedProject ?? "Select project",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: selectedProject == null ? Color(grey2Color) : Colors.black,
-                      ),
-                    ),
-                    Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: Color(grey2Color),
-                      size: 30,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: 12),
+            if(selectedStatusId == 53)_fieldProject(),
             Text(
               "Status Prospect",
               style: TextStyle(
@@ -629,7 +620,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                   }
                 } else {
                   context.read<ProspectStatusBloc>().add(
-                        FetchProspectStatusesEvent(),
+                        const FetchProspectStatusesEvent(type: 'plan'),
                       );
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Memuat daftar status...')),
@@ -668,7 +659,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
             ),
             SizedBox(height: 12),
             Text(
-              "Tanggal Appointment",
+              "Tanggal ${selectedStatusId == 53? "Appointment" :selectedStatusId == 63? "Visit" : selectedStatusId == 70? "Reserved" : "SP"}",
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
@@ -707,58 +698,8 @@ class _ContactAddPageState extends State<ContactAddPage> {
               ),
             ),
             SizedBox(height: 12),
-            Text(
-              "Appointment Volume",
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Color(grey2Color),
-              ),
-            ),
-            SizedBox(height: 6),
-            GestureDetector(
-              onTap: () async {
-                final result = await context.pushNamed(
-                  'detailContactDropdown',
-                  extra: ContactDropdownArgs(
-                    title: 'Appointment Volume',
-                    items: itemsJmlDatang,
-                    selectedId: null,
-                  ),
-                );
-                if (result != null) {
-                  final selected = result as OwnerDropdownItem;
-                  setState(() {
-                    jmlDatang = selected.name;
-                  });
-                }
-              },
-              child: Container(
-                width: double.infinity,
-                height: 40,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Color(grey8Color)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                alignment: Alignment.centerLeft,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "${jmlDatang}",
-                      style: TextStyle(fontSize: 14, color: Colors.black),
-                    ),
-                    Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: Color(grey2Color),
-                      size: 30,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: 12),
+            if (selectedStatusId == 53) _fieldAppointmentVolume(),
+            if (selectedStatusId == 70 || selectedStatusId == 74) _fieldBlockSelected(),
             Text(
               "Note",
               style: TextStyle(
@@ -820,6 +761,367 @@ class _ContactAddPageState extends State<ContactAddPage> {
       ),
     );
   }
+
+  Widget _fieldProject(){
+   return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+       children: [
+         Text(
+           "Project",
+           style: TextStyle(
+             fontSize: 12,
+             fontWeight: FontWeight.bold,
+             color: Color(grey2Color),
+           ),
+         ),
+         SizedBox(height: 6),
+         GestureDetector(
+           onTap: () async {
+             final selectedItem = itemsProject.firstWhere(
+                (e) => e.name == selectedProject,
+                orElse: () => OwnerDropdownItem(id: 0, name: ''),
+              );
+             final result = await context.pushNamed(
+                'detailContactDropdown',
+                extra: ContactDropdownArgs(
+                  title: 'Project',
+                  items: itemsProject,
+                  selectedId: selectedItem.id,
+                ),
+              );
+               if (result != null) {
+                  final selected = result as OwnerDropdownItem;
+                 setState(() {
+                   selectedProject = selected.name;
+                 });
+               }
+           },
+           child: Container(
+             width: double.infinity,
+             height: 40,
+             decoration: BoxDecoration(
+               border: Border.all(color: Color(grey8Color)),
+               borderRadius: BorderRadius.circular(8),
+             ),
+             padding: EdgeInsets.symmetric(horizontal: 16),
+             alignment: Alignment.centerLeft,
+             child: Row(
+               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+               children: [
+                 Text(
+                   selectedProject ?? "Select project",
+                   style: TextStyle(
+                     fontSize: 14,
+                     color: selectedProject == null ? Color(grey2Color) : Colors.black,
+                   ),
+                 ),
+                 Icon(
+                   Icons.keyboard_arrow_down_rounded,
+                   color: Color(grey2Color),
+                   size: 30,
+                 ),
+               ],
+             ),
+           ),
+         ),
+         SizedBox(height: 12),
+       ],
+     );
+  }
+
+  Widget _fieldAppointmentVolume(){
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Appointment Volume",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Color(grey2Color),
+          ),
+        ),
+        SizedBox(height: 6),
+        GestureDetector(
+          onTap: () async {
+            final result = await context.pushNamed(
+              'detailContactDropdown',
+              extra: ContactDropdownArgs(
+                title: 'Appointment Volume',
+                items: itemsJmlDatang,
+                selectedId: null,
+              ),
+            );
+            if (result != null) {
+              final selected = result as OwnerDropdownItem;
+              setState(() {
+                jmlDatang = selected.name;
+              });
+            }
+          },
+          child: Container(
+            width: double.infinity,
+            height: 40,
+            decoration: BoxDecoration(
+              border: Border.all(color: Color(grey8Color)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "${jmlDatang}",
+                  style: TextStyle(fontSize: 14, color: Colors.black),
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Color(grey2Color),
+                  size: 30,
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget _fieldBlockSelected() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Last Project Category",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Color(grey2Color),
+          ),
+        ),
+        SizedBox(height: 6),
+        GestureDetector(
+          onTap: () async {
+            final selectedItem = itemsProjectCategory.firstWhere(
+              (e) => e.name == selectedProjectCategory,
+              orElse: () => OwnerDropdownItem(id: 0, name: ''),
+            );
+            final result = await context.pushNamed(
+              'detailContactDropdown',
+              extra: ContactDropdownArgs(
+                title: 'Project Category',
+                items: itemsProjectCategory,
+                selectedId: selectedItem.id,
+              ),
+            );
+            if (result != null) {
+              final selected = result as OwnerDropdownItem;
+
+              setState(() {
+                selectedProjectCategory = selected.name;
+              });
+            }
+          },
+          child: Container(
+            width: double.infinity,
+            height: 40,
+            decoration: BoxDecoration(
+              border: Border.all(color: Color(grey8Color)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  selectedProjectCategory ?? "Select category",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: selectedProjectCategory == null
+                        ? Color(grey2Color)
+                        : Colors.black,
+                  ),
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Color(grey2Color),
+                  size: 30,
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(height: 12),
+        Text(
+          "Last Project",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Color(grey2Color),
+          ),
+        ),
+        SizedBox(height: 6),
+        GestureDetector(
+          onTap: () async {
+            final selectedItem = itemsProject.firstWhere(
+              (e) => e.name == selectedProject,
+              orElse: () => OwnerDropdownItem(id: 0, name: ''),
+            );
+            final result = await context.pushNamed(
+              'detailContactDropdown',
+              extra: ContactDropdownArgs(
+                title: 'Last Project',
+                items: itemsProject,
+                selectedId: selectedItem.id,
+              ),
+            );
+            if (result != null) {
+              final selected = result as OwnerDropdownItem;
+
+              setState(() {
+                selectedProject = selected.name;
+              });
+            }
+          },
+          child: Container(
+            width: double.infinity,
+            height: 40,
+            decoration: BoxDecoration(
+              border: Border.all(color: Color(grey8Color)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  selectedProject ?? "Select project",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: selectedProject == null
+                        ? Color(grey2Color)
+                        : Colors.black,
+                  ),
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Color(grey2Color),
+                  size: 30,
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(height: 12),
+        Text(
+          "Last Product",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Color(grey2Color),
+          ),
+        ),
+        SizedBox(height: 6),
+        GestureDetector(
+          onTap: () async {
+            final selectedItem = itemsProduct.firstWhere(
+              (e) => e.name == selectedProduct,
+              orElse: () => OwnerDropdownItem(id: 0, name: ''),
+            );
+            final result = await context.pushNamed(
+              'detailContactDropdown',
+              extra: ContactDropdownArgs(
+                title: 'Last Product',
+                items: itemsProduct,
+                selectedId: selectedItem.id,
+              ),
+            );
+            if (result != null) {
+              final selected = result as OwnerDropdownItem;
+
+              setState(() {
+                selectedProduct = selected.name;
+              });
+            }
+          },
+          child: Container(
+            width: double.infinity,
+            height: 40,
+            decoration: BoxDecoration(
+              border: Border.all(color: Color(grey8Color)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  selectedProduct ?? "Select product",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: selectedProduct == null
+                        ? Color(grey2Color)
+                        : Colors.black,
+                  ),
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Color(grey2Color),
+                  size: 30,
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(height: 12),
+        Text(
+          "Last Block No",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Color(grey2Color),
+          ),
+        ),
+        SizedBox(height: 6),
+        TextField(
+          controller: lBlockNoTC,
+          focusNode: lBlockNoFN,
+          onTapOutside: (event) => lBlockNoFN.unfocus(),
+          decoration: InputDecoration(
+            hintText: "Enter block no",
+            hintStyle: TextStyle(
+              color: Color(grey2Color),
+              fontSize: 12,
+            ),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 2,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Color(grey8Color)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Color(grey8Color)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Color(primaryColor)),
+            ),
+          ),
+        ),
+        SizedBox(height: 12),
+      ],
+    );
+  }
+
+
 
 
   Widget _buildVisit() {
@@ -1712,18 +2014,4 @@ class _ContactAddPageState extends State<ContactAddPage> {
     );
   }
 
-  // Widget _buildPreviewWidget(dynamic file) {
-  //   // Jika file adalah bytes (Web), gunakan Image.memory
-  //   if (kIsWeb && file is Uint8List) {
-  //     return Image.memory(file, fit: BoxFit.contain, width: 200, height: 200);
-  //   }
-
-  //   // Jika file adalah File (Mobile), gunakan Image.file
-  //   if (file is File) {
-  //     return Image.file(file, fit: BoxFit.contain, width: 200, height: 200);
-  //   }
-
-  //   // Fallback (jika file kosong atau tipe lain)
-  //   return Container();
-  // }
 }

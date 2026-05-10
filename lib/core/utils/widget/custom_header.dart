@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 
-Widget customHeader(BuildContext context, String title, {bool isBack = false, Color? colorBack, Color? colorBg, Color? colorTitle,IconData? iconLeft, IconData? iconRight,VoidCallback? iconLeftOnTap,VoidCallback? iconRightOnTap, VoidCallback? onBack, Color? colorIconLeft, Color? colorIconRight}) {
+Widget customHeader(BuildContext context, String title, {bool isBack = false, Color? colorBack, Color? colorBg, Color? colorTitle,IconData? iconLeft, IconData? iconRight,VoidCallback? iconLeftOnTap,VoidCallback? iconRightOnTap, VoidCallback? onBack, Color? colorIconLeft, Color? colorIconRight, bool showBadgeLeft = false}) {
   return Container(
     decoration: BoxDecoration(
       color: colorBg ?? Colors.white,
@@ -44,12 +44,29 @@ Widget customHeader(BuildContext context, String title, {bool isBack = false, Co
             ],
           ),
           if(iconLeft != null)
-          IconButton(
-          icon:  Icon(iconLeft, size: 24, color: colorIconLeft),
-          onPressed: () {
-            iconLeftOnTap?.call();
-          },
-        ),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              IconButton(
+                icon:  Icon(iconLeft, size: 24, color: colorIconLeft),
+                onPressed: () {
+                  iconLeftOnTap?.call();
+                },
+              ),
+              if (showBadgeLeft)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     ),

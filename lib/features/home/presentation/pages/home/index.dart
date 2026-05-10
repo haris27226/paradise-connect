@@ -14,10 +14,11 @@ import 'package:progress_group/features/auth/presentation/state/profile/profile_
 import 'package:progress_group/features/contact/presentation/state/activity/activity_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/activity/activity_event.dart';
 import 'package:progress_group/features/contact/presentation/state/activity/activity_state.dart';
-import 'package:progress_group/features/inbox/data/arguments/inbox_detail_args.dart';
-import 'package:progress_group/features/inbox/domain/entities/inbox_contact_entity.dart';
-import 'package:url_launcher/url_launcher.dart';
-
+import 'package:progress_group/features/contact/domain/entities/contact/contact.dart';
+import 'package:progress_group/features/contact/data/arguments/contact_detail_args.dart';
+import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_bloc.dart';
+import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_event.dart';
+import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_state.dart';
 import '../../../../../core/utils/widget/custom_header.dart';
 
 class HomePage extends StatefulWidget {
@@ -33,7 +34,7 @@ class _HomePageState extends State<HomePage> {
   DateTime _chartEndDate = DateTime.now();
   DateTime _chartStartDate = DateTime.now().subtract(const Duration(days: 6));
   int day = 0;
-  final Set<int> _completedActivityIds = {};
+  bool isCompleted = false;
 
   
   @override
@@ -115,6 +116,9 @@ class _HomePageState extends State<HomePage> {
         isRefresh: true,
       ),
     );
+    
+    context.read<NotifActivityBloc>().add(const FetchActivitiesEvent(isRefresh: true));
+    context.read<WhatsappActivityBloc>().add(const FetchWhatsappUnreadSummaryEvent(0));
 
     try {
       if (mounted) setState(() {});
@@ -126,9 +130,29 @@ class _HomePageState extends State<HomePage> {
     return SafeArea(
       child: Column(
         children: [
-          customHeader(context, 'Dashboard',iconRight: Icons.menu,iconRightOnTap: () => Scaffold.of(context).openDrawer(), iconLeft: Icons.notifications_none_rounded, iconLeftOnTap: () {
-            context.pushNamed('notif');
-          }),
+          BlocBuilder<NotifActivityBloc, ActivityState>(
+            builder: (context, notifState) {
+              return BlocBuilder<WhatsappActivityBloc, WhatsappActivityState>(
+                builder: (context, whatsappState) {
+                  final hasUnseenNotif = notifState.activities.any((a) => !notifState.seenActivityIds.contains(a.activityId));
+                  final hasUnreadWA = whatsappState.data.isNotEmpty;
+                  final showBadge = hasUnseenNotif || hasUnreadWA;
+
+                  return customHeader(
+                    context, 
+                    'Dashboard',
+                    iconRight: Icons.menu,
+                    iconRightOnTap: () => Scaffold.of(context).openDrawer(), 
+                    iconLeft: Icons.notifications_none_rounded, 
+                    showBadgeLeft: showBadge,
+                    iconLeftOnTap: () {
+                      context.pushNamed('notif');
+                    }
+                  );
+                },
+              );
+            },
+          ),
           SizedBox(height: 16),
           Expanded(
             child: RefreshIndicator(
@@ -243,101 +267,100 @@ class _HomePageState extends State<HomePage> {
                         itemCount: activities.length,
                         itemBuilder: (context, index) {
                           final activity = activities[index];
-                          final isCompleted = _completedActivityIds.contains(activity.activityId);
-                          final isWhatsApp = activity.activityType.toLowerCase().contains('whatsapp');
-                          final isCall = activity.activityType.toLowerCase().contains('call');
+                                    final type = activity.activityType.toLowerCase();
+                                    final isWhatsApp = type.contains('whatsapp');
+                                    final isCall = type.contains('call');
+                                    final isMeeting = type.contains('meeting');
+                                    final isVisit = type.contains('visit');
+                                    final isTask = type.contains('task');
 
-                          return GestureDetector(
-                            onTap: () async {
-                              if (isWhatsApp) {
-                                if (activity.waId != null && activity.jid != null && activity.sessionCode != null) {
-                                  context.pushNamed('detailInbox',
-                                    extra: InboxDetailArgs(
-                                      data: InboxContact(
-                                        id: activity.waId!,
-                                        name: activity.contactName ?? 'Unknown',
-                                        jid: activity.jid!,
-                                        isGroup: activity.isGroup ?? false,
-                                        initials: activity.initials ?? '?',
-                                        sessionCode: activity.sessionCode!,
-                                      ),
-                                      icon: Icons.person,
-                                    ),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Missing message history'), backgroundColor: Colors.red),
-                                  );
-                                }
-                              } else if (isCall) {
-                                final Uri telLaunchUri = Uri(scheme: 'tel', path: activity.phoneNumber);
-                                if (await canLaunchUrl(telLaunchUri)) {
-                                  await launchUrl(telLaunchUri);
-                                }
-                              }
+                                    return GestureDetector(
+                                      onTap: () async {
+                                        int page = 6;
+                                        String namePage = "Update Status Prospect";
 
-                              setState(() {
-                                if (isCompleted) {
-                                  _completedActivityIds.remove(activity.activityId);
-                                } else {
-                                  _completedActivityIds.add(activity.activityId);
-                                }
-                              });
-                            },
+                                        if (isCall) { page = 0; namePage = "Call"; }
+                                        else if (isWhatsApp) { page = 1; namePage = "WhatsApp"; }
+                                        else if (isMeeting) { page = 2; namePage = "Meeting"; }
+                                        else if (isTask) { page = 3; namePage = "Task"; }
+                                        else if (isVisit) { page = 4; namePage = "Visit"; }
 
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-                              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Color(grey10Color)))),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        isCompleted ? Icons.check_circle : Icons.check_circle_outline_rounded,
-                                        color: isCompleted ? Colors.green : Color(primaryColor),
-                                        size: 40,
-                                      ),
-
-                                      const SizedBox(width: 10),
-
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            activity.activityType,
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(blackColor),
-                                              decoration: isCompleted ? TextDecoration.lineThrough : null,
+                                        context.pushNamed(
+                                          'addContact',
+                                          extra: ContactDetailArgs(
+                                            page: page,
+                                            namePage: namePage,
+                                            dataActivity: activity,
+                                            dataContact: Contact(
+                                              contactId: activity.contactId,
+                                              fullName: activity.contactName,
                                             ),
                                           ),
-
-                                          Text(
-                                            activity.contactName ?? "Unknown",
-                                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(grey2Color)),
-                                          ),
-
-                                          Text(
-                                            activity.nextFollowUpDate != null
-                                                ? DateHelper.formatToIndonesian(DateTime.parse(activity.nextFollowUpDate!))
-                                                : "No follow-up date",
-                                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(grey2Color)),
-                                          ),
-                                        ],
+                                        );
+                                      },
+                                      child: Container(
+                                        margin: const EdgeInsets.only(bottom: 10),
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(10),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.grey.withOpacity(0.1),
+                                              spreadRadius: 1,
+                                              blurRadius: 3,
+                                              offset: const Offset(0, 1),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  isCompleted ? Icons.check_circle : Icons.check_circle_outline_rounded,
+                                                  color: isCompleted ? Colors.green : Color(primaryColor),
+                                                  size: 40,
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      activity.activityType,
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Color(blackColor),
+                                                        decoration: isCompleted ? TextDecoration.lineThrough : null,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      activity.contactName ?? '',
+                                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(grey2Color)),
+                                                    ),
+                                                    Text(
+                                                      activity.nextFollowUpDate != null
+                                                          ? DateHelper.formatToIndonesian(DateTime.parse(activity.nextFollowUpDate!))
+                                                          : "No follow-up date",
+                                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(grey2Color)),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                            isWhatsApp
+                                                ? Image.asset(icContactDetailWA, width: 30)
+                                                : isMeeting
+                                                    ? Image.asset(icContactDetailMeeting, width: 30)
+                                                    : isVisit
+                                                        ? Image.asset(icContactDetailVisit, width: 30)
+                                                        : Icon(isCall ? Icons.phone_outlined : Icons.event_note_outlined, color: Color(primaryColor), size: 30),
+                                          ],
+                                        ),
                                       ),
-                                    ],
-                                  ),
-
-                                  isWhatsApp
-                                      ? Image.asset(icContactDetailWA)
-                                      : Icon(isCall ? Icons.phone_outlined : Icons.event_note_outlined, color: Color(primaryColor), size: 30),
-                                ],
-                              ),
-                            ),
-                          );
+                                    );
                         },
                       ),
                     ),
@@ -348,94 +371,6 @@ class _HomePageState extends State<HomePage> {
     },
   );
 }
-
-  // Widget _buildFunnel(){
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       Text("Funnel", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-  //       SizedBox(height: 5),
-  //       Row(children: [_buildCard(), _buildCard()]),
-  //       Row(children: [_buildCard(), _buildCard()]),
-  //       Row(children: [_buildCard(), _buildCard()]),
-  //     ],
-  //   );
-  // }
-  // Widget _buildCard() {
-  //   return Expanded(
-  //     child: Padding(
-  //       padding: const EdgeInsets.only(bottom: 6,right: 3,left: 3),
-  //       child: Container(
-  //         padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-  //         decoration: BoxDecoration(
-  //           color: Color(whiteColor),
-  //           borderRadius: BorderRadius.circular(10),
-  //         ),
-  //         child: Row(
-  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //           children: [
-  //             Column(
-  //               children: [
-  //                 Text("Leads :", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(grey2Color))),
-  //                 Text("250", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(blackColor))),
-  //                 Row(
-  //                   children: [
-  //                     Text("(Growth ", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(blackColor))),
-  //                     Text("10%", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(greenPercentColor))),
-  //                     Text(")", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(blackColor))),
-  //                   ],
-  //                 ),
-  //               ],
-  //             ),
-  //             Column(
-  //               crossAxisAlignment: CrossAxisAlignment.end,
-  //               children: [
-  //                 Column(
-  //                   crossAxisAlignment: CrossAxisAlignment.end,
-  //                   children: [
-  //                     Text("→ 40 %", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(blackColor))),
-  //                     Text("Conv.", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(blackColor))),
-  //                   ],
-  //                 ),
-  //                 Column(
-  //                   crossAxisAlignment: CrossAxisAlignment.end,
-  //                   children: [
-  //                     Text("Leads", style: TextStyle(fontSize: 8,fontWeight: FontWeight.bold,color: Color(grey3Color))),
-  //                     Row(
-  //                       children: [
-  //                         Container(
-  //                           height: 6,
-  //                           width: 6,
-  //                           decoration: BoxDecoration(
-  //                             shape: BoxShape.circle,
-  //                             color: Color(bluePeriodColor),
-  //                           ),
-  //                         ),
-  //                         Text("10", style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(blackColor))),
-  //                         SizedBox(width: 5),
-  //                         Text("-", style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(blackColor))),
-  //                         SizedBox(width: 5),
-  //                         Container(
-  //                           height: 6,
-  //                           width: 6,
-  //                           decoration: BoxDecoration(
-  //                             shape: BoxShape.circle,
-  //                             color: Color(redPeriodColor),
-  //                           ),
-  //                         ),
-  //                         Text("10", style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(blackColor))),
-  //                       ],
-  //                     ),
-  //                   ],
-  //                 ),
-  //               ],
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
 
   Widget _buildWhatsAppChart() {
     const double maxHeight = 110.0;

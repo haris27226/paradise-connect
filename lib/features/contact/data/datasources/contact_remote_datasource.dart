@@ -23,7 +23,7 @@ abstract class ContactRemoteDataSource {
 
   Future<List<InfoSourceModel>> getInfoSources();
 
-  Future<List<ProspectStatusModel>> getProspectStatuses();
+  Future<List<ProspectStatusModel>> getProspectStatuses({String? type});
 
   Future<List<ContactPropertyGroupModel>> getContactProperties();
 
@@ -117,9 +117,10 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
     }
   }
   @override
-  Future<List<ProspectStatusModel>> getProspectStatuses() async {
+  Future<List<ProspectStatusModel>> getProspectStatuses({String? type}) async {
     try {
-      final response = await dio.get('/sales/statuses');
+      final url = type != null ? '/sales/statuses/$type' : '/sales/statuses';
+      final response = await dio.get(url);
 
       if (response.data['status'] == true) {
         final List<dynamic> data = response.data['data'];

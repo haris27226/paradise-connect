@@ -47,6 +47,16 @@ class CreateVisitEvent {
 
 class ResetActivityEvent extends ActivityEvent {}
 
+class MarkActivitiesAsSeenEvent extends ActivityEvent {
+  final List<int> activityIds;
+  const MarkActivitiesAsSeenEvent(this.activityIds);
+
+  @override
+  List<Object?> get props => [activityIds];
+}
+
+class LoadSeenActivitiesEvent extends ActivityEvent {}
+
 abstract class ActivityProspectStatusEvent {}
 
 class FetchActivityProspectStatusEvent extends ActivityProspectStatusEvent {

@@ -19,7 +19,7 @@ abstract class ContactRepository {
   Future<Either<String, ContactResponse>> getContacts({  int page = 1,  int perPage = 10,  String? search,  String? startDate,  String? endDate,  List<int>? ownerIds,  List<int>? statusProspectIds,});
   Future<Either<String, Contact>> getContactDetail(int id);
   Future<Either<String, List<InfoSource>>> getInfoSources();
-  Future<Either<String, List<ProspectStatus>>> getProspectStatuses();
+  Future<Either<String, List<ProspectStatus>>> getProspectStatuses({String? type});
   Future<Either<String, List<ContactPropertyGroup>>> getContactProperties();
   Future<Either<String, void>> updateContact(int id, CreateContactParams params);
   Future<Either<String, void>> createContact(CreateContactParams params);

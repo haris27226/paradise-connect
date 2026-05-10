@@ -16,7 +16,7 @@ class ProspectStatusBloc extends Bloc<ProspectStatusEvent, ProspectStatusState> 
   ) async {
     emit(state.copyWith(status: ProspectStatusEnum.loading));
 
-    final result = await getProspectStatusesUseCase();
+    final result = await getProspectStatusesUseCase(type: event.type);
 
     result.fold(
       (failure) => emit(state.copyWith(
