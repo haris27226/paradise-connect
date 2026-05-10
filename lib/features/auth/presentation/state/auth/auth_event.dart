@@ -19,6 +19,8 @@ class ForgotPasswordEvent extends AuthEvent {
 
 class CheckRememberMeEvent extends AuthEvent {}
 
+class LogoutEvent extends AuthEvent {}
+
 class ClearRememberMeEvent extends AuthEvent {}
 
 class ResetPasswordEvent extends AuthEvent {

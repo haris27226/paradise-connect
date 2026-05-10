@@ -105,7 +105,7 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
   @override
   Future<List<InfoSourceModel>> getInfoSources() async {
     try {
-      final response = await dio.get('/api/sumber-informasi'); // Sesuaikan path endpointnya
+      final response = await dio.get('/sumber-informasi'); // Sesuaikan path endpointnya
 
       if (response.data['status'] == true) {
         final List<dynamic> data = response.data['data'];

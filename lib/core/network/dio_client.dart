@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../app/router.dart';
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
+import '../../features/auth/presentation/state/auth/auth_bloc.dart';
+import '../../features/auth/presentation/state/auth/auth_event.dart';
 import 'api_constants.dart';
 
 class DioClient {
@@ -32,6 +34,22 @@ class DioClient {
           }
           return handler.next(options);
         },
+        // onError: (DioException e, handler) async {
+        //   print("DIO ERROR: ${e.message}");
+
+        //   if (e.response?.statusCode == 401) {
+        //     final context = AppRouter.rootNavigatorKey.currentContext;
+        //     if (context != null) {
+        //       // Dispatch LogoutEvent — akan clear token + reset semua BLoC
+        //       context.read<AuthBloc>().add(LogoutEvent());
+        //     } else {
+        //       // Fallback jika context tidak tersedia
+        //       await _authLocalDataSource.clearToken();
+        //       AppRouter.router.go('/login');
+        //     }
+        //   }
+        //   return handler.next(e);
+        // },
         onError: (DioException e, handler) async {
           // Log errors or handle common status codes here
           print("DIO ERROR: ${e.message}");
@@ -39,7 +57,7 @@ class DioClient {
           if (e.response?.statusCode == 401) {
             await _authLocalDataSource.clearToken();
             
-            final context = AppRouter.rootNavigatorKey.currentContext;
+           final context = AppRouter.rootNavigatorKey.currentContext;
             if (context != null) {
               showDialog(
                 context: context,
@@ -49,9 +67,11 @@ class DioClient {
                   content: const Text("Sesi Anda telah habis. Silakan login kembali."),
                   actions: [
                     TextButton(
-                      onPressed: () {
-                        context.go('/login');
-
+                      onPressed: ()async {
+                       await _authLocalDataSource.clearToken();
+                      context.read<AuthBloc>().add(LogoutEvent());
+                      
+                       AppRouter.router.go('/login');
                       },
                       child: const Text("OK"),
                     ),
@@ -76,5 +96,4 @@ class DioClient {
 
   Dio get dio => _dio;
 }
-
 

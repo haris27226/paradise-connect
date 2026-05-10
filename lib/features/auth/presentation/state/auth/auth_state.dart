@@ -30,3 +30,5 @@ class RememberMeLoaded extends AuthState {
 }
 
 class RememberMeEmpty extends AuthState {}
+
+class AuthLoggedOut extends AuthState {}

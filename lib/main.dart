@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,9 +18,12 @@ import 'package:progress_group/features/auth/domain/usecase/forgot_password_usec
 import 'package:progress_group/features/auth/domain/usecase/get_remember_me_usecase.dart';
 import 'package:progress_group/features/auth/domain/usecase/login_usecase.dart';
 import 'package:progress_group/features/auth/domain/usecase/get_profile_usecase.dart';
+import 'package:progress_group/features/auth/domain/usecase/logout_usecase.dart';
 import 'package:progress_group/features/auth/domain/usecase/reset_password_usecase.dart';
 import 'package:progress_group/features/auth/presentation/state/auth/auth_bloc.dart';
+import 'package:progress_group/features/auth/presentation/state/auth/auth_state.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
+import 'package:progress_group/features/auth/presentation/state/profile/profile_event.dart';
 import 'package:progress_group/features/contact/domain/usecases/activity/create_activity_visit_usecase.dart';
 import 'package:progress_group/features/contact/domain/usecases/activity/get_activity_prospect_status_usecase.dart';
 import 'package:progress_group/features/contact/domain/usecases/activity/get_whatsapp_activity_usecase.dart';
@@ -75,6 +79,9 @@ void main() async {
   await initializeDateFormatting('id_ID', null);
   final prefs = await SharedPreferences.getInstance();
 
+  // Inisialisasi router pertama kali
+  AppRouter.init();
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.white,
@@ -86,37 +93,61 @@ void main() async {
   runApp(MyApp(prefs: prefs));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final SharedPreferences prefs;
   const MyApp({super.key, required this.prefs});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  // Key ini digunakan untuk memaksa rebuild seluruh MultiBlocProvider
+  Key _blocKey = UniqueKey();
+
+  void _resetApp() {
+    setState(() {
+      // 1. Reset status auth notifier agar GoRouter mengarahkan ke /login
+      AppRouter.authNotifier.value = false;
+      // 2. Inisialisasi ulang router dengan GlobalKey baru untuk menghindari 'Duplicate GlobalKey' error
+      AppRouter.init();
+      // 3. Ganti key untuk membuang semua BLoC lama dan membuat yang baru (Initial State)
+      _blocKey = UniqueKey();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final localDataSource = AuthLocalDataSourceImpl(prefs);
+    // Infrastructure
+    final localDataSource = AuthLocalDataSourceImpl(widget.prefs);
     final dioClient = DioClient(localDataSource);
+    
+    // Auth
     final remoteDataSource = AuthRemoteDataSourceImpl(dioClient.dio);
     final repository = AuthRepositoryImpl(remoteDataSource, localDataSource);
-
     final loginUseCase = LoginUseCase(repository);
     final forgotPasswordUseCase = ForgotPasswordUseCase(repository);
     final getRememberMeUseCase = GetRememberMeUseCase(repository);
     final resetPasswordUsecase = ResetPasswordUsecase(repository);
+    final logoutUseCase = LogoutUseCase(repository);
     final getProfileUseCase = GetProfileUseCase(repository);
 
+    // Inbox & Messages
     final inboxRemoteDataSource = InboxContactRemoteDataSourceImpl(dioClient.dio);
     final inboxRepository = InboxContactRepositoryImpl(inboxRemoteDataSource);
     final getInboxContactsUsecase = GetInboxContactsUsecase(inboxRepository);
     final getWhatsappDevicesUsecase = GetWhatsappDevicesUsecase(inboxRepository);
     final getQrSessionUsecase = GetQrSessionUsecase(inboxRepository);
-
     final messageRemoteDataSource = MessageRemoteDataSourceImpl(dioClient.dio);
     final messageRepository = MessageRepositoryImpl(messageRemoteDataSource);
     final getMessagesUseCase = GetMessagesUseCase(messageRepository);
 
+    // Reports
     final reportRemoteDataSource = ReportRemoteDataSourceImpl(dioClient.dio);
     final reportRepository = ReportRepositoryImpl(reportRemoteDataSource);
     final getVolumeReportUseCase = GetVolumeReportUseCase(reportRepository);
 
+    // Contacts & Activities
     final contactRemoteDataSource = ContactRemoteDataSourceImpl(dioClient.dio);
     final contactRepository = ContactRepositoryImpl(contactRemoteDataSource);
     final getContactsUseCase = GetContactsUseCase(contactRepository);
@@ -128,7 +159,6 @@ class MyApp extends StatelessWidget {
     final updateContactUseCase = UpdateContactUseCase(contactRepository);
     final deleteContactUseCase = DeleteContactUseCase(contactRepository);
     final getContactPropertiesUseCase = GetContactPropertiesUseCase(contactRepository);
-
     final getAttachmentTypesUseCase = GetAttachmentTypesUseCase(contactRepository);
     final uploadAttachmentUseCase = UploadAttachmentUseCase(contactRepository);
     final getAttachmentsUseCase = GetAttachments(contactRepository);
@@ -137,7 +167,9 @@ class MyApp extends StatelessWidget {
     final createActivityVisitUseCase = CreateActivityVisitUseCase(contactRepository);
     final getActivityProspectStatusUseCase = GetActivityProspectStatusUseCase(contactRepository);
     final getWhatsappActivityUseCase =  GetWhatsappUnreadSummaryUseCase(contactRepository);
+    final getInfoSourcesUseCase = GetInfoSourcesUseCase(contactRepository);
 
+    // Attendance
     final attendanceRemoteDataSource = AttendanceRemoteDataSourceImpl(dioClient.dio);
     final attendanceRepository = AttendanceRepositoryImpl(attendanceRemoteDataSource);
     final getAttendanceUseCase = GetAttendanceUseCase(attendanceRepository);
@@ -145,37 +177,49 @@ class MyApp extends StatelessWidget {
     final submitAttendanceUseCase = SubmitAttendanceUseCase(attendanceRepository);
     final submitAttendanceActivityUseCase = SubmitAttendanceActivityUseCase(attendanceRepository);
 
-    final getInfoSourcesUseCase = GetInfoSourcesUseCase(contactRepository);
-    
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (_) => AuthBloc(loginUseCase: loginUseCase,forgotPasswordUseCase: forgotPasswordUseCase,getRememberMeUseCase: getRememberMeUseCase,resetPasswordUsecase: resetPasswordUsecase)),
-        BlocProvider(create: (_) => InboxContactBloc(getInboxContactsUsecase)),
-        BlocProvider(create: (_) => WhatsappDeviceBloc(getWhatsappDevicesUsecase)),
-        BlocProvider(create: (_) => WhatsappQrBloc(getQrSessionUsecase)),
-        BlocProvider(create: (_) => ProfileBloc(getProfileUseCase: getProfileUseCase)),
-        BlocProvider(create: (_) => MessageBloc(getMessagesUseCase)),
-        BlocProvider(create: (_) => ReportBloc(getVolumeReportUseCase)),
-        BlocProvider(create: (_) => ContactBloc(getContactsUseCase: getContactsUseCase,createContactUseCase: createContactUseCase,updateContactUseCase: updateContactUseCase,deleteContactUseCase: deleteContactUseCase,getContactDetailUseCase: getContactDetailUseCase)),
-        BlocProvider(create: (_) => ProspectStatusBloc(getProspectStatusesUseCase: getProspectStatusesUseCase)),
-        BlocProvider(create: (_) => ContactPropertiesBloc(getContactPropertiesUseCase: getContactPropertiesUseCase)),
-        BlocProvider(create: (_) => ActivityBloc(getActivitiesUseCase: getActivitiesUseCase,createActivityUseCase: createActivityUseCase)),
-        BlocProvider(create: (_) => NotifActivityBloc(getActivitiesUseCase: getActivitiesUseCase,createActivityUseCase: createActivityUseCase)),
-        BlocProvider(create: (_) => ActivityVisitBloc(createActivityVisitUseCase)),
-        BlocProvider(create: (_) => AttachmentTypeBloc(getAttachmentTypesUseCase)),
-        BlocProvider(create: (_) => UploadAttachmentBloc(uploadAttachmentUseCase,updateAttachmentUseCase )),
-        BlocProvider(create: (_) => AttachmentCubit(getAttachmentsUseCase, deleteAttachmentUseCase)),
-        BlocProvider(create: (_) => ActivityProspectStatusBloc(getActivityProspectStatusUseCase)),
-        BlocProvider(create: (_) => AttendanceBloc(getAttendanceUseCase: getAttendanceUseCase,getLocationsUseCase: getLocationsUseCase,submitAttendanceUseCase: submitAttendanceUseCase,submitAttendanceActivityUseCase: submitAttendanceActivityUseCase,)),
-        BlocProvider(create: (_) => WhatsappActivityBloc(getWhatsappActivityUseCase)),
-        BlocProvider(create: (_) => InfoSourceBloc(getInfoSourcesUseCase: getInfoSourcesUseCase)),
-      
-      ],
-      child: MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        routerConfig: AppRouter.router,
-      ),
+    return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      routerConfig: AppRouter.router,
+      builder: (context, child) {
+        return MultiBlocProvider(
+          key: _blocKey,
+          providers: [
+            BlocProvider(create: (_) => AuthBloc(loginUseCase: loginUseCase, forgotPasswordUseCase: forgotPasswordUseCase, getRememberMeUseCase: getRememberMeUseCase, resetPasswordUsecase: resetPasswordUsecase, logoutUseCase: logoutUseCase)),
+            BlocProvider(create: (_) => InboxContactBloc(getInboxContactsUsecase)),
+            BlocProvider(create: (_) => WhatsappDeviceBloc(getWhatsappDevicesUsecase)),
+            BlocProvider(create: (_) => WhatsappQrBloc(getQrSessionUsecase)),
+            BlocProvider(create: (_) => ProfileBloc(getProfileUseCase: getProfileUseCase)),
+            BlocProvider(create: (_) => MessageBloc(getMessagesUseCase)),
+            BlocProvider(create: (_) => ReportBloc(getVolumeReportUseCase)),
+            BlocProvider(create: (_) => ContactBloc(getContactsUseCase: getContactsUseCase, createContactUseCase: createContactUseCase, updateContactUseCase: updateContactUseCase, deleteContactUseCase: deleteContactUseCase, getContactDetailUseCase: getContactDetailUseCase)),
+            BlocProvider(create: (_) => ProspectStatusBloc(getProspectStatusesUseCase: getProspectStatusesUseCase)),
+            BlocProvider(create: (_) => ContactPropertiesBloc(getContactPropertiesUseCase: getContactPropertiesUseCase)),
+            BlocProvider(create: (_) => ActivityBloc(getActivitiesUseCase: getActivitiesUseCase, createActivityUseCase: createActivityUseCase)),
+            BlocProvider(create: (_) => NotifActivityBloc(getActivitiesUseCase: getActivitiesUseCase, createActivityUseCase: createActivityUseCase)),
+            BlocProvider(create: (_) => ActivityVisitBloc(createActivityVisitUseCase)),
+            BlocProvider(create: (_) => AttachmentTypeBloc(getAttachmentTypesUseCase)),
+            BlocProvider(create: (_) => UploadAttachmentBloc(uploadAttachmentUseCase, updateAttachmentUseCase)),
+            BlocProvider(create: (_) => AttachmentCubit(getAttachmentsUseCase, deleteAttachmentUseCase)),
+            BlocProvider(create: (_) => ActivityProspectStatusBloc(getActivityProspectStatusUseCase)),
+            BlocProvider(create: (_) => AttendanceBloc(getAttendanceUseCase: getAttendanceUseCase, getLocationsUseCase: getLocationsUseCase, submitAttendanceUseCase: submitAttendanceUseCase, submitAttendanceActivityUseCase: submitAttendanceActivityUseCase)),
+            BlocProvider(create: (_) => WhatsappActivityBloc(getWhatsappActivityUseCase)),
+            BlocProvider(create: (_) => InfoSourceBloc(getInfoSourcesUseCase: getInfoSourcesUseCase)),
+          ],
+          child: BlocListener<AuthBloc, AuthState>(
+            listener: (context, state) {
+              if (state is AuthSuccess) {
+                context.read<ProfileBloc>().add(GetProfileEvent());
+                AppRouter.authNotifier.value = true;
+              } else if (state is AuthLoggedOut) {
+                // Restart aplikasi total seolah-olah baru dibuka pertama kali
+                _resetApp();
+              }
+            },
+            child: child!,
+          ),
+        );
+      },
     );
   }
 }

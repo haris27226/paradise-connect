@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:progress_group/core/constants/assets.dart';
 import 'package:progress_group/core/constants/colors.dart';
 import 'package:progress_group/features/auth/presentation/state/auth/auth_bloc.dart';
+import 'package:progress_group/features/auth/presentation/state/auth/auth_event.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_state.dart';
 
@@ -77,8 +78,7 @@ class _MainLayoutState extends State<MainLayout> {
         }
 
         final now = DateTime.now();
-        final isTimeout = _lastPressedAt == null ||
-            now.difference(_lastPressedAt!) > const Duration(seconds: 2);
+        final isTimeout = _lastPressedAt == null ||now.difference(_lastPressedAt!) > const Duration(seconds: 2);
 
         if (isTimeout) {
           _lastPressedAt = now;
@@ -303,7 +303,8 @@ class _MainLayoutState extends State<MainLayout> {
                 padding: const EdgeInsets.symmetric( horizontal: 20),
                 child: GestureDetector(
                   onTap: () {
-                    context.go('/login');
+                    Navigator.of(context).pop(); // tutup drawer dulu
+                    context.read<AuthBloc>().add(LogoutEvent());
                   },
                   child: Row(
                     children: [

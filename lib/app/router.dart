@@ -1,5 +1,4 @@
 
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_dropdown_args.dart';
@@ -34,12 +33,35 @@ import '../features/splash/presentation/pages/index.dart';
 import 'main_layout.dart';
 
 class AppRouter {
-  static final rootNavigatorKey = GlobalKey<NavigatorState>();
+  static GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
-  static final router = GoRouter(
-    initialLocation: '/splash',
-    navigatorKey: rootNavigatorKey,
-    routes: [
+  /// Notifier ini mengontrol status autentikasi.
+  /// Saat nilainya berubah, GoRouter otomatis mengevaluasi ulang [redirect].
+  static final authNotifier = ValueNotifier<bool>(false);
+
+  static late GoRouter router;
+
+  static void init() {
+    // 🔥 Buat GlobalKey baru setiap kali init dipanggil
+    rootNavigatorKey = GlobalKey<NavigatorState>();
+    
+    router = GoRouter(
+      initialLocation: '/splash',
+      navigatorKey: rootNavigatorKey,
+      refreshListenable: authNotifier,
+      redirect: (context, state) {
+        final isLoggedIn = authNotifier.value;
+        final location = state.matchedLocation;
+
+        if (location == '/splash') return null;
+        if (location.startsWith('/forgot-password')) return null;
+
+        if (!isLoggedIn && location != '/login') return '/login';
+        if (isLoggedIn && location == '/login') return '/';
+
+        return null;
+      },
+      routes: [
       GoRoute(
         path: '/splash',
         builder: (context, state) => const SplashPage(),
@@ -200,4 +222,5 @@ class AppRouter {
       ),
     ],
   );
+}
 }

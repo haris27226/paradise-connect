@@ -8,6 +8,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
   ProfileBloc({required this.getProfileUseCase}) : super(ProfileInitial()) {
     on<GetProfileEvent>(_onGetProfile);
+    on<ClearProfileEvent>((event, emit) => emit(ProfileInitial()));
   }
 
   Future<void> _onGetProfile(GetProfileEvent event, Emitter<ProfileState> emit) async {

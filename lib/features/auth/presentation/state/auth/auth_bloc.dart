@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:progress_group/features/auth/domain/usecase/forgot_password_usecase.dart';
 import 'package:progress_group/features/auth/domain/usecase/get_remember_me_usecase.dart';
 import 'package:progress_group/features/auth/domain/usecase/login_usecase.dart';
+import 'package:progress_group/features/auth/domain/usecase/logout_usecase.dart';
 import 'package:progress_group/features/auth/domain/usecase/reset_password_usecase.dart';
 
 import 'auth_event.dart';
@@ -13,14 +14,22 @@ import 'auth_state.dart';
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginUseCase loginUseCase;
   final ForgotPasswordUseCase forgotPasswordUseCase;
-   final ResetPasswordUsecase resetPasswordUsecase;
+  final ResetPasswordUsecase resetPasswordUsecase;
   final GetRememberMeUseCase getRememberMeUseCase;
+  final LogoutUseCase logoutUseCase;
 
-  AuthBloc({ required this.loginUseCase, required this.forgotPasswordUseCase, required this.resetPasswordUsecase, required this.getRememberMeUseCase, }) : super(AuthInitial()) {
+  AuthBloc({
+    required this.loginUseCase,
+    required this.forgotPasswordUseCase,
+    required this.resetPasswordUsecase,
+    required this.getRememberMeUseCase,
+    required this.logoutUseCase,
+  }) : super(AuthInitial()) {
     on<LoginEvent>(_onLogin);
     on<ForgotPasswordEvent>(_onForgotPassword);
     on<ResetPasswordEvent>(_onResetPassword);
     on<CheckRememberMeEvent>(_onCheckRememberMe);
+    on<LogoutEvent>(_onLogout);
   }
 
   Future<void> _onLogin(LoginEvent event, Emitter<AuthState> emit,) async {
@@ -70,4 +79,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthFailure(e.toString()));
     }
   }
-}
+
+  Future<void> _onLogout(LogoutEvent event, Emitter<AuthState> emit) async {
+    try {
+      await logoutUseCase();
+      emit(AuthLoggedOut());
+    } catch (e) {
+      // Tetap logout meski ada error
+      emit(AuthLoggedOut());
+    }
+  }
+}

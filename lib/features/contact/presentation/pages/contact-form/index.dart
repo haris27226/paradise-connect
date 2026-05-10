@@ -49,7 +49,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
   TextEditingController lBlockNoTC = TextEditingController();
   TextEditingController noKTPTC = TextEditingController();
   TextEditingController ktpAddressTC = TextEditingController();
-  // TextEditingController sumberInfoTC = TextEditingController();
   TextEditingController volumePlanTC = TextEditingController();
   TextEditingController vCountTC = TextEditingController();
   TextEditingController firstVisitorDateTC = TextEditingController();
@@ -69,7 +68,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
   String? selectedStatusProspectName;
   String? selectedProject;
   int? selectedChannelId;
-  String? selectedSumberInformasi;
   int? selectedTeamId;
   int? selectedSupervisorId;
   int? selectedSalesExecutiveId;
@@ -102,7 +100,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
   FocusNode lBlockNoFN = FocusNode();
   FocusNode noKTPFN = FocusNode();
   FocusNode ktpAddressFN = FocusNode();
-  FocusNode sumberInfoFN = FocusNode();
   FocusNode volumePlanFN = FocusNode();
   FocusNode vCountFN = FocusNode();
   FocusNode firstVisitorDateFN = FocusNode();
@@ -114,7 +111,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
   FocusNode lossReasonNoteFN = FocusNode();
   FocusNode fspFN = FocusNode();
   FocusNode lspFN = FocusNode();
-  FocusNode sumberInformationFN = FocusNode();
   
   bool _showValidation = false;
   
@@ -570,7 +566,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
     lBlockNoFN.dispose();
     noKTPFN.dispose();
     ktpAddressFN.dispose();
-    sumberInfoFN.dispose();
     volumePlanFN.dispose();
     vCountFN.dispose();
     firstVisitorDateFN.dispose();
@@ -589,7 +584,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
     selectedOwnerId = null;
     selectedProject = null;
  
-    sumberInformationFN.dispose();
     for (final c in _propertyControllers.values) {
       c.dispose();
     }
@@ -645,7 +639,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
       salesTeamId: selectedTeamId,
       salesChannelId: selectedChannelId,
       statusProspectId: selectedStatusId,
-      sumberInformasi2: selectedSumberInformasi,
+      sumberInformasi2: selectedSourceName?.isNotEmpty == true ? selectedSourceName : null,
       generalNotes: generalNotesTC.text.isNotEmpty ? generalNotesTC.text : null,
       propertiesJson: propertiesJson.isNotEmpty ? propertiesJson : null,
       fullName: fullNameTC.text.isNotEmpty ? fullNameTC.text : null,

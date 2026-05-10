@@ -22,7 +22,7 @@ class _SplashPageState extends State<SplashPage> {
   }
 
   void _checkAutoLogin() async {
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 1));
     final prefs = await SharedPreferences.getInstance();
     final isAutoLogin = prefs.getBool('is_auto_login') ?? false;
     final token = prefs.getString('auth_token');
