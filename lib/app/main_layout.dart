@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:progress_group/core/constants/assets.dart';
 import 'package:progress_group/core/constants/colors.dart';
+import 'package:progress_group/features/auth/presentation/state/auth/auth_bloc.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_state.dart';
 
@@ -301,7 +302,9 @@ class _MainLayoutState extends State<MainLayout> {
               Padding(
                 padding: const EdgeInsets.symmetric( horizontal: 20),
                 child: GestureDetector(
-                  onTap: () => context.go('/login'),
+                  onTap: () {
+                    context.go('/login');
+                  },
                   child: Row(
                     children: [
                       Icon(Icons.login_outlined, color: Color(grey2Color), size: 24),

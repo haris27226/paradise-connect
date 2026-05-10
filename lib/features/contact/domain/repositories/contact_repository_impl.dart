@@ -4,6 +4,7 @@ import 'package:progress_group/features/contact/domain/entities/activity/create_
 import 'package:progress_group/features/contact/domain/entities/activity/whatsapp_activity_entity.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/attachment_entity.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/attachment_type.dart';
+import 'package:progress_group/features/contact/domain/entities/info_source/info_source.dart';
 import '../entities/activity/activity_entity.dart';
 import '../entities/contact/contact.dart';
 import '../entities/contact/contact_response.dart';
@@ -42,6 +43,16 @@ class ContactRepositoryImpl implements ContactRepository {
   Future<Either<String, Contact>> getContactDetail(int id) async {
     try {
       final result = await remoteDataSource.getContactDetail(id);
+      return Right(result);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, List<InfoSource>>> getInfoSources() async {
+    try {
+      final result = await remoteDataSource.getInfoSources();
       return Right(result);
     } catch (e) {
       return Left(e.toString());

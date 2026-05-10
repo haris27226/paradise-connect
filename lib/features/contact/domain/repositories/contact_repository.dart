@@ -4,6 +4,7 @@ import 'package:progress_group/features/contact/domain/entities/activity/create_
 import 'package:progress_group/features/contact/domain/entities/activity/whatsapp_activity_entity.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/attachment_entity.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/upload_attachment_params.dart';
+import 'package:progress_group/features/contact/domain/entities/info_source/info_source.dart';
 import '../entities/activity/activity_entity.dart';
 import '../entities/contact/contact.dart';
 import '../entities/contact/contact_response.dart';
@@ -17,6 +18,7 @@ abstract class ContactRepository {
   Future<Either<String, List<AttachmentType>>> getAttachmentTypes();
   Future<Either<String, ContactResponse>> getContacts({  int page = 1,  int perPage = 10,  String? search,  String? startDate,  String? endDate,  List<int>? ownerIds,  List<int>? statusProspectIds,});
   Future<Either<String, Contact>> getContactDetail(int id);
+  Future<Either<String, List<InfoSource>>> getInfoSources();
   Future<Either<String, List<ProspectStatus>>> getProspectStatuses();
   Future<Either<String, List<ContactPropertyGroup>>> getContactProperties();
   Future<Either<String, void>> updateContact(int id, CreateContactParams params);

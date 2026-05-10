@@ -6,6 +6,9 @@ import 'package:intl/intl.dart';
 import 'package:progress_group/features/contact/domain/entities/contact/create_contact_params.dart';
 import 'package:go_router/go_router.dart';
 import 'package:progress_group/features/contact/domain/entities/prospect/prospect_status.dart';
+import 'package:progress_group/features/contact/presentation/state/info_source/info_source_bloc.dart';
+import 'package:progress_group/features/contact/presentation/state/info_source/info_source_event.dart';
+import 'package:progress_group/features/contact/presentation/state/info_source/info_source_state.dart';
 import 'package:progress_group/features/contact/presentation/state/prospect_status/prospect_status_event.dart';
 
 import '../../../../../core/constants/colors.dart';
@@ -46,7 +49,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
   TextEditingController lBlockNoTC = TextEditingController();
   TextEditingController noKTPTC = TextEditingController();
   TextEditingController ktpAddressTC = TextEditingController();
-  TextEditingController sumberInfoTC = TextEditingController();
+  // TextEditingController sumberInfoTC = TextEditingController();
   TextEditingController volumePlanTC = TextEditingController();
   TextEditingController vCountTC = TextEditingController();
   TextEditingController firstVisitorDateTC = TextEditingController();
@@ -80,6 +83,8 @@ class _ContactFormPageState extends State<ContactFormPage> {
   String? selectLastProjectProduct;
   String? selectFirstProjectCategory;
   String? selectLastProjectCategory;
+  String? selectedSourceName;
+  int? selectedSourceId;
 
 
   List<Map<String, dynamic>> salesInfoFields = [];
@@ -232,7 +237,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
     lBlockNoTC.text = contact.lastBlokNo ?? '';
     noKTPTC.text = contact.noKtp ?? '';
     ktpAddressTC.text = contact.ktpAddress ?? '';
-    sumberInfoTC.text = contact.sumberInformasi2 ?? '';
+    selectedSourceName = contact.sumberInformasi2 ?? '';
     volumePlanTC.text = contact.volumePlan?.toString() ?? '';
     vCountTC.text = contact.visitCount?.toString() ?? '';
     firstVisitorDateTC.text = _formatFromContact(contact.firstVisitDate);
@@ -561,7 +566,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
     generalNotesFN.dispose();
     fspTC.dispose();
     lspTC.dispose();
-    sumberInfoTC.dispose();
 
     lBlockNoFN.dispose();
     noKTPFN.dispose();
@@ -1095,11 +1099,42 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         },
                       ),
                       
-                       _buildField(
+                      //  _buildField(
+                      //   label: "Sumber Informasi",
+                      //   controller: sumberInfoTC,
+                      //   focusNode: sumberInfoFN,
+                      //   isError: _showValidation && sumberInfoTC.text.isEmpty,
+                      // ),
+                      _buildFieldDown(
                         label: "Sumber Informasi",
-                        controller: sumberInfoTC,
-                        focusNode: sumberInfoFN,
-                        isError: _showValidation && sumberInfoTC.text.isEmpty,
+                        value: selectedSourceName,
+                        onTap: () async {
+                          final sourceState = context.read<InfoSourceBloc>().state;
+                          if (sourceState.status == InfoSourceStatus.loaded) {
+                            // Konversi ke item dropdown
+                            final sourceItems = sourceState.sources
+                                .map((e) => OwnerDropdownItem(id: e.id, name: e.name))
+                                .toList();
+
+                            final result = await context.pushNamed('detailContactDropdown', 
+                              extra: ContactDropdownArgs(
+                                title: 'Pilih Sumber',
+                                items: sourceItems,
+                                selectedId: selectedSourceId,
+                              ),
+                            );
+
+                            if (result != null) {
+                              final selected = result as OwnerDropdownItem;
+                              setState(() {
+                                selectedSourceId = selected.id;
+                                selectedSourceName = selected.name;
+                              });
+                            }
+                          } else {
+                            context.read<InfoSourceBloc>().add(FetchInfoSourcesEvent());
+                          }
+                        },
                       ),
                       _buildField(
                         label: "General Notes",

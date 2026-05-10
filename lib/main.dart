@@ -28,7 +28,9 @@ import 'package:progress_group/features/contact/domain/usecases/attachment/get_a
 import 'package:progress_group/features/contact/domain/usecases/attachment/update_attachment_usecase.dart';
 import 'package:progress_group/features/contact/domain/usecases/contact/delete_contact_usecase.dart';
 import 'package:progress_group/features/contact/domain/usecases/contact/update_contact_usecase.dart';
+import 'package:progress_group/features/contact/domain/usecases/info_source/get_info_sources_usecase.dart';
 import 'package:progress_group/features/contact/presentation/state/attachment/attachment_cubit.dart';
+import 'package:progress_group/features/contact/presentation/state/info_source/info_source_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_bloc.dart';
 import 'package:progress_group/features/home/domain/usecases/get_report_whatsapp_usecase.dart';
 import 'package:progress_group/features/home/presentation/state/report-whatsapp/report_bloc.dart';
@@ -143,6 +145,8 @@ class MyApp extends StatelessWidget {
     final submitAttendanceUseCase = SubmitAttendanceUseCase(attendanceRepository);
     final submitAttendanceActivityUseCase = SubmitAttendanceActivityUseCase(attendanceRepository);
 
+    final getInfoSourcesUseCase = GetInfoSourcesUseCase(contactRepository);
+    
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => AuthBloc(loginUseCase: loginUseCase,forgotPasswordUseCase: forgotPasswordUseCase,getRememberMeUseCase: getRememberMeUseCase,resetPasswordUsecase: resetPasswordUsecase)),
@@ -164,6 +168,8 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => ActivityProspectStatusBloc(getActivityProspectStatusUseCase)),
         BlocProvider(create: (_) => AttendanceBloc(getAttendanceUseCase: getAttendanceUseCase,getLocationsUseCase: getLocationsUseCase,submitAttendanceUseCase: submitAttendanceUseCase,submitAttendanceActivityUseCase: submitAttendanceActivityUseCase,)),
         BlocProvider(create: (_) => WhatsappActivityBloc(getWhatsappActivityUseCase)),
+        BlocProvider(create: (_) => InfoSourceBloc(getInfoSourcesUseCase: getInfoSourcesUseCase)),
+      
       ],
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,

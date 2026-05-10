@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../app/router.dart';
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
 import 'api_constants.dart';
@@ -49,8 +50,8 @@ class DioClient {
                   actions: [
                     TextButton(
                       onPressed: () {
-                        Navigator.of(context).pop();
-                        AppRouter.router.go('/login');
+                        context.go('/login');
+
                       },
                       child: const Text("OK"),
                     ),

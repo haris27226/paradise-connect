@@ -10,6 +10,7 @@ import 'package:progress_group/features/contact/data/models/contact/contact_mode
 import 'package:progress_group/features/contact/data/models/contact/contact_property_model.dart';
 import 'package:progress_group/features/contact/data/models/contact/contact_response_model.dart';
 import 'package:progress_group/features/contact/data/models/dropdown/prospect_status_model.dart';
+import 'package:progress_group/features/contact/data/models/info_source/info_source_model.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_params.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_visit_params.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/upload_attachment_params.dart';
@@ -19,6 +20,8 @@ abstract class ContactRemoteDataSource {
   Future<ContactResponseModel> getContacts({int page = 1, int perPage = 10, String? search, String? startDate, String? endDate, List<int>? ownerIds, List<int>? statusProspectIds});
 
   Future<ContactModel> getContactDetail(int id);
+
+  Future<List<InfoSourceModel>> getInfoSources();
 
   Future<List<ProspectStatusModel>> getProspectStatuses();
 
@@ -37,6 +40,7 @@ abstract class ContactRemoteDataSource {
   Future<void> createActivity(CreateActivityParams params);
 
   Future<List<ActivityProspectStatusModel>> getActivityProspectStatus(int contactId);
+  
   Future<List<WhatsappUnreadSummaryModel>> getWhatsappUnreadSummary(int contactId);
 
   Future<List<AttachmentTypeModel>> getAttachmentTypes();
@@ -98,6 +102,20 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
     }
   }
 
+  @override
+  Future<List<InfoSourceModel>> getInfoSources() async {
+    try {
+      final response = await dio.get('/api/sumber-informasi'); // Sesuaikan path endpointnya
+
+      if (response.data['status'] == true) {
+        final List<dynamic> data = response.data['data'];
+        return data.map((json) => InfoSourceModel.fromJson(json)).toList();
+      }
+      throw Exception(response.data['message'] ?? 'Gagal memuat sumber informasi');
+    } on DioException catch (e) {
+      throw Exception(getErrorMessage(e, 'Gagal memuat sumber informasi'));
+    }
+  }
   @override
   Future<List<ProspectStatusModel>> getProspectStatuses() async {
     try {
