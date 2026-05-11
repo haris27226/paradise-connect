@@ -45,6 +45,9 @@ const int redPeriodColor = 0xFFFF3C00;
 const int redColor =0xFFF65160;
 
 const int purpleColor = 0xFF6D5DD3;
+const int successColor = 0xFF22C55E;
+const int warningColor = 0xFFF59E0B;
+const int infoColor = 0xFF06B6D4;
 
 const int orangeColor = 0xFFD1A250;
 

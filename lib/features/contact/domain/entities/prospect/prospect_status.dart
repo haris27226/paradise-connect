@@ -1,10 +1,10 @@
 import 'package:equatable/equatable.dart';
 
-class ProspectStatus extends Equatable {
+class ProspectStatusEntity extends Equatable {
   final int statusProspectId;
   final String statusProspectName;
 
-  const ProspectStatus({
+  const ProspectStatusEntity({
     required this.statusProspectId,
     required this.statusProspectName,
   });

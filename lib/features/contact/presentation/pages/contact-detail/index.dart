@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:progress_group/app/router.dart';
 import 'package:progress_group/core/constants/assets.dart';
 import 'package:progress_group/core/constants/colors.dart';
 import 'package:progress_group/core/utils/share_helper.dart';
@@ -22,11 +21,9 @@ import 'package:progress_group/features/contact/presentation/state/attachment/up
 import 'package:progress_group/features/contact/presentation/state/contact/contact_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/contact/contact_event.dart';
 import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_bloc.dart';
-import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_event.dart';
 import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_state.dart';
 import 'package:progress_group/features/inbox/data/arguments/inbox_detail_args.dart';
 import 'package:progress_group/features/inbox/domain/entities/inbox_contact_entity.dart';
-import 'package:progress_group/features/contact/domain/entities/activity/whatsapp_activity_entity.dart';
 import 'package:progress_group/features/inbox/presentation/state/inbox/inbox_block.dart';
 import 'package:progress_group/features/inbox/presentation/state/inbox/inbox_event.dart';
 import 'package:progress_group/features/inbox/presentation/state/inbox/inbox_statte.dart';
@@ -35,7 +32,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../../core/utils/widget/custom_bg_icon.dart';
 import '../../../../../core/utils/widget/custom_buttomsheet.dart';
 import 'package:progress_group/features/contact/presentation/widgets/contact_options_sheet.dart';
-import 'package:progress_group/core/utils/helpers/image_url.dart';
 
 
 
@@ -100,7 +96,6 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
     await _getActivity();
     await _getAttachment();
     await _getContactDetail();
-    // await _getWhatsappUnreadSummary();
     await _fetchInbox();
   }
 
@@ -124,12 +119,6 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
     ));
   }
 
-  Future<void> _getWhatsappUnreadSummary() async {
-    final contactId = widget.args.dataContact?.contactId;
-    if (contactId != null) {
-      context.read<WhatsappActivityBloc>().add(FetchWhatsappUnreadSummaryEvent(contactId));
-    }
-  }
 
   Future<void> _getContactDetail() async {
     final contactId = widget.args.dataContact?.contactId;
@@ -276,27 +265,12 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                                 BgIcon(
                                   asset: icContactDetailWA,
                                   onTap: () async {
-                                    var phone =
-                                        widget
-                                            .args
-                                            .dataContact
-                                            ?.whatsappNumber ??
-                                        widget.args.dataContact?.primaryPhone;
+                                    var phone =widget.args.dataContact?.whatsappNumber ??widget.args.dataContact?.primaryPhone;
                                     if (phone != null && phone.isNotEmpty) {
-                                      phone = phone.replaceAll(
-                                        RegExp(r'[^0-9]'),
-                                        '',
-                                      );
-                                      if (phone.startsWith('0')) {
-                                        phone = '62${phone.substring(1)}';
-                                      }
-                                      final Uri whatsappUri = Uri.parse(
-                                        "https://wa.me/$phone",
-                                      );
-                                      await launchUrl(
-                                        whatsappUri,
-                                        mode: LaunchMode.externalApplication,
-                                      );
+                                      phone = phone.replaceAll(RegExp(r'[^0-9]'), '');
+                                      if (phone.startsWith('0')) {phone = '62${phone.substring(1)}';}
+                                      final Uri whatsappUri = Uri.parse("https://wa.me/$phone");
+                                      await launchUrl(whatsappUri,mode: LaunchMode.externalApplication);
                                     }
                                   },
                                 ),
@@ -334,12 +308,7 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                   index: currentTab,
                   children: [
                     _buildActivityContent(),
-                    ContactFormPage(
-                      args: ContactDetailArgs(
-                        dataContact: widget.args.dataContact,
-                        page: 2,
-                      ),
-                    ),
+                    ContactFormPage(args: ContactDetailArgs(dataContact: widget.args.dataContact,page: 2)),
                     _buildAttachmentContent(),
 
                   ],
@@ -663,9 +632,6 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                       grouped[key]!.add(item);
                     }
 
-                    // =========================
-                    // UI
-                    // =========================
                         // =========================
                         // UI
                         // =========================
@@ -673,12 +639,7 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                           controller: _activityScrollController,
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                           children: [
-                            // UNREAD WHATSAPP SUMMARY
-                            if (unreadState.status == WhatsappUnreadSummaryStatus.loaded && unreadState.data.isNotEmpty)
-                              Column(
-                                children: unreadState.data.map((item) => _whatsappUnreadItem(item)).toList(),
-                              ),
-
+                           
                             // TIMELINE ITEMS
                             ...grouped.entries.map((entry) {
                               final date = entry.key;
@@ -756,41 +717,22 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
               child: Container(
                 padding: EdgeInsets.only(left: 12),
                 decoration: BoxDecoration(
-                  border: Border(left: BorderSide(color: Colors.green, width: 5)),
+                  border: Border(left: BorderSide(color: Color(successColor), width: 5)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "${item.crmContactName??'-'} - WhatsApp Integration",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
+                    Text("Chat with ${item.ownerName ?? '-'}",style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    Text(DateFormat('HH:mm').format(DateTime.parse(item.lastConversationDate ?? '-')), style: TextStyle(fontSize: 11),),
+                    SizedBox(
+                      width: double.infinity,
+                      child: Text("${item.lastMessage ?? '-'}",maxLines:1,overflow: TextOverflow.ellipsis,style: TextStyle(fontSize: 11,),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.lastConversationDate ?? '-',
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 11,
-                      ),
-                    ),
-                
-                    Text(
-                      "Status Message \nDelivered: ${item.lastMessageReceiver ?? '-'}, Sender: ${item.lastMessageSender ?? '-'}",
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                      ),
-                    ),
-                
-                    const SizedBox(height: 4),
                   ],
                 ),
               ),
             ),
-      
-            
           ],
         ),
       ),
@@ -799,8 +741,6 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
 
 
   Widget _prospectItem(dynamic item) {
-    final bool isUpdate = item.previousStatusName != null;
-
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
@@ -811,52 +751,27 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+        
           Expanded(
-            child: Container(
-            padding: EdgeInsets.only(left: 12),
-            decoration: BoxDecoration(
-              border: Border(left: BorderSide(color: Color(purpleColor), width: 5)),
-            ),
-              child: RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 13,
-                  ),
-                  children: isUpdate
-                      ? [
-                          TextSpan(
-                              text: "${item.projectName} — Status berubah dari "),
-                          TextSpan(
-                            text: item.previousStatusName,
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                          const TextSpan(text: " ke "),
-                          TextSpan(
-                            text: item.statusName,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue,
-                            ),
-                          ),
-                          const TextSpan(text: "."),
-                        ]
-                      : [
-                          TextSpan(
-                              text: "${item.projectName} — Status awal "),
-                          TextSpan(
-                            text: item.statusName,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue,
-                            ),
-                          ),
-                          const TextSpan(text: "."),
-                        ],
+              child: Container(
+                padding: EdgeInsets.only(left: 12),
+                decoration: BoxDecoration(
+                  border: Border(left: BorderSide(color: Color(warningColor), width: 5)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("${item.projectName}",style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    Text(DateFormat('HH:mm').format(DateTime.parse(item.createdAt ?? '-')), style: TextStyle(fontSize: 11),),
+                    SizedBox(
+                      width: double.infinity,
+                      child: Text("Status changed from ${item.previousStatusName ?? '-'} to ${item.statusName ?? '-'}",maxLines:2,overflow: TextOverflow.ellipsis,style: TextStyle(fontSize: 11,),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -960,7 +875,7 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                           final item = list[index];
                           return GestureDetector(
                             onTap: () {
-                              if (item.attachmentUrl != null && item.attachmentUrl!.isNotEmpty) {
+                              if (item.attachmentUrl.isNotEmpty) {
                                 context.pushNamed('attachmentWebView', extra: item.attachmentUrl);
                               } else {
                                 context.pushNamed(
@@ -1265,74 +1180,6 @@ Widget _buildIconLink(
       ),
     );
   }
-
-  Widget _whatsappUnreadItem(WhatsappUnreadSummaryEntity item) {
-    return GestureDetector(
-      onTap: () {
-        print("POINDAHHHHH");
-        AppRouter.rootNavigatorKey.currentContext!.pushNamed(
-          'detailInbox',
-          extra: InboxDetailArgs(
-            data: InboxContact(
-              id: item!.contactId??0, // Use contactId from entity
-              name: item.contactName ?? 'Unknown',
-              jid: item.jid,
-              isGroup: false, // Default or fetch if available
-              initials: item.contactName.isNotEmpty ? item.contactName[0] : '?',
-              sessionCode: item.sessionId,
-            ),
-            icon: Icons.person,
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Color(whiteColor),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              height: 50,
-              width: 5,
-              decoration: BoxDecoration(
-                color: Colors.green,
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-      
-            const SizedBox(width: 10),
-      
-            Expanded(
-              child: RichText(
-                text: TextSpan(
-                  style: const TextStyle(color: Colors.black, fontSize: 13),
-                  children: [
-                    TextSpan(
-                      text: item.contactName,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-      
-                    const TextSpan(text: " mengirim "),
-      
-                    TextSpan(
-                      text: "${item.unreadCount} pesan belum dibaca",
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
-                    ),
-      
-                    const TextSpan(text: "."),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 
@@ -1498,13 +1345,13 @@ class _ActivityItemState extends State<ActivityItem> {
                     children: [
                       Text(
                         item.activityType,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                       Text(
-                        DateFormat('HH:mm')
-                            .format(DateTime.parse(item.activityDate)),
+                        DateFormat('HH:mm').format(DateTime.parse(item.activityDate)),
+                        style: TextStyle(fontSize: 11),
                       ),
-                      if (item.notes != null) Text(item.notes!),
+                      if (item.notes != null) SizedBox(width: double.infinity,child: Text(item.notes!, maxLines: 1,overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11))),
                     ],
                   ),
                 ),

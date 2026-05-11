@@ -7,7 +7,7 @@ class GetProspectStatusesUseCase {
 
   GetProspectStatusesUseCase(this.repository);
 
-  Future<Either<String, List<ProspectStatus>>> call({String? type}) async {
+  Future<Either<String, List<ProspectStatusEntity>>> call({String? type}) async {
     return await repository.getProspectStatuses(type: type);
   }
 }

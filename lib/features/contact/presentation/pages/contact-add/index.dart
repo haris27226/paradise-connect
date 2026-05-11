@@ -424,7 +424,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                 // Try to find the status name from current ProspectStatusBloc state if possible
                 final statusState = context.read<ProspectStatusBloc>().state;
                 if (statusState.status == ProspectStatusEnum.loaded) {
-                  final matched = statusState.statuses.cast<ProspectStatus?>().firstWhere(
+                  final matched = statusState.statuses.cast<ProspectStatusEntity?>().firstWhere(
                     (e) => e?.statusProspectId == data.statusProspectId,
                     orElse: () => null,
                   );
@@ -606,7 +606,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                   if (result != null) {
                     final selected = result as OwnerDropdownItem;
                     final picked = statusState.statuses
-                        .cast<ProspectStatus?>()
+                        .cast<ProspectStatusEntity?>()
                         .firstWhere(
                           (e) => e?.statusProspectId == selected.id,
                           orElse: () => null,
@@ -1173,7 +1173,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                   if (result != null) {
                     final selected = result as OwnerDropdownItem;
                     final picked = statusState.statuses
-                        .cast<ProspectStatus?>()
+                        .cast<ProspectStatusEntity?>()
                         .firstWhere(
                           (e) => e?.statusProspectId == selected.id,
                           orElse: () => null,

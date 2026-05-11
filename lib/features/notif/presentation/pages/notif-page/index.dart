@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:progress_group/features/inbox/data/arguments/inbox_detail_args.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import 'package:progress_group/core/constants/assets.dart';
 import 'package:progress_group/core/constants/colors.dart';
 import 'package:progress_group/core/utils/helpers/date_helper.dart';

@@ -32,6 +32,7 @@ class UserProfileEntity {
   final String? photo;
   final String permissionScope;
   final String? positionName;
+  final int? nikNumber;
   final int? salesPersonId;
   final List<HierarchyNodeEntity> salesRoles;
   final List<HierarchyNodeEntity> subordinates;
@@ -46,6 +47,7 @@ class UserProfileEntity {
     this.photo,
     required this.permissionScope,
     this.positionName,
+    this.nikNumber,
     this.salesPersonId,
     this.salesRoles = const [],
     this.subordinates = const [],

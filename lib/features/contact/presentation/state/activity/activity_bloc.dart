@@ -146,8 +146,7 @@ class ActivityVisitBloc extends Bloc<CreateVisitEvent, VisitState> {
 class ActivityProspectStatusBloc extends Bloc<ActivityProspectStatusEvent, ActivityProspectStatusState> {
   final GetActivityProspectStatusUseCase useCase;
 
-  ActivityProspectStatusBloc(this.useCase)
-      : super(const ActivityProspectStatusState()) {
+  ActivityProspectStatusBloc(this.useCase) : super(const ActivityProspectStatusState()) {
     on<FetchActivityProspectStatusEvent>(_onFetch);
     on<ResetActivityProspectStatusEvent>((event, emit) => emit(const ActivityProspectStatusState()));
   }

@@ -148,6 +148,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ],
                     ),
+                    Text("NIK Number : ${user.nikNumber}"),
                     const SizedBox(height: 16),
                     Divider(color: Colors.grey.shade300),
                     const SizedBox(height: 16),
@@ -252,105 +253,105 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildAtasanChain(dynamic node) {
-    // 1. Flatten the linked list of parents
-    List<dynamic> chain = [];
-    dynamic current = node;
-    while (current != null) {
-      chain.add(current);
-      current = current.parent;
-    }
-    // 2. Reverse the list so the highest position is first
-    chain = chain.reversed.toList();
+  // Widget _buildAtasanChain(dynamic node) {
+  //   // 1. Flatten the linked list of parents
+  //   List<dynamic> chain = [];
+  //   dynamic current = node;
+  //   while (current != null) {
+  //     chain.add(current);
+  //     current = current.parent;
+  //   }
+  //   // 2. Reverse the list so the highest position is first
+  //   chain = chain.reversed.toList();
 
-    // 3. Build the widgets recursively from the top down
-    return _buildAtasanNode(chain, 0);
-  }
+  //   // 3. Build the widgets recursively from the top down
+  //   return _buildAtasanNode(chain, 0);
+  // }
 
-  Widget _buildAtasanNode(List<dynamic> chain, int index) {
-    if (index >= chain.length) return const SizedBox();
+  // Widget _buildAtasanNode(List<dynamic> chain, int index) {
+  //   if (index >= chain.length) return const SizedBox();
 
-    var node = chain[index];
-    bool isLast = index == chain.length - 1;
+  //   var node = chain[index];
+  //   bool isLast = index == chain.length - 1;
 
-    Widget titleContent = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(node.fullName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-        if (node.positionName != null && node.positionName!.isNotEmpty)
-          Text(node.positionName!, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-      ],
-    );
+  //   Widget titleContent = Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Text(node.fullName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+  //       if (node.positionName != null && node.positionName!.isNotEmpty)
+  //         Text(node.positionName!, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+  //     ],
+  //   );
 
-    if (isLast) {
-      return Padding(
-        padding: EdgeInsets.only(left: index * 16.0, bottom: 8.0, top: 4.0),
-        child: Row(
-          children: [
-            Icon(Icons.person_outline, size: 20, color: Color(primaryColor)),
-            const SizedBox(width: 8),
-            Expanded(child: titleContent),
-          ],
-        ),
-      );
-    }
+  //   if (isLast) {
+  //     return Padding(
+  //       padding: EdgeInsets.only(left: index * 16.0, bottom: 8.0, top: 4.0),
+  //       child: Row(
+  //         children: [
+  //           Icon(Icons.person_outline, size: 20, color: Color(primaryColor)),
+  //           const SizedBox(width: 8),
+  //           Expanded(child: titleContent),
+  //         ],
+  //       ),
+  //     );
+  //   }
 
-    return Padding(
-      padding: EdgeInsets.only(left: index == 0 ? 0 : 16.0),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          initiallyExpanded: true,
-          tilePadding: EdgeInsets.zero,
-          childrenPadding: EdgeInsets.zero,
-          leading: Icon(Icons.people_alt_outlined, color: Color(primaryColor)),
-          title: titleContent,
-          children: [_buildAtasanNode(chain, index + 1)],
-        ),
-      ),
-    );
-  }
+  //   return Padding(
+  //     padding: EdgeInsets.only(left: index == 0 ? 0 : 16.0),
+  //     child: Theme(
+  //       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+  //       child: ExpansionTile(
+  //         initiallyExpanded: true,
+  //         tilePadding: EdgeInsets.zero,
+  //         childrenPadding: EdgeInsets.zero,
+  //         leading: Icon(Icons.people_alt_outlined, color: Color(primaryColor)),
+  //         title: titleContent,
+  //         children: [_buildAtasanNode(chain, index + 1)],
+  //       ),
+  //     ),
+  //   );
+  // }
 
-  Widget _buildHierarchyNode(dynamic node, {bool isAtasan = false, int depth = 0}) {
-    // Determine children (Subordinates only now, as Atasan has its own builder)
-    List children = node.subordinates ?? [];
+  // Widget _buildHierarchyNode(dynamic node, {bool isAtasan = false, int depth = 0}) {
+  //   // Determine children (Subordinates only now, as Atasan has its own builder)
+  //   List children = node.subordinates ?? [];
 
-    Widget titleContent = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(node.fullName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-        if (node.positionName != null && node.positionName!.isNotEmpty)
-          Text(node.positionName!, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-      ],
-    );
+  //   Widget titleContent = Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Text(node.fullName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+  //       if (node.positionName != null && node.positionName!.isNotEmpty)
+  //         Text(node.positionName!, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+  //     ],
+  //   );
 
-    if (children.isEmpty) {
-      return Padding(
-        padding: EdgeInsets.only(left: depth * 16.0, bottom: 8.0, top: 4.0),
-        child: Row(
-          children: [
-            Icon(Icons.person_outline, size: 20, color: Color(primaryColor)),
-            const SizedBox(width: 8),
-            Expanded(child: titleContent),
-          ],
-        ),
-      );
-    }
+  //   if (children.isEmpty) {
+  //     return Padding(
+  //       padding: EdgeInsets.only(left: depth * 16.0, bottom: 8.0, top: 4.0),
+  //       child: Row(
+  //         children: [
+  //           Icon(Icons.person_outline, size: 20, color: Color(primaryColor)),
+  //           const SizedBox(width: 8),
+  //           Expanded(child: titleContent),
+  //         ],
+  //       ),
+  //     );
+  //   }
 
-    return Padding(
-      padding: EdgeInsets.only(left: depth * 16.0),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: EdgeInsets.zero,
-          childrenPadding: EdgeInsets.zero,
-          leading: Icon(Icons.people_alt_outlined, color: Color(primaryColor)),
-          title: titleContent,
-          children: children.map((child) => _buildHierarchyNode(child, isAtasan: isAtasan, depth: depth + 1)).toList(),
-        ),
-      ),
-    );
-  }
+  //   return Padding(
+  //     padding: EdgeInsets.only(left: depth * 16.0),
+  //     child: Theme(
+  //       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+  //       child: ExpansionTile(
+  //         tilePadding: EdgeInsets.zero,
+  //         childrenPadding: EdgeInsets.zero,
+  //         leading: Icon(Icons.people_alt_outlined, color: Color(primaryColor)),
+  //         title: titleContent,
+  //         children: children.map((child) => _buildHierarchyNode(child, isAtasan: isAtasan, depth: depth + 1)).toList(),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _inputField({   required TextEditingController controller,   required FocusNode focusNode,   required String hint,   TextInputType? keyboardType,   bool obscure = false,   Widget? suffix, }) {
     return SizedBox(

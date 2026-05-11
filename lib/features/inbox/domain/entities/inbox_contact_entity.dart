@@ -13,6 +13,7 @@ class InboxContact {
   final String? crmContactName;
   final String? lastMessageReceiver;
   final String? lastMessageSender;
+  final String? lastMessage;
 
   InboxContact({
     required this.id,
@@ -29,5 +30,6 @@ class InboxContact {
     this.crmContactName,
     this.lastMessageReceiver,
     this.lastMessageSender,
+    this.lastMessage,
   });
 }

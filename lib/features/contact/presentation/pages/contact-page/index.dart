@@ -231,7 +231,7 @@ class _ContactPageState extends State<ContactPage> {
                                     if (contactState.statusProspectIds!.length ==
                                         1) {
                                       final status = statusState.statuses
-                                          .cast<ProspectStatus?>()
+                                          .cast<ProspectStatusEntity?>()
                                           .firstWhere(
                                             (e) =>
                                                 e?.statusProspectId ==

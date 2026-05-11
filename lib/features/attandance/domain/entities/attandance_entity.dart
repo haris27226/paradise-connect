@@ -13,6 +13,7 @@ class AttendanceEntity {
   final String? location0;
   final String? location1;
   final String? location6;
+  final String? fullName;
 
 
 
@@ -31,6 +32,7 @@ class AttendanceEntity {
     this.location0,
     this.location1,
     this.location6,
+    required this.fullName,
   });
 
 }

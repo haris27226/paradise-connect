@@ -1,10 +1,11 @@
 import 'package:dio/dio.dart';
 
 abstract class AttendanceRemoteDataSource {
-  Future<Map<String, dynamic>> getAttendance();
-  Future<Map<String, dynamic>> postAttendance({required String attendanceDatetime,required int flag,required String locationName,String? note,String? filePath,});
-  Future<Map<String, dynamic>> postAttendanceActivity({required String attendanceDatetime,  required int flag,  required String locationName,  String? note,  required List<String> filePaths,});
+  Future<Map<String, dynamic>> getAttendance({List<int>? salesPersonIds});
+  Future<Map<String, dynamic>> postAttendance({required String attendanceDatetime,required int flag,required String locationName,String? note,String? filePath,required int nikNumber});
+  Future<Map<String, dynamic>> postAttendanceActivity({required String attendanceDatetime,  required int flag,  required String locationName,  String? note,  required List<String> filePaths, required int nikNumber});
   Future<Map<String, dynamic>> getLocations();
+  Future<Map<String, dynamic>> getOfficeLocations();
 }
 
 class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
@@ -19,11 +20,19 @@ class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
   }
 
   @override
-  Future<Map<String, dynamic>> getAttendance() async {
+  Future<Map<String, dynamic>> getOfficeLocations() async {
+    final response = await dio.get('/attendance/locations/office');
+    return response.data;
+  }
+
+  @override
+  Future<Map<String, dynamic>> getAttendance({List<int>? salesPersonIds}) async {
     final response = await dio.get(
       '/attendance',
       queryParameters: {
         "per_page": 10,
+        if (salesPersonIds != null && salesPersonIds.isNotEmpty)
+          "sales_person_id": salesPersonIds.join(','),
       },
     );
 
@@ -31,17 +40,12 @@ class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
   }
 
   @override
-  Future<Map<String, dynamic>> postAttendance({
-    required String attendanceDatetime,
-    required int flag,
-    required String locationName,
-    String? note,
-    String? filePath,
-  }) async {
+  Future<Map<String, dynamic>> postAttendance({  required String attendanceDatetime,  required int flag,  required String locationName,  String? note,  String? filePath, required int nikNumber}) async {
     final formData = FormData.fromMap({
       'attendance_datetime': attendanceDatetime,
       'flag': flag,
       'location_name': locationName,
+      'nik_number': nikNumber,
       if (note != null) 'note': note,
       if (filePath != null)
         'file_attachment': await MultipartFile.fromFile(filePath),
@@ -52,7 +56,7 @@ class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
   }
 
   @override
-  Future<Map<String, dynamic>> postAttendanceActivity({  required String attendanceDatetime,  required int flag,  required String locationName,  String? note,  required List<String> filePaths,}) async {
+  Future<Map<String, dynamic>> postAttendanceActivity({  required String attendanceDatetime,  required int flag,  required String locationName,  String? note,  required List<String> filePaths, required int nikNumber}) async {
     final formData = FormData.fromMap({
       'attendance_datetime': attendanceDatetime,
       'flag': flag,

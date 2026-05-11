@@ -16,6 +16,7 @@ class AttendanceModel extends AttendanceEntity {
     super.location0,
     super.location1,
     super.location6,
+    super.fullName,
   });
 
   factory AttendanceModel.fromJson(Map<String, dynamic> json) {
@@ -34,6 +35,7 @@ class AttendanceModel extends AttendanceEntity {
       location0: json['location_flag_0'],
       location1: json['location_flag_1'],
       location6: json['location_flag_6'],
+      fullName: json['full_name'] ?? json['nama'] ?? '',
     );
   }
 

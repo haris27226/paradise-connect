@@ -58,6 +58,7 @@ class UserProfileModel extends UserProfileEntity {
     super.salesPersonId,
     super.salesRoles,
     super.subordinates,
+    super.nikNumber,
   });
 
   factory UserProfileModel.fromJson(Map<String, dynamic> json) {
@@ -78,6 +79,7 @@ class UserProfileModel extends UserProfileEntity {
       subordinates: json['subordinates'] != null
           ? (json['subordinates'] as List).map((i) => HierarchyNodeModel.fromJson(i)).toList()
           : const [],
+      nikNumber: json['nik_number'],
     );
   }
 
@@ -95,6 +97,7 @@ class UserProfileModel extends UserProfileEntity {
       'sales_person_id': salesPersonId,
       'sales_roles': salesRoles.map((i) => (i as HierarchyNodeModel).toJson()).toList(),
       'subordinates': subordinates.map((i) => (i as HierarchyNodeModel).toJson()).toList(),
+      'nik_number': nikNumber,
     };
   }
 }

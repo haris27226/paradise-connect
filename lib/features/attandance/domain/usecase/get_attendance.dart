@@ -6,7 +6,7 @@ class GetAttendanceUseCase {
 
   GetAttendanceUseCase(this.repository);
 
-  Future<List<AttendanceEntity>> call() {
-    return repository.getAttendance();
+  Future<List<AttendanceEntity>> call({List<int>? salesPersonIds}) {
+    return repository.getAttendance(salesPersonIds: salesPersonIds);
   }
 }

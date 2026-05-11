@@ -1,8 +1,8 @@
 class AttendanceLocation {
   final int id;
   final String name;
-  final String? latitude;
-  final String? longitude;
+  final double? latitude;
+  final double? longitude;
   final int? radius;
 
   AttendanceLocation({

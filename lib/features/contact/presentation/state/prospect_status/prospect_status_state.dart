@@ -5,7 +5,7 @@ enum ProspectStatusEnum { initial, loading, loaded, error }
 
 class ProspectStatusState extends Equatable {
   final ProspectStatusEnum status;
-  final List<ProspectStatus> statuses;
+  final List<ProspectStatusEntity> statuses;
   final String? errorMessage;
 
   const ProspectStatusState({
@@ -16,7 +16,7 @@ class ProspectStatusState extends Equatable {
 
   ProspectStatusState copyWith({
     ProspectStatusEnum? status,
-    List<ProspectStatus>? statuses,
+    List<ProspectStatusEntity>? statuses,
     String? errorMessage,
   }) {
     return ProspectStatusState(

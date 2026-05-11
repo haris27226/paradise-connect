@@ -10,8 +10,9 @@ class AttendanceLoading extends AttendanceState {}
 class AttendanceLoaded extends AttendanceState {
   final List<AttendanceEntity> data;
   final List<AttendanceLocation>? locations;
+  final List<AttendanceLocation>? officeLocations;
 
-  AttendanceLoaded({required this.data, this.locations});
+  AttendanceLoaded({required this.data, this.locations, this.officeLocations});
 }
 
 class AttendanceError extends AttendanceState {

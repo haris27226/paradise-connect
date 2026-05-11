@@ -320,7 +320,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
       final statusState = context.read<ProspectStatusBloc>().state;
       if (statusState.status == ProspectStatusEnum.loaded) {
         selectedStatusProspectName = statusState.statuses
-            .cast<ProspectStatus?>()
+            .cast<ProspectStatusEntity?>()
             .firstWhere(
               (e) => e?.statusProspectId == selectedStatusId,
               orElse: () => null,
@@ -1193,7 +1193,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
 
                             if (result != null) {
                               final selected = result as OwnerDropdownItem;
-                              final picked = statusState.statuses.cast<ProspectStatus?>().firstWhere((e) => e?.statusProspectId == selected.id,orElse: () => null,);
+                              final picked = statusState.statuses.cast<ProspectStatusEntity?>().firstWhere((e) => e?.statusProspectId == selected.id,orElse: () => null,);
                               if (picked != null) {
                                 setState(() {
                                   selectedStatusId = picked.statusProspectId;

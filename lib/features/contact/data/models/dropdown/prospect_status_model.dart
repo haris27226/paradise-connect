@@ -1,9 +1,10 @@
 import '../../../domain/entities/prospect/prospect_status.dart';
 
-class ProspectStatusModel extends ProspectStatus {
+class ProspectStatusModel extends ProspectStatusEntity {
   const ProspectStatusModel({
     required super.statusProspectId,
     required super.statusProspectName,
+    
   });
 
   factory ProspectStatusModel.fromJson(Map<String, dynamic> json) {

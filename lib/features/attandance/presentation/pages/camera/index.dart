@@ -14,6 +14,8 @@ import 'package:progress_group/features/contact/data/arguments/contact_dropdown_
 
 import '../../../../../core/constants/colors.dart';
 import '../../../../../core/utils/widget/custom_header.dart';
+import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
+import 'package:progress_group/features/auth/presentation/state/profile/profile_state.dart';
 
 class CameraPage extends StatefulWidget {
   final AttandanceArgs args;
@@ -39,10 +41,12 @@ class _CameraPageState extends State<CameraPage> {
   bool _isAddingMore = false;
   int? _selectedLocationId;
 
+
   @override
   void initState() {
     super.initState();
     _initCamera();
+    context.read<AttendanceBloc>().add(GetOfficeLocationsEvent());
     context.read<AttendanceBloc>().add(GetLocationsEvent());
   }
 
@@ -70,7 +74,7 @@ class _CameraPageState extends State<CameraPage> {
 
       _controller = CameraController(
         _cameras![_cameraIndex],
-        ResolutionPreset.medium,
+        ResolutionPreset.high,
         enableAudio: false,
       );
 
@@ -129,22 +133,16 @@ class _CameraPageState extends State<CameraPage> {
     final datetime = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
     final location = pameranTC.text.isNotEmpty ? pameranTC.text : (widget.args.location ?? "Unknown");
 
+    int nikNumber = 0;
+    final profileState = context.read<ProfileBloc>().state;
+    if (profileState is ProfileLoaded) {
+      nikNumber = profileState.profile.nikNumber ?? 0;
+    }
+
     if (_isMultiplePhotosSupported) {
-      context.read<AttendanceBloc>().add(SubmitAttendanceActivityEvent(
-            datetime: datetime,
-            flag: flag!,
-            location: location,
-            note: notesTC.text,
-            filePaths: _imageFiles.map((e) => e.path).toList(),
-          ));
+      context.read<AttendanceBloc>().add(SubmitAttendanceActivityEvent(datetime: datetime,flag: flag!,location: location,note: notesTC.text,filePaths: _imageFiles.map((e) => e.path).toList(),nikNumber: nikNumber,));
     } else {
-      context.read<AttendanceBloc>().add(SubmitAttendanceEvent(
-            datetime: datetime,
-            flag: flag!,
-            location: location,
-            note: notesTC.text,
-            filePath: _imageFiles.first.path,
-          ));
+      context.read<AttendanceBloc>().add(SubmitAttendanceEvent(datetime: datetime,flag: flag!,location: location,note: notesTC.text,filePath: _imageFiles.first.path,nikNumber: nikNumber,));
     }
   }
 
@@ -165,9 +163,12 @@ class _CameraPageState extends State<CameraPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Attendance recorded successfully!")),
           );
-          context.pop();
-          // Refresh logs on home page
-          context.read<AttendanceBloc>().add(GetAttendanceEvent());
+          
+          if (context.canPop()) {
+            context.pop(true);
+          } else {
+            context.go('/attandance');
+          }
         } else if (state is AttendanceError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.message), backgroundColor: Colors.red),
@@ -212,12 +213,18 @@ class _CameraPageState extends State<CameraPage> {
   }
 
   Widget _buildCameraView() {
+    final size = MediaQuery.of(context).size;
+    var scale = size.aspectRatio * _controller!.value.aspectRatio;
+    if (scale < 1) scale = 1 / scale;
+
     return Stack(
       children: [
         Positioned.fill(
-          child: AspectRatio(
-            aspectRatio: _controller!.value.aspectRatio,
-            child: CameraPreview(_controller!),
+          child: Transform.scale(
+            scale: scale,
+            child: Center(
+              child: CameraPreview(_controller!),
+            ),
           ),
         ),
         if (_imageFiles.isNotEmpty)
@@ -424,64 +431,67 @@ class _CameraPageState extends State<CameraPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             SizedBox(height: 10),
-                            Text("Pameran/ Open Table (optional)", style: TextStyle(fontSize: 14, color: Color(grey2Color))),
-                            SizedBox(height: 5),
+                               
+                               SizedBox(height: 15),
 
-                            Container(
-                              width: double.infinity,
-                              height: 50,
-                              alignment: Alignment.centerRight,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Color(grey8Color), width: 1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: InkWell(
-                                onTap: () async {
-                                  final state = context.read<AttendanceBloc>().state;
-                                  if (state is AttendanceLoaded && state.locations != null) {
-                                    final items = state.locations!.map((e) => OwnerDropdownItem(id: e.id, name: e.name)).toList();
+                             Text("Pameran/ Open Table (optional)", style: TextStyle(fontSize: 14, color: Color(grey2Color))),
+                             SizedBox(height: 5),
 
-                                    final result = await context.pushNamed(
-                                      'detailContactDropdown',
-                                      extra: ContactDropdownArgs(
-                                        title: 'Select Pameran',
-                                        items: items,
-                                        selectedId: _selectedLocationId,
-                                        isMultiSelect: false,
-                                      ),
-                                    );
+                             Container(
+                               width: double.infinity,
+                               height: 50,
+                               alignment: Alignment.centerRight,
+                               decoration: BoxDecoration(
+                                 border: Border.all(color: Color(grey8Color), width: 1),
+                                 borderRadius: BorderRadius.circular(12),
+                               ),
+                               child: InkWell(
+                                 onTap: () async {
+                                   final state = context.read<AttendanceBloc>().state;
+                                   if (state is AttendanceLoaded && state.locations != null) {
+                                     final items = state.locations!.map((e) => OwnerDropdownItem(id: e.id, name: e.name)).toList();
 
-                                    if (result != null) {
-                                      final selected = result as OwnerDropdownItem;
-                                      setState(() {
-                                        _selectedLocationId = selected.id;
-                                        pameranTC.text = selected.name;
-                                      });
-                                    }
-                                  }
-                                },
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: TextField(
-                                        enabled: false,
-                                        maxLines: 1,
-                                        minLines: 1,
-                                        controller: pameranTC,
-                                        decoration: InputDecoration(
-                                          hintText: "Select Pameran",
-                                          hintStyle: TextStyle(color: Color(grey2Color), fontSize: 14),
-                                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                          border: InputBorder.none,
-                                        ),
-                                      ),
-                                    ),
-                                    Icon(Icons.keyboard_arrow_up),
-                                    SizedBox(width: 5),
-                                  ],
-                                ),
-                              ),
-                            ),
+                                     final result = await context.pushNamed(
+                                       'detailContactDropdown',
+                                       extra: ContactDropdownArgs(
+                                         title: 'Select Pameran',
+                                         items: items,
+                                         selectedId: _selectedLocationId,
+                                         isMultiSelect: false,
+                                       ),
+                                     );
+
+                                     if (result != null) {
+                                       final selected = result as OwnerDropdownItem;
+                                       setState(() {
+                                         _selectedLocationId = selected.id;
+                                         pameranTC.text = selected.name;
+                                       });
+                                     }
+                                   }
+                                 },
+                                 child: Row(
+                                   children: [
+                                     Expanded(
+                                       child: TextField(
+                                         enabled: false,
+                                         maxLines: 1,
+                                         minLines: 1,
+                                         controller: pameranTC,
+                                         decoration: InputDecoration(
+                                           hintText: "Select Pameran",
+                                           hintStyle: TextStyle(color: Color(grey2Color), fontSize: 14),
+                                           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                           border: InputBorder.none,
+                                         ),
+                                       ),
+                                     ),
+                                     Icon(Icons.keyboard_arrow_up),
+                                     SizedBox(width: 5),
+                                   ],
+                                 ),
+                               ),
+                             ),
 
                             SizedBox(height: 20),
                             Text("Notes", style: TextStyle(fontSize: 14, color: Color(grey2Color))),

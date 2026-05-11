@@ -11,6 +11,7 @@ class SubmitAttendanceActivityUseCase {
     required String location,
     String? note,
     required List<String> filePaths,
+    required int nikNumber,
   }) {
     return repository.submitAttendanceActivity(
       datetime: datetime,
@@ -18,6 +19,7 @@ class SubmitAttendanceActivityUseCase {
       location: location,
       note: note,
       filePaths: filePaths,
+      nikNumber: nikNumber,
     );
   }
 }

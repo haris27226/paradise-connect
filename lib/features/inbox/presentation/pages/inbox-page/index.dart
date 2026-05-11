@@ -352,7 +352,7 @@ class _InboxPageState extends State<InboxPage> {
                     
                                 if (statusState.status == ProspectStatusEnum.loaded) {
                                   if (contactState.statusProspectIds!.length == 1) {
-                                    final status = statusState.statuses.cast<ProspectStatus?>().firstWhere((e) => e?.statusProspectId == contactState.statusProspectIds!.first, orElse: () => null);
+                                    final status = statusState.statuses.cast<ProspectStatusEntity?>().firstWhere((e) => e?.statusProspectId == contactState.statusProspectIds!.first, orElse: () => null);
                                     if (status != null) label = status.statusProspectName;
                                   } else {
                                     label = "${contactState.statusProspectIds!.length} Statuses";
