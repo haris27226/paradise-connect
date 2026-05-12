@@ -27,12 +27,14 @@ import 'package:progress_group/features/contact/presentation/state/attachment/up
 import 'package:progress_group/features/contact/presentation/state/attachment/upload_attachment_state.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/upload_attachment_params.dart';
 import 'package:progress_group/features/contact/presentation/state/contact/contact_state.dart';
+import 'package:progress_group/features/contact/presentation/state/lost_reason/lost_reason_block.dart';
+import 'package:progress_group/features/contact/presentation/state/lost_reason/lost_reason_event.dart';
+import 'package:progress_group/features/contact/presentation/state/lost_reason/lost_reason_state.dart';
 import 'package:progress_group/features/contact/presentation/state/prospect_status/prospect_status_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/prospect_status/prospect_status_event.dart';
 import 'package:progress_group/features/contact/presentation/state/prospect_status/prospect_status_state.dart';
 import 'package:progress_group/features/contact/presentation/state/contact/contact_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/contact/contact_event.dart';
-import 'package:progress_group/features/contact/presentation/state/attachment/attachment_cubit.dart';
 
 
 import '../../../../../core/constants/colors.dart';
@@ -51,8 +53,12 @@ class ContactAddPage extends StatefulWidget {
 class _ContactAddPageState extends State<ContactAddPage> {
   TextEditingController descTC = TextEditingController();
   TextEditingController lBlockNoTC = TextEditingController();
+  TextEditingController volumeTC = TextEditingController();
+  TextEditingController nameSPTC = TextEditingController();
   FocusNode descFN = FocusNode();
   FocusNode lBlockNoFN = FocusNode();
+  FocusNode volumeFN = FocusNode();
+  FocusNode spNameFN = FocusNode();
 
   bool isFollowUp = false;
   DateTime? selectedDate;
@@ -65,7 +71,11 @@ class _ContactAddPageState extends State<ContactAddPage> {
   String selectedStatusName = "Select status";
 
   int? selectedTypeId;
+  int?selectedLostReasonId;
+  String? selectedLostReasonName;
   int? selectedStatusId;
+  String? selectedStatusValueProspect;
+
   String? selectedProject;
   String? selectedProduct;
   String jmlDatang = "1";
@@ -138,12 +148,16 @@ class _ContactAddPageState extends State<ContactAddPage> {
         selectedProject = data.lastProject ?? data.firstProject;
         selectedProduct = data.lastProduct;
         selectedStatusId = data.statusProspectId;
-        selectedStatusName = "Update Status Prospect";
+        selectedStatusName = selectedStatusName;
         selectedBlockNo = data.lastBlokNo;
         selectedProjectCategory = data.lastProjectCategory;
         lBlockNoTC.text = data.lastBlokNo ?? '';
         jmlDatang = data.visitCount?.toString() ?? "1";
         descTC.text = data.generalNotes ?? "";
+        volumeTC.text = data.volumePlan!=null?data.volumePlan.toString():'0';
+        selectedLostReasonId = data.lostReasonId;
+        selectedLostReasonName = data.lostReasonNote??'';
+        selectedBlockNo = data.lastBlokNo;
         if (data.lastApptDate != null) {
           try {
             selectedDate = DateTime.parse(data.lastApptDate!);
@@ -151,7 +165,6 @@ class _ContactAddPageState extends State<ContactAddPage> {
         }
       });
 
-      // Fetch latest detail to ensure data is fresh
       context.read<ContactBloc>().add(FetchContactDetailEvent(data.contactId),);
     }
 
@@ -167,7 +180,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
     }
 
     context.read<AttachmentTypeBloc>().add(FetchAttachmentTypesEvent());
-    context.read<ProspectStatusBloc>().add(const FetchProspectStatusesEvent(type: 'plan'));
+    context.read<ProspectStatusBloc>().add(const FetchProspectStatusesEvent());
   }
 
   Future<void> pickFile() async {
@@ -192,7 +205,6 @@ class _ContactAddPageState extends State<ContactAddPage> {
       'camera',
       extra: AttandanceArgs(
         type: widget.args.page == 4 ? "Visit" : "Attachment",
-        location: "-", // or fetch location if needed
         time: DateFormat('HH:mm').format(DateTime.now()),
         isReturnImage: true,
         skipPreview: widget.args.page == 4,
@@ -207,7 +219,6 @@ class _ContactAddPageState extends State<ContactAddPage> {
           selectedImages.add(file);
         } else {
           selectedImage = file;
-          selectedFile = file; // reset file
         }
       });
     }
@@ -308,6 +319,10 @@ class _ContactAddPageState extends State<ContactAddPage> {
 
   void _submitUpdateStatus(BuildContext context) {
     final contact = widget.args.dataContact;
+    final firstLostDate = contact?.firstLostDate != null ?selectedDate != null ? DateFormat('yyyy-MM-dd').format(selectedDate!) : null: null;
+    final lostLostDateDeal = selectedDate != null ? DateFormat('yyyy-MM-dd').format(selectedDate!) :null;
+    final lostDate = selectedDate != null ? DateFormat('yyyy-MM-dd').format(selectedDate!) : null;
+    
     if (contact == null) return;
 
     final params = CreateContactParams(
@@ -319,8 +334,12 @@ class _ContactAddPageState extends State<ContactAddPage> {
       lastProduct: selectedProduct,
       lastProjectCategory: selectedProjectCategory,
       generalNotes: descTC.text,
+      lostReasonId: selectedLostReasonId,
+      firstLostDate: firstLostDate,
+      lostDate: lostDate,
+      lostLostDate: lostLostDateDeal,
+      nameSP: nameSPTC.text,
     );
-
 
     print("data update: ${params.toString()}");
 
@@ -348,26 +367,26 @@ class _ContactAddPageState extends State<ContactAddPage> {
     context.read<ActivityVisitBloc>().add(CreateVisitEvent(params));
   }
 
+  dispose(){
+    descTC.dispose();
+    lBlockNoTC.dispose();
+    volumeTC.dispose();
+    descFN.dispose();
+    lBlockNoFN.dispose();
+    volumeFN.dispose();
+    nameSPTC.dispose();
+    spNameFN.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocListener(
       listeners: [
         BlocListener<ActivityBloc, ActivityState>(
-          listener: (context, state) {
+          listener: (ctx, state) {
             if (state.status == ActivityStatus.createSuccess) {
-              final contactId = widget.args.dataContact?.contactId;
-              if (contactId != null) {
-                context.read<ActivityBloc>().add(FetchActivitiesEvent(contactId: contactId, isRefresh: true));
-                context.read<ActivityProspectStatusBloc>().add(FetchActivityProspectStatusEvent(contactId));
-                context.read<ContactBloc>().add(FetchContactDetailEvent(contactId));
-              }
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Activity berhasil ditambahkan'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-              context.pop();
+              context.replaceNamed('detailContact',extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 2),);
             } else if (state.status == ActivityStatus.error) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -381,15 +400,8 @@ class _ContactAddPageState extends State<ContactAddPage> {
           },
         ),
         BlocListener<UploadAttachmentBloc, UploadAttachmentState>(
-          listener: (context, state) {
+          listener: (ctx, state) {
             if (state is UploadAttachmentSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Attachment berhasil diupload'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-              context.pop();
             } else if (state is UploadAttachmentError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -401,27 +413,16 @@ class _ContactAddPageState extends State<ContactAddPage> {
           },
         ),
         BlocListener<ContactBloc, ContactState>(
-          listener: (context, state) {
+          listener: (ctx, state) {
             if (state.status == ContactStatus.createSuccess) {
-              final contactId = widget.args.dataContact?.contactId;
-              if (contactId != null) {
-                context.read<ActivityBloc>().add(FetchActivitiesEvent(contactId: contactId, isRefresh: true));
-                context.read<ActivityProspectStatusBloc>().add(FetchActivityProspectStatusEvent(contactId));
-                context.read<ContactBloc>().add(FetchContactDetailEvent(contactId));
-              }
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Status Prospect berhasil diperbarui'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-              context.pop();
+              print("Contact status success, popping with 0");
+                
+              context.replaceNamed('detailContact',extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 2),);
             } else if (state.status == ContactStatus.detailLoaded && state.contactDetail != null) {
               final data = state.contactDetail!;
               setState(() {
                 selectedProject = data.projectName ?? data.firstProject;
                 selectedStatusId = data.statusProspectId;
-                // Try to find the status name from current ProspectStatusBloc state if possible
                 final statusState = context.read<ProspectStatusBloc>().state;
                 if (statusState.status == ProspectStatusEnum.loaded) {
                   final matched = statusState.statuses.cast<ProspectStatusEntity?>().firstWhere(
@@ -457,30 +458,13 @@ class _ContactAddPageState extends State<ContactAddPage> {
           },
         ),
         BlocListener<ActivityVisitBloc, VisitState>(
-          listener: (context, state) {
+          listener: (ctx, state) {
             if (state is VisitSuccess) {
-              final contactId = widget.args.dataContact?.contactId;
-              final dealId = widget.args.dataContact?.dealId;
 
-              if (contactId != null) {
-                // Refresh Activities
-                context.read<ActivityBloc>().add(FetchActivitiesEvent(contactId: contactId, isRefresh: true));
                 
-                // Refresh Attachments
-                context.read<AttachmentCubit>().fetch(contactId, dealId);
                 
-                // Refresh Prospect Status & Detail
-                context.read<ActivityProspectStatusBloc>().add(FetchActivityProspectStatusEvent(contactId));
-                context.read<ContactBloc>().add(FetchContactDetailEvent(contactId));
-              }
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Visit berhasil ditambahkan'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-              context.pop();
+              context.replaceNamed('detailContact',extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 2),);
             } else if (state is VisitError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -495,28 +479,23 @@ class _ContactAddPageState extends State<ContactAddPage> {
 
       child: Scaffold(
         body: SafeArea(
-          child: BlocBuilder<UploadAttachmentBloc, UploadAttachmentState>(
-            builder: (context, state) {
-              final isLoading = state is UploadAttachmentLoading;
+          child: Builder(
+            builder: (context) {
+              final activityState = context.watch<ActivityBloc>().state;
+              final attachmentState = context.watch<UploadAttachmentBloc>().state;
+              final visitState = context.watch<ActivityVisitBloc>().state;
+
+              final isLoading = activityState.status == ActivityStatus.creating ||
+                  attachmentState is UploadAttachmentLoading ||
+                  visitState is VisitLoading;
+
               return Stack(
                 children: [
                   Column(
                     children: [
                       customHeader(
                         context,
-                        widget.args.page == 0
-                            ? "Call"
-                            : widget.args.page == 1
-                            ? "WhatsApp"
-                            : widget.args.page == 2
-                            ? "Meeting"
-                            : widget.args.page == 3
-                            ? "Task"
-                            : widget.args.page == 4
-                            ? "Visit"
-                            : widget.args.page == 5
-                            ? "Attachment"
-                            : selectedStatusName,
+                        widget.args.page == 0? "Call": widget.args.page == 1? "WhatsApp": widget.args.page == 2? "Meeting": widget.args.page == 3? "Task": widget.args.page == 4? "Visit": widget.args.page == 5? "Attachment": selectedStatusName,
                         isBack: true,
                         colorBack: Color(primaryColor),
                       ),
@@ -546,7 +525,9 @@ class _ContactAddPageState extends State<ContactAddPage> {
                     Positioned.fill(
                       child: Container(
                         color: Colors.black.withOpacity(0.4),
-                        child: Center(child: CircularProgressIndicator()),
+                        child: Center(
+                          child: CircularProgressIndicator(),
+                        ),
                       ),
                     ),
                 ],
@@ -557,6 +538,116 @@ class _ContactAddPageState extends State<ContactAddPage> {
       ),
     );
   }
+
+  Widget _buildFormSP(){
+    return Column(
+      children: [
+        _fieldStatusProspect(),
+        SizedBox(height: 12),
+        _fieldDate(),
+        SizedBox(height: 12),
+        _fieldProject(),
+        SizedBox(height: 12),
+        _fieldBlockUnitSelected(),
+        SizedBox(height: 12),
+        _fieldNameSP(),
+        SizedBox(height: 12),
+         _fieldNote(),
+        SizedBox(height: 12),
+        Container(child: selectedStatusId == 77||selectedStatusId == 78||selectedStatusId == 75?_buildLostForm():Container()),
+        _buildButtonSave(),
+        
+    ]);
+  }
+
+  Widget _buildFormReserved(){
+    return Column(
+      children: [
+        _fieldStatusProspect(),
+        SizedBox(height: 12),
+        _fieldDate(),
+        SizedBox(height: 12),
+        _fieldProject(),
+        SizedBox(height: 12),
+        _fieldBlockUnitSelected(),
+        SizedBox(height: 12),
+        _fieldNote(),
+        SizedBox(height: 12),
+        Container(child: selectedStatusId == 73||selectedStatusId == 43?_buildLostForm():Container()),
+        _buildButtonSave(),
+      ],
+    );
+  }
+  
+
+  Widget _buildFormAppt(){
+    return Column(
+      children: [
+        _fieldProject(),
+        SizedBox(height: 12),
+        _fieldStatusProspect(),
+        SizedBox(height: 12),
+        _fieldDate(),
+        SizedBox(height: 12),
+        _fieldNote(),
+        SizedBox(height: 12),
+        _fieldVolume(),
+        SizedBox(height: 12),
+        Container(child: selectedStatusId == 61||selectedStatusId == 62?_buildLostForm():Container()),
+        _buildButtonSave(),
+      ],
+    );
+  }
+
+  Widget _buildFormDB(){
+    return Column(
+      children: [
+        _fieldProject(),
+        SizedBox(height: 12),
+        _fieldStatusProspect(),
+        SizedBox(height: 12),
+        _fieldDate(),
+        SizedBox(height: 12),
+        _fieldNote(),
+        SizedBox(height: 12),
+        Container(child: selectedStatusId == 55||selectedStatusId == 56||selectedStatusId == 57||selectedStatusId == 58?_buildLostForm():Container()),
+        _buildButtonSave(),
+      ],
+    );
+  }
+
+
+  Widget _fieldNameSP(){
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children:[
+        Text(
+          "Name SP",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Color(grey2Color),
+          ),
+        ),
+        SizedBox(height: 6),
+        TextField(
+          maxLines: 1,
+          controller: nameSPTC,
+          focusNode: spNameFN,
+          onTapOutside: (event) => spNameFN.unfocus(),
+          style: TextStyle(fontSize: 14),
+          decoration: InputDecoration(
+            hintText: "Name SP...",
+            hintStyle: TextStyle(color: Color(grey2Color),fontSize: 14,),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16,vertical: 12,),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey7Color)),),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey7Color)),),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(primaryColor)),),
+          ),),
+      ]
+    );
+  }
+
 
   Widget _buildUpdateStatusProspect() {
     return Container(
@@ -571,194 +662,304 @@ class _ContactAddPageState extends State<ContactAddPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if(selectedStatusId == 53)_fieldProject(),
-            Text(
-              "Status Prospect",
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Color(grey2Color),
-              ),
-            ),
-            SizedBox(height: 6),
-            GestureDetector(
-              onTap: () async {
-                final statusState = context.read<ProspectStatusBloc>().state;
-                if (statusState.status == ProspectStatusEnum.loaded) {
-                  final statusItems = statusState.statuses
-                      .map(
-                        (e) => OwnerDropdownItem(
-                          id: e.statusProspectId,
-                          name: e.statusProspectName,
-                        ),
-                      )
-                      .toList();
-
-                  final result = await context.pushNamed(
-                    'detailContactDropdown',
-                    extra: ContactDropdownArgs(
-                      title: 'Pilih Status',
-                      items: statusItems,
-                      selectedId: selectedStatusId,
-                    ),
-                  );
-
-                  if (result != null) {
-                    final selected = result as OwnerDropdownItem;
-                    final picked = statusState.statuses
-                        .cast<ProspectStatusEntity?>()
-                        .firstWhere(
-                          (e) => e?.statusProspectId == selected.id,
-                          orElse: () => null,
-                        );
-                    if (picked != null) {
-                      setState(() {
-                        selectedStatusId = picked.statusProspectId;
-                        selectedStatusName = picked.statusProspectName;
-                      });
-                    }
-                  }
-                } else {
-                  context.read<ProspectStatusBloc>().add(
-                        const FetchProspectStatusesEvent(type: 'plan'),
-                      );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Memuat daftar status...')),
-                  );
-                }
-              },
-              child: Container(
-                width: double.infinity,
-                height: 40,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Color(grey8Color)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                alignment: Alignment.centerLeft,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      selectedStatusName,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: selectedStatusName == "Select status"
-                            ? Color(grey2Color)
-                            : Colors.black,
-                      ),
-                    ),
-                    Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: Color(grey2Color),
-                      size: 30,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: 12),
-            Text(
-              "Tanggal ${selectedStatusId == 53? "Appointment" :selectedStatusId == 63? "Visit" : selectedStatusId == 70? "Reserved" : "SP"}",
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Color(grey2Color),
-              ),
-            ),
-            SizedBox(height: 6),
-            GestureDetector(
-              onTap: () => pickDateTime(context),
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Color(grey7Color)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      selectedDate != null
-                          ? DateHelper.formatFull(selectedDate!)
-                          : DateHelper.nowFull(),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(blackColor),
-                      ),
-                    ),
-                    Icon(
-                      Icons.calendar_today,
-                      color: Color(primaryColor),
-                      size: 16,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: 12),
-            if (selectedStatusId == 53) _fieldAppointmentVolume(),
-            if (selectedStatusId == 70 || selectedStatusId == 74) _fieldBlockSelected(),
-            Text(
-              "Note",
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Color(grey2Color),
-              ),
-            ),
-            SizedBox(height: 6),
-            TextField(
-              maxLines: 4,
-              minLines: 3,
-              controller: descTC,
-              focusNode: descFN,
-              onTapOutside: (event) => descFN.unfocus(),
-              textInputAction: TextInputAction.newline,
-              decoration: InputDecoration(
-                hintText: "Note...",
-                hintStyle: TextStyle(
-                  color: Color(grey2Color),
-                  fontSize: 14,
-                ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(grey7Color)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(grey7Color)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(primaryColor)),
-                ),
-              ),
-            ),
-            SizedBox(height: 20),
-            BlocConsumer<ContactBloc, ContactState>(
-              listener: (context, state) {},
-              builder: (context, state) {
-                final isLoading = state.status == ContactStatus.creating;
-
-                return customButton(
-                  isLoading
-                      ? null
-                      : () {
-                          _submitUpdateStatus(context);
-                        },
-                  isLoading ? 'Saving...' : 'Save',
-                );
-              },
-            ),
+            Text("selectstatusProspect: $selectedStatusId"),
+            Container(
+              child:selectedStatusId == 48 ||selectedStatusId == 49||selectedStatusId == 50||selectedStatusId == 51||selectedStatusId ==52|| selectedStatusId == 55||selectedStatusId == 56||selectedStatusId == 57||selectedStatusId == 58? _buildFormDB():
+              selectedStatusId == 54 ||selectedStatusId == 76||selectedStatusId == 53||selectedStatusId == 60 || selectedStatusId == 61||selectedStatusId == 62? _buildFormAppt():
+              selectedStatusId == 70 || selectedStatusId == 71 ||selectedStatusId == 72 || selectedStatusId == 73||selectedStatusId == 43? _buildFormReserved():
+              selectedStatusId == 74 ? _buildFormSP():
+             Container() ,
+            )
+            
           ],
         ),
       ),
+    );
+  }
+  
+  Widget _fieldVolume(){
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children :[
+        Text(
+          "Appt Volume",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Color(grey2Color),
+          ),
+        ),
+        SizedBox(height: 6),
+        TextField(
+          maxLines: 1,
+          minLines: 1,
+          controller: volumeTC,
+          focusNode: volumeFN,
+          onTapOutside: (event) => volumeFN.unfocus(),
+          textInputAction: TextInputAction.newline,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            hintText: "Volume...",
+            hintStyle: TextStyle(color: Color(grey2Color),fontSize: 14,),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16,vertical: 12,),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey7Color)),),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey7Color)),),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(primaryColor)),),
+          ),
+        ),
+      ]
+    );
+
+  }
+
+  Widget _buildLostForm(){
+    return Column(
+      children: [
+        _fieldLostReason(),
+        SizedBox(height: 12),
+
+      ],
+    );
+  }
+
+  Widget _buildButtonSave(){
+    return BlocConsumer<ContactBloc, ContactState>(
+      listener: (context, state) {},
+      builder: (context, state) {
+        return customButton(() => _submitUpdateStatus(context),'Save');
+      },
+    );
+  }
+
+
+  Widget _fieldNote(){
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children:[
+        Text(
+          "Note",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Color(grey2Color),
+          ),
+        ),
+        SizedBox(height: 6),
+        TextField(
+          maxLines: 4,
+          minLines: 3,
+          controller: descTC,
+          focusNode: descFN,
+          onTapOutside: (event) => descFN.unfocus(),
+          textInputAction: TextInputAction.newline,
+          decoration: InputDecoration(
+            hintText: "Note...",
+            hintStyle: TextStyle(color: Color(grey2Color),fontSize: 14,),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16,vertical: 12,),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey7Color)),),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey7Color)),),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(primaryColor)),),
+          ),
+        ),
+      ]
+    );
+  }
+
+  Widget _fieldDate(){
+    String displayStatus(String? value) {
+      if (value == null) return '';
+      if (!value.contains('-')) return value;
+      return value.split('-').last.trim();
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+          Text(
+          "Tanggal ${displayStatus(selectedStatusName)}",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Color(grey2Color),
+          ),
+        ),
+        SizedBox(height: 6),
+        GestureDetector(
+          onTap: () => pickDateTime(context),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Color(grey7Color)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  selectedDate != null
+                      ? DateHelper.formatFull(selectedDate!)
+                      : DateHelper.nowFull(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(blackColor),
+                  ),
+                ),
+                Icon(
+                  Icons.calendar_today,
+                  color: Color(primaryColor),
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _fieldStatusProspect(){
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Status Prospect",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Color(grey2Color),
+          ),
+        ),
+        SizedBox(height: 6),
+        GestureDetector(
+          onTap: () async {
+            final statusState = context.read<ProspectStatusBloc>().state;
+            if (statusState.status == ProspectStatusEnum.loaded) {
+              final statusItems = statusState.statuses.map((e) => OwnerDropdownItem(id: e.statusProspectId,name: e.statusProspectName,),).toList();
+              final result = await context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Pilih Status',items: statusItems,selectedId: selectedStatusId,),);
+              if (result != null) {
+                final selected = result as OwnerDropdownItem;
+                final picked = statusState.statuses.cast<ProspectStatusEntity?>().firstWhere((e) => e?.statusProspectId == selected.id,orElse: () => null,);
+                if (picked != null) {
+                  setState(() {
+                    selectedStatusId = picked.statusProspectId;
+                    selectedStatusName = picked.statusProspectName;
+                  });
+                }
+              }
+            } else {
+              context.read<ProspectStatusBloc>().add(
+                    const FetchProspectStatusesEvent(),
+                  );
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Memuat daftar status...')),
+              );
+            }
+          },
+          child: Container(
+            width: double.infinity,
+            height: 40,
+            decoration: BoxDecoration(
+              border: Border.all(color: Color(grey8Color)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  selectedStatusName,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: selectedStatusName == "Select status"
+                        ? Color(grey2Color)
+                        : Colors.black,
+                  ),
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Color(grey2Color),
+                  size: 30,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _fieldLostReason() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Alasan Lost",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Color(grey2Color),
+          ),
+        ),
+        const SizedBox(height: 6),
+        GestureDetector(
+          onTap: () async {
+            final state = context.read<LostReasonBloc>().state;
+
+            if (state.status == LostReasonStatus.loaded) {
+              final items = state.reasons.map((e) => OwnerDropdownItem(id: e.id,name: e.text,),).toList();
+
+              final result = await context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Pilih Alasan',items: items,selectedId: selectedLostReasonId,),);
+
+              if (result != null) {
+                final selected = result as OwnerDropdownItem;
+
+                final picked = state.reasons.firstWhere((e) => e.id == selected.id);
+
+                setState(() {
+                  selectedLostReasonId = picked.id;
+                  selectedLostReasonName = picked.text;
+                });
+              }
+            } else {
+              context.read<LostReasonBloc>().add(FetchLostReasonsEvent());
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Memuat daftar alasan...')),
+              );
+            }
+          },
+          child: Container(
+            width: double.infinity,
+            height: 40,
+            decoration: BoxDecoration(
+              border: Border.all(color: Color(grey8Color)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  selectedLostReasonName??'',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: selectedLostReasonName == null
+                        ? Color(grey2Color)
+                        : Colors.black,
+                  ),
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Color(grey2Color),
+                  size: 30,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -824,7 +1025,6 @@ class _ContactAddPageState extends State<ContactAddPage> {
              ),
            ),
          ),
-         SizedBox(height: 12),
        ],
      );
   }
@@ -889,7 +1089,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
     );
   }
 
-  Widget _fieldBlockSelected() {
+  Widget _fieldBlockUnitSelected() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1358,34 +1558,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
               ),
             ),
             SizedBox(height: 20),
-            BlocConsumer<ActivityVisitBloc, VisitState>(
-              listener: (context, state) {
-                if (state is VisitSuccess) {
-                  final contactId = widget.args.dataContact?.contactId;
-                  if (contactId != null) {
-                    context.read<ActivityBloc>().add(
-                          FetchActivitiesEvent(
-                              contactId: contactId, isRefresh: true),
-                        );
-                    context.read<ActivityProspectStatusBloc>().add(
-                          FetchActivityProspectStatusEvent(contactId),
-                        );
-                    context.read<ContactBloc>().add(
-                          FetchContactDetailEvent(contactId),
-                        );
-                  }
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Visit berhasil dibuat')),
-                  );
-                  Navigator.pop(context);
-                }
-
-                if (state is VisitError) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text(state.message)));
-                }
-              },
+            BlocBuilder<ActivityVisitBloc, VisitState>(
               builder: (context, state) {
                 final isLoading = state is VisitLoading;
 
@@ -1833,84 +2006,16 @@ class _ContactAddPageState extends State<ContactAddPage> {
         ],
       ),
     );
-  }
-
-  // Widget _buildCameraFile() {
-  //   // 1. Kondisi ketika SEMUA kosong (Tampilkan tombol upload)
-  //   if (selectedFile == null &&
-  //       selectedImage == null &&
-  //       existingImageUrl == null) {
-  //     return Row(
-  //       mainAxisAlignment: MainAxisAlignment.center,
-  //       children: [
-  //         Column(
-  //           mainAxisAlignment: MainAxisAlignment.center,
-  //           crossAxisAlignment: CrossAxisAlignment.center,
-  //           children: [
-  //             Container(
-  //              padding: EdgeInsets.all(18),
-  //               decoration: BoxDecoration(
-  //                 color: Color(whiteColor),
-  //                 borderRadius: BorderRadius.circular(14),
-  //                 border: Border.all(color: Color(primaryColor)),
-  //               ),
-  //               child: Icon(Icons.camera_alt_rounded, color: Color(primaryColor), size: 40),
-  //             ),
-  //             SizedBox(height: 8),
-  //             Text(
-  //               "Open Camera",
-  //               style: TextStyle(
-  //                 fontSize: 14,
-  //                 fontWeight: FontWeight.bold,
-  //                 color: Color(blue2Color),
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       ],
-  //     );
-  //   }
-
-  //   // 2. Jika ada file/gambar yang dipilih, tampilkan konten
-  //   return ClipRRect(
-  //     borderRadius: BorderRadius.circular(8),
-  //     child: _buildInsideContent(),
-  //   );
-  // }
-
-  // Widget _buildInsideContent() {
-  //   // PDF Logic
-  //   if (selectedFile != null && isPdf) {
-  //     return Column(
-  //       mainAxisAlignment: MainAxisAlignment.center,
-  //       children: [
-  //         Icon(Icons.picture_as_pdf, size: 60, color: Colors.red),
-  //         SizedBox(height: 8),
-  //         Text(selectedFileName ?? "PDF File", textAlign: TextAlign.center),
-  //       ],
-  //     );
-  //   }
-
-  //   // Local Image Logic (Mobile/Web)
-  //   if (selectedFile != null || selectedImage != null) {
-  //     return Center(
-  //       child: SizedBox(
-  //         height: 120,
-  //         child: _buildPreviewWidget(selectedFile ?? selectedImage!),
-  //       ),
-  //     );
-  //   }
-
-  //   // Network Image Logic
-  //   return Image.network(
-  //     convertDriveUrl(existingImageUrl!),
-  //     width: double.infinity,
-  //     fit: BoxFit.cover,
-  //     errorBuilder: (context, error, stackTrace) {
-  //       return Center(child: Icon(Icons.broken_image));
-  //     },
-  //   );
-  // }
+}
+// Widget _buildCameraFile() {//   if (selectedFile == null &//       selectedImage == null &//       existingImageUrl == null) //     return Row//       mainAxisAlignment: MainAxisAlignment.center//       children: //         Column//           mainAxisAlignment: MainAxisAlignment.center//           crossAxisAlignment: CrossAxisAlignment.center//           children: //             Container//              padding: EdgeInsets.all(18)//               decoration: BoxDecoration//                 color: Color(whiteColor)//                 borderRadius: BorderRadius.circular(14)//                 border: Border.all(color: Color(primaryColor))//               )//               child: Icon(Icons.camera_alt_rounded, color: Color(primaryColor), size: 40)//             )//             SizedBox(height: 8)//             Text//               "Open Camera"//               style: TextStyle//                 fontSize: 14//                 fontWeight: FontWeight.bold//                 color: Color(blue2Color)//               )//             )//           ]//         )//       ]//     )
+//   }
+//   return ClipRRect//     borderRadius: BorderRadius.circular(8)//     child: _buildInsideContent()//   )// }
+// Widget _buildInsideContent() {//   if (selectedFile != null && isPdf) //     return Column//       mainAxisAlignment: MainAxisAlignment.center//       children: //         Icon(Icons.picture_as_pdf, size: 60, color: Colors.red)//         SizedBox(height: 8)//         Text(selectedFileName ?? "PDF File", textAlign: TextAlign.center)//       ]//     )
+//   }
+//   if (selectedFile != null || selectedImage != null) //     return Center//       child: SizedBox//         height: 120//         child: _buildPreviewWidget(selectedFile ?? selectedImage!)//       )//     )
+//   }
+//   return Image.network//     convertDriveUrl(existingImageUrl!)//     width: double.infinity//     fit: BoxFit.cover//     errorBuilder: (context, error, stackTrace) //       return Center(child: Icon(Icons.broken_image))//     }//   )
+// }
 
   Widget _buildVisitPhotos() {
     return Column(

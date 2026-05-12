@@ -5,6 +5,7 @@ import 'package:progress_group/features/contact/domain/entities/activity/whatsap
 import 'package:progress_group/features/contact/domain/entities/attachment/attachment_entity.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/attachment_type.dart';
 import 'package:progress_group/features/contact/domain/entities/info_source/info_source.dart';
+import 'package:progress_group/features/contact/domain/entities/lost_reason/lost_reason_entity.dart';
 import '../entities/activity/activity_entity.dart';
 import '../entities/contact/contact.dart';
 import '../entities/contact/contact_response.dart';
@@ -69,6 +70,16 @@ class ContactRepositoryImpl implements ContactRepository {
     }
   }
 
+  @override
+  Future<Either<String, List<LostReasonEntity>>> getLostReasons() async {
+    try {
+      final result = await remoteDataSource.getLostReasons();
+      return Right(result);
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+  
   @override
   Future<Either<String, List<ContactPropertyGroup>>> getContactProperties() async {
     try {

@@ -11,6 +11,7 @@ import 'package:progress_group/features/contact/data/models/contact/contact_prop
 import 'package:progress_group/features/contact/data/models/contact/contact_response_model.dart';
 import 'package:progress_group/features/contact/data/models/dropdown/prospect_status_model.dart';
 import 'package:progress_group/features/contact/data/models/info_source/info_source_model.dart';
+import 'package:progress_group/features/contact/data/models/lost_reason/lost_reason_model.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_params.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_visit_params.dart';
 import 'package:progress_group/features/contact/domain/entities/attachment/upload_attachment_params.dart';
@@ -24,6 +25,7 @@ abstract class ContactRemoteDataSource {
   Future<List<InfoSourceModel>> getInfoSources();
 
   Future<List<ProspectStatusModel>> getProspectStatuses({String? type});
+  Future<List<LostReasonModel>> getLostReasons();
 
   Future<List<ContactPropertyGroupModel>> getContactProperties();
 
@@ -116,6 +118,7 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
       throw Exception(getErrorMessage(e, 'Gagal memuat sumber informasi'));
     }
   }
+ 
   @override
   Future<List<ProspectStatusModel>> getProspectStatuses({String? type}) async {
     try {
@@ -131,6 +134,26 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
       throw Exception(response.data['message'] ?? 'Failed to load prospect statuses');
     } on DioException catch (e) {
       throw Exception(getErrorMessage(e, 'Failed to load prospect statuses'));
+    }
+  }
+
+  @override
+  Future<List<LostReasonModel>> getLostReasons() async {
+    try {
+      final response = await dio.get('/lost-reasons');
+
+      if (response.data['status'] == true) {
+        final List<dynamic> data = response.data['data'];
+
+        return data
+            .map((json) => LostReasonModel.fromJson(json))
+            .toList();
+      }
+
+      throw Exception(
+          response.data['message'] ?? 'Failed to load lost reasons');
+    } on DioException catch (e) {
+      throw Exception(getErrorMessage(e, 'Failed to load lost reasons'));
     }
   }
 

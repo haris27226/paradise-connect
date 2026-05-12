@@ -58,6 +58,9 @@ class Contact extends Equatable {
   final String? createdAt;
   final String? updatedAt;
   final String? deletedAt;
+  final String? lostDate;
+  final int? lostReasonId;
+  final String? lostReasonNote;
 
   const Contact({
     required this.contactId,
@@ -117,6 +120,9 @@ class Contact extends Equatable {
     this.createdAt,
     this.updatedAt,
     this.deletedAt,
+    this.lostDate,
+    this.lostReasonId,
+    this.lostReasonNote
   });
 
 
@@ -179,6 +185,9 @@ class Contact extends Equatable {
     createdAt,
     updatedAt,
     deletedAt,
+    lostDate,
+    lostReasonId,
+    lostReasonNote
   ];
 }
 

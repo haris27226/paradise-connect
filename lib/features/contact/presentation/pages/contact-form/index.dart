@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:progress_group/core/utils/helpers/date_helper.dart';
 import 'package:intl/intl.dart';
+import 'package:progress_group/features/contact/domain/entities/contact/contact.dart';
 import 'package:progress_group/features/contact/domain/entities/contact/create_contact_params.dart';
 import 'package:go_router/go_router.dart';
 import 'package:progress_group/features/contact/domain/entities/prospect/prospect_status.dart';
@@ -217,7 +218,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
 
   
 
-  Future<void> _fillForm(dynamic contact) async {
+  Future<void> _fillForm(Contact contact) async {
     fullNameTC.text = contact.fullName ?? '';
     emailTC.text = contact.primaryEmail ?? '';
     phoneTC.text = contact.primaryPhone ?? '';
@@ -242,9 +243,10 @@ class _ContactFormPageState extends State<ContactFormPage> {
     lastApptDateTC.text = _formatFromContact(contact.lastApptDate);
     dealValueTC.text = contact.dealValue ?? '';
     reserveDateTC.text = _formatFromContact(contact.apptDate);
-    lossReasonNoteTC.text = contact.dealNote ?? '';
+    lossReasonNoteTC.text = contact.lostReasonNote ?? '';
     fspTC.text = _formatFromContact(contact.firstSpDate);
     lspTC.text = _formatFromContact(contact.lastSpDate);
+
 
     print("data contact: $contact");
     setState(() {
@@ -329,7 +331,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
       }
       // Auto-fill property controllers from property_groups if provided in detail response
       try {
-        final groups = contact.propertyGroupsJson as List<dynamic>?;
+        final groups = contact.propertyGroupsJson;
         if (groups != null) {
           for (final g in groups) {
             final props = (g['contact_properties'] as List<dynamic>?) ?? [];
@@ -722,17 +724,10 @@ class _ContactFormPageState extends State<ContactFormPage> {
             builder: (context) =>const Center(child: CircularProgressIndicator()),
           );
         } else if (state.status == ContactStatus.createSuccess) {
-          context.pop(); // Close loading
+          context.pop();
           
           if (widget.args.page == 1) {
-            // If editing, go back to detail page and preserve/set tab
-            context.goNamed(
-              'detailContact',
-              extra: ContactDetailArgs(
-                dataContact: widget.args.dataContact,
-                initialTab: widget.args.initialTab,
-              ),
-            );
+            context.pop(1);
           } else {
 
             context.read<ContactBloc>().add(
@@ -741,14 +736,14 @@ class _ContactFormPageState extends State<ContactFormPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Contact created successfully')),
             );
-            context.pop(); // Go back to list
+            context.pop();
           }
 
         } else if (state.status == ContactStatus.detailLoaded &&
             state.contactDetail != null) {
           _fillForm(state.contactDetail!);
         } else if (state.status == ContactStatus.error) {
-          context.pop(); // Close loading
+          context.pop(); 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.errorMessage ?? 'Error creating contact'),
@@ -800,7 +795,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
             return BlocBuilder<ContactBloc, ContactState>(
               builder: (context, contactState) {
 
-                // 🔥 LOADING (Wait for Detail + Status + Properties)
                 final statusLoading = context.watch<ProspectStatusBloc>().state.status != ProspectStatusEnum.loaded;
                 final propertiesLoading = context.watch<ContactPropertiesBloc>().state.status != ContactPropertiesStatus.loaded;
                 final detailLoading = contactState.status == ContactStatus.loadingDetail || contactState.status == ContactStatus.initial;
@@ -903,7 +897,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         onTap: () async {
                           if (profileState is ProfileLoaded) {
                             final user = profileState.profile;
-                            // Build list: user + all subordinates flat
                             final List<OwnerDropdownItem> ownerItems = [];
                             ownerItems.add(
                               OwnerDropdownItem(
@@ -929,7 +922,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
                             addSubs(user.subordinates);
 
                             if (ownerItems.length == 1) {
-                              // Only self, no selection needed
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
@@ -1100,7 +1092,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         onTap: () async {
                           final sourceState = context.read<InfoSourceBloc>().state;
                           if (sourceState.status == InfoSourceStatus.loaded) {
-                            // Konversi ke item dropdown
                             final sourceItems = sourceState.sources
                                 .map((e) => OwnerDropdownItem(id: e.id, name: e.name))
                                 .toList();

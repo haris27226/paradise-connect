@@ -92,6 +92,20 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
   }
 
 
+  Future<void> _navigateToAddContact(ContactDetailArgs args) async {
+    final result = await context.pushNamed(
+      'addContact',
+      extra: args.copyWith(initialTab: currentTab),
+    );
+    print("Navigation result received: $result");
+    if (result != null && result is int) {
+      setState(() {
+        currentTab = result;
+        _tabController.animateTo(result);
+      });
+    }
+  }
+
   void _init() async {
     await _getActivity();
     await _getAttachment();
@@ -339,9 +353,8 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
           ),
           SizedBox(height: 5),
           ContactOptionsSheet.buildIconLink(context, icContactDetailPhone, "Phone", () {
-            context.pushNamed(
-              'addContact',
-              extra: ContactDetailArgs(
+            _navigateToAddContact(
+              ContactDetailArgs(
                 dataContact: widget.args.dataContact,
                 page: 0,
                 namePage: "Call",
@@ -349,9 +362,8 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
             );
           }),
           ContactOptionsSheet.buildIconLink(context, icContactDetailWA, "WhatsApp", () {
-            context.pushNamed(
-              'addContact',
-              extra: ContactDetailArgs(
+            _navigateToAddContact(
+              ContactDetailArgs(
                 dataContact: widget.args.dataContact,
                 page: 1,
                 namePage: "WhatsApp",
@@ -359,9 +371,8 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
             );
           }),
           ContactOptionsSheet.buildIconLink(context, icContactDetailMeeting, "Meeting", () {
-            context.pushNamed(
-              'addContact',
-              extra: ContactDetailArgs(
+            _navigateToAddContact(
+              ContactDetailArgs(
                 dataContact: widget.args.dataContact,
                 page: 2,
                 namePage: "Meeting",
@@ -369,9 +380,8 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
             );
           }),
           ContactOptionsSheet.buildIconLink(context, icContactDetailReminder, "Task", () {
-            context.pushNamed(
-              'addContact',
-              extra: ContactDetailArgs(
+            _navigateToAddContact(
+              ContactDetailArgs(
                 dataContact: widget.args.dataContact,
                 page: 3,
                 namePage: "Task",
@@ -379,9 +389,8 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
             );
           }),
           ContactOptionsSheet.buildIconLink(context, icContactDetailVisit, "Visit", () {
-            context.pushNamed(
-              'addContact',
-              extra: ContactDetailArgs(
+            _navigateToAddContact(
+              ContactDetailArgs(
                 dataContact: widget.args.dataContact,
                 page: 4,
                 namePage: "Visit",
@@ -393,9 +402,8 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
             icSidebarSalesKit,
             "Update Status Prospect",
             () {
-              context.pushNamed(
-                'addContact',
-                extra: ContactDetailArgs(
+              _navigateToAddContact(
+                ContactDetailArgs(
                   dataContact: widget.args.dataContact,
                   page: 6,
                   namePage: "Update Status Prospect",
@@ -803,9 +811,8 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                 BgIcon(
                   asset: icUpload,
                   onTap: () {
-                    context.pushNamed(
-                      'addContact',
-                      extra: ContactDetailArgs(
+                    _navigateToAddContact(
+                      ContactDetailArgs(
                         dataContact: widget.args.dataContact,
                         page: 5,
                         namePage: "Attachment",
@@ -878,9 +885,8 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                               if (item.attachmentUrl.isNotEmpty) {
                                 context.pushNamed('attachmentWebView', extra: item.attachmentUrl);
                               } else {
-                                context.pushNamed(
-                                  'addContact',
-                                  extra: ContactDetailArgs(
+                                _navigateToAddContact(
+                                  ContactDetailArgs(
                                     page: 6,
                                     dataContact: Contact(
                                       contactId: widget.args.dataContact!.contactId,
@@ -981,9 +987,8 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                             
                                     onSelected: (value) {
                                       if (value == 'edit') {
-                                        context.pushNamed(
-                                          'addContact',
-                                          extra: ContactDetailArgs(
+                                        _navigateToAddContact(
+                                          ContactDetailArgs(
                                             dataContact: widget.args.dataContact,
                                             dataAttachment: item,
                                             page: 6,
@@ -1048,11 +1053,17 @@ Widget _buildContactOptions(BuildContext context, Contact contact) {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildIconLink(context, icEdit, "Edit Contact", () {
-          context.pushNamed(
+        _buildIconLink(context, icEdit, "Edit Contact", () async {
+          final result = await context.pushNamed(
             'formContact',
-            extra: ContactDetailArgs(dataContact: contact, page: 1),
+            extra: ContactDetailArgs(dataContact: contact, page: 1, initialTab: currentTab),
           );
+          if (result != null && result is int) {
+            setState(() {
+              currentTab = result;
+              _tabController.animateTo(result);
+            });
+          }
         }),
         _buildIconLink(context, icDelete, "Delete Contact", () {
           showDialog(
@@ -1310,9 +1321,8 @@ class _ActivityItemState extends State<ActivityItem> {
         // Find the parent state to get dataContact
         final parentState = context.findAncestorStateOfType<_ContactDetailPageState>();
         if (parentState != null) {
-          context.pushNamed(
-            'addContact',
-            extra: ContactDetailArgs(
+          parentState._navigateToAddContact(
+            ContactDetailArgs(
               page: page,
               namePage: namePage,
               dataContact: parentState.widget.args.dataContact,

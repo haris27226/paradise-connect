@@ -18,4 +18,22 @@ class ContactDetailArgs {
     this.namePage,
     this.initialTab = 0,
   });
+
+  ContactDetailArgs copyWith({
+    ContactAttachment? dataAttachment,
+    Contact? dataContact,
+    ActivityEntity? dataActivity,
+    int? page,
+    String? namePage,
+    int? initialTab,
+  }) {
+    return ContactDetailArgs(
+      dataAttachment: dataAttachment ?? this.dataAttachment,
+      dataContact: dataContact ?? this.dataContact,
+      dataActivity: dataActivity ?? this.dataActivity,
+      page: page ?? this.page,
+      namePage: namePage ?? this.namePage,
+      initialTab: initialTab ?? this.initialTab,
+    );
+  }
 }

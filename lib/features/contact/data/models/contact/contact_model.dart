@@ -60,6 +60,9 @@ class ContactModel extends Contact {
     super.createdAt,
     super.updatedAt,
     super.deletedAt,
+    super.lostDate,
+    super.lostReasonId,
+    super.lostReasonNote
   });
 
   factory ContactModel.fromJson(Map<String, dynamic> json) {
@@ -122,6 +125,10 @@ class ContactModel extends Contact {
       salesExecutiveName: json['sales_executive_name'],
       salesSupervisorName: json['sales_supervisor_name'],
       salesManagerName: json['sales_manager_name'],
+
+      lostDate: json['lost_date'],
+      lostReasonId: json['lost_reason_id'],
+      lostReasonNote : json['lost_reason_note'],
 
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],

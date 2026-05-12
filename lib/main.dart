@@ -34,8 +34,10 @@ import 'package:progress_group/features/contact/domain/usecases/attachment/updat
 import 'package:progress_group/features/contact/domain/usecases/contact/delete_contact_usecase.dart';
 import 'package:progress_group/features/contact/domain/usecases/contact/update_contact_usecase.dart';
 import 'package:progress_group/features/contact/domain/usecases/info_source/get_info_sources_usecase.dart';
+import 'package:progress_group/features/contact/domain/usecases/lost_reason/get_lost_reason.dart';
 import 'package:progress_group/features/contact/presentation/state/attachment/attachment_cubit.dart';
 import 'package:progress_group/features/contact/presentation/state/info_source/info_source_bloc.dart';
+import 'package:progress_group/features/contact/presentation/state/lost_reason/lost_reason_block.dart';
 import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_bloc.dart';
 import 'package:progress_group/features/home/domain/usecases/get_report_whatsapp_usecase.dart';
 import 'package:progress_group/features/home/presentation/state/report-whatsapp/report_bloc.dart';
@@ -169,7 +171,8 @@ class _MyAppState extends State<MyApp> {
     final getActivityProspectStatusUseCase = GetActivityProspectStatusUseCase(contactRepository);
     final getWhatsappActivityUseCase =  GetWhatsappUnreadSummaryUseCase(contactRepository);
     final getInfoSourcesUseCase = GetInfoSourcesUseCase(contactRepository);
-
+    final getLostReasonsUseCase = GetLostReasonsUseCase(contactRepository);
+    
     // Attendance
     final attendanceRemoteDataSource = AttendanceRemoteDataSourceImpl(dioClient.dio);
     final attendanceRepository = AttendanceRepositoryImpl(attendanceRemoteDataSource);
@@ -207,6 +210,7 @@ class _MyAppState extends State<MyApp> {
             BlocProvider(create: (_) => AttendanceBloc(getAttendanceUseCase: getAttendanceUseCase, getLocationsUseCase: getLocationsUseCase, getOfficeLocationsUseCase: getOfficeLocationsUseCase, submitAttendanceUseCase: submitAttendanceUseCase, submitAttendanceActivityUseCase: submitAttendanceActivityUseCase)),
             BlocProvider(create: (_) => WhatsappActivityBloc(getWhatsappActivityUseCase)),
             BlocProvider(create: (_) => InfoSourceBloc(getInfoSourcesUseCase: getInfoSourcesUseCase)),
+            BlocProvider(create: (_) => LostReasonBloc(getLostReasonsUseCase: getLostReasonsUseCase)),
           ],
           child: BlocListener<AuthBloc, AuthState>(
             listener: (context, state) {

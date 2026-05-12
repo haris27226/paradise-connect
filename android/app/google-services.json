@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "957537490033",
+    "project_id": "paradise-connect-mobile",
+    "storage_bucket": "paradise-connect-mobile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:957537490033:android:99353084afcd684ffeb7d0",
+        "android_client_info": {
+          "package_name": "com.example.progress_group"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDE8ei3HSq9NUBDO78pv0WB5MXAdyiAcFk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
