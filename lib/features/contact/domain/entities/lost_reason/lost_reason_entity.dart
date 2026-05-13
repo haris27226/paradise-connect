@@ -1,14 +1,14 @@
 import 'package:equatable/equatable.dart';
 
 class LostReasonEntity extends Equatable {
-  final int id;
-  final String text;
+  final int lostReasonId;
+  final String lostReasonName;
 
   const LostReasonEntity({
-    required this.id,
-    required this.text,
+    required this.lostReasonId,
+    required this.lostReasonName,
   });
 
   @override
-  List<Object?> get props => [id, text];
+  List<Object?> get props => [lostReasonId, lostReasonName];
 }

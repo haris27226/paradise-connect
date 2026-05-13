@@ -33,14 +33,15 @@ class CreateContactParams extends Equatable {
   final String? firstSPDate;
   final String? lastSPDate;
   final String? reserveDate;
+  final String? firstReserveDate;
   final String? lastReserveDate;
   final String? dealValue;
-  final String? lossReasonNote;
+  final String? lostReasonNote;
   final Map<String, dynamic>? properties;
   final List<Map<String, dynamic>>? propertiesJson;
   final int? lostReasonId;
   final String? firstLostDate;
-  final String? lostLostDate;
+  final String? lastLostDate;
   final String? lostDate;
   final String? nameSP;
 
@@ -77,14 +78,15 @@ class CreateContactParams extends Equatable {
     this.firstSPDate,
     this.lastSPDate,
     this.reserveDate,
+    this.firstReserveDate,
     this.lastReserveDate,
     this.dealValue,
-    this.lossReasonNote,
+    this.lostReasonNote,
     this.properties,
     this.propertiesJson,
     this.lostReasonId,
     this.firstLostDate,
-    this.lostLostDate,
+    this.lastLostDate,
     this.lostDate,
     this.nameSP,
     
@@ -122,16 +124,17 @@ class CreateContactParams extends Equatable {
       if (firstVisitDate != null) 'first_visit_date': firstVisitDate,
       if (lastVisitDate != null) 'last_visit_date': lastVisitDate,
       if (dealValue != null) 'deal_value': dealValue,
-      if (lossReasonNote != null) 'loss_reason_note': lossReasonNote,
+      if (lostReasonNote != null) 'lost_reason_note': lostReasonNote,
       if (firstSPDate != null) 'first_sp_date': firstSPDate,
       if (lastSPDate != null) 'last_sp_date': lastSPDate,
       if (reserveDate != null) 'reserve_date': reserveDate,
+      if (firstReserveDate != null) 'first_reserve_date': firstReserveDate,
       if (lastReserveDate != null) 'last_reserve_date': lastReserveDate,
       if (properties != null) 'properties': properties,
       if (propertiesJson != null) 'properties_json': propertiesJson,
       if (lostReasonId != null) 'lost_reason_id': lostReasonId,
       if (firstLostDate != null) 'first_lost_date': firstLostDate,
-      if (lostLostDate != null) 'last_lost_date': lostLostDate,
+      if (lastLostDate != null) 'last_lost_date': lastLostDate,
       if (lostDate != null) 'lost_date': lostDate,
       if (nameSP != null) 'name_sp': nameSP,
 
@@ -170,15 +173,17 @@ class CreateContactParams extends Equatable {
     firstVisitDate,
     lastVisitDate,
     dealValue,
-    lossReasonNote,
+    lostReasonNote,
     firstSPDate,
     lastSPDate,
     properties,
     propertiesJson,
     lostReasonId,
     firstLostDate,
-    lostLostDate,
+    lastLostDate,
     lostDate,
     nameSP,
+    firstReserveDate,
+    lastReserveDate,
   ];
 }

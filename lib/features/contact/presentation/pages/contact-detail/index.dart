@@ -7,6 +7,7 @@ import 'package:progress_group/core/utils/widget/custom_search_field.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_detail_args.dart';
 import 'package:progress_group/features/contact/data/models/activity/activity_dashboard.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/activity_entity.dart';
+import 'package:progress_group/features/contact/domain/entities/activity/activity_prospect_status.dart';
 import 'package:progress_group/features/contact/domain/entities/contact/contact.dart';
 import 'package:progress_group/features/contact/presentation/pages/contact-form/index.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -33,11 +34,6 @@ import '../../../../../core/utils/widget/custom_bg_icon.dart';
 import '../../../../../core/utils/widget/custom_buttomsheet.dart';
 import 'package:progress_group/features/contact/presentation/widgets/contact_options_sheet.dart';
 
-
-
-
-
-
 class ContactDetailPage extends StatefulWidget {
   final ContactDetailArgs args;
 
@@ -47,7 +43,7 @@ class ContactDetailPage extends StatefulWidget {
   State<ContactDetailPage> createState() => _ContactDetailPageState();
 }
 
-class _ContactDetailPageState extends State<ContactDetailPage> with TickerProviderStateMixin {
+class _ContactDetailPageState extends State<ContactDetailPage>with TickerProviderStateMixin {
   TextEditingController searchTC = TextEditingController();
 
   FocusNode searchFN = FocusNode();
@@ -61,17 +57,20 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
   int _gPage = 1;
   final ScrollController _activityScrollController = ScrollController();
 
-  
-
   @override
   void initState() {
     super.initState();
     currentTab = widget.args.initialTab;
-    _tabController = TabController(length: tabs.length, vsync: this, initialIndex: currentTab);
+    _tabController = TabController(
+      length: tabs.length,
+      vsync: this,
+      initialIndex: currentTab,
+    );
     _tabController.addListener(() {
       if (_tabController.index != currentTab) {
         setState(() {
           currentTab = _tabController.index;
+          searchTC.clear();
         });
       }
     });
@@ -85,12 +84,11 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
       final contactId = widget.args.dataContact?.contactId;
       if (contactId != null) {
         context.read<ActivityBloc>().add(
-              FetchActivitiesEvent(contactId: contactId),
-            );
+          FetchActivitiesEvent(contactId: contactId),
+        );
       }
     }
   }
-
 
   Future<void> _navigateToAddContact(ContactDetailArgs args) async {
     final result = await context.pushNamed(
@@ -104,6 +102,7 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
         _tabController.animateTo(result);
       });
     }
+    searchTC.clear(); 
   }
 
   void _init() async {
@@ -113,7 +112,7 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
     await _fetchInbox();
   }
 
-    Future<void> _fetchInbox({String? search, bool isLoadMore = false}) async {
+  Future<void> _fetchInbox({String? search, bool isLoadMore = false}) async {
     if (!isLoadMore) {
       _cPage = 1;
       _gPage = 1;
@@ -121,18 +120,26 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
 
     final contactState = context.read<ContactBloc>().state;
 
-    context.read<InboxContactBloc>().add(GetInboxContactsEvent(
-      search: search ?? searchTC.text,
-      cPage: _cPage,
-      gPage: _gPage,
-      salesExecutiveId: (contactState.ownerIds != null && contactState.ownerIds!.isNotEmpty) ? contactState.ownerIds!.first : null,
-      statusProspectId: (contactState.statusProspectIds != null && contactState.statusProspectIds!.isNotEmpty) ? contactState.statusProspectIds!.first : null,
-      startDate: contactState.startDate,
-      endDate: contactState.endDate,
-      isLoadMore: isLoadMore,
-    ));
+    context.read<InboxContactBloc>().add(
+      GetInboxContactsEvent(
+        search: search ?? searchTC.text,
+        cPage: _cPage,
+        gPage: _gPage,
+        salesExecutiveId:
+            (contactState.ownerIds != null && contactState.ownerIds!.isNotEmpty)
+            ? contactState.ownerIds!.first
+            : null,
+        statusProspectId:
+            (contactState.statusProspectIds != null &&
+                contactState.statusProspectIds!.isNotEmpty)
+            ? contactState.statusProspectIds!.first
+            : null,
+        startDate: contactState.startDate,
+        endDate: contactState.endDate,
+        isLoadMore: isLoadMore,
+      ),
+    );
   }
-
 
   Future<void> _getContactDetail() async {
     final contactId = widget.args.dataContact?.contactId;
@@ -140,7 +147,6 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
       context.read<ContactBloc>().add(FetchContactDetailEvent(contactId));
     }
   }
-
 
   Future<void> _getActivity() async {
     final contactId = widget.args.dataContact?.contactId;
@@ -174,15 +180,18 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
   @override
   void dispose() {
     context.read<ActivityBloc>().add(ResetActivityEvent());
-    context.read<ActivityProspectStatusBloc>().add(ResetActivityProspectStatusEvent());
+    context.read<ActivityProspectStatusBloc>().add(
+      ResetActivityProspectStatusEvent(),
+    );
     context.read<AttachmentCubit>().reset();
     context.read<ContactBloc>().add(ClearContactDetailEvent());
     _tabController.dispose();
+
     _activityScrollController.dispose();
+    searchTC.dispose();
+    searchFN.dispose();
     super.dispose();
-
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -279,12 +288,27 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                                 BgIcon(
                                   asset: icContactDetailWA,
                                   onTap: () async {
-                                    var phone =widget.args.dataContact?.whatsappNumber ??widget.args.dataContact?.primaryPhone;
+                                    var phone =
+                                        widget
+                                            .args
+                                            .dataContact
+                                            ?.whatsappNumber ??
+                                        widget.args.dataContact?.primaryPhone;
                                     if (phone != null && phone.isNotEmpty) {
-                                      phone = phone.replaceAll(RegExp(r'[^0-9]'), '');
-                                      if (phone.startsWith('0')) {phone = '62${phone.substring(1)}';}
-                                      final Uri whatsappUri = Uri.parse("https://wa.me/$phone");
-                                      await launchUrl(whatsappUri,mode: LaunchMode.externalApplication);
+                                      phone = phone.replaceAll(
+                                        RegExp(r'[^0-9]'),
+                                        '',
+                                      );
+                                      if (phone.startsWith('0')) {
+                                        phone = '62${phone.substring(1)}';
+                                      }
+                                      final Uri whatsappUri = Uri.parse(
+                                        "https://wa.me/$phone",
+                                      );
+                                      await launchUrl(
+                                        whatsappUri,
+                                        mode: LaunchMode.externalApplication,
+                                      );
                                     }
                                   },
                                 ),
@@ -293,7 +317,10 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                                   onTap: () {
                                     showCustomBottomSheet(
                                       context: context,
-                                      child:_buildContactOptions(context, widget.args.dataContact!)
+                                      child: _buildContactOptions(
+                                        context,
+                                        widget.args.dataContact!,
+                                      ),
                                     );
                                   },
                                 ),
@@ -322,9 +349,13 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                   index: currentTab,
                   children: [
                     _buildActivityContent(),
-                    ContactFormPage(args: ContactDetailArgs(dataContact: widget.args.dataContact,page: 2)),
+                    ContactFormPage(
+                      args: ContactDetailArgs(
+                        dataContact: widget.args.dataContact,
+                        page: 2,
+                      ),
+                    ),
                     _buildAttachmentContent(),
-
                   ],
                 ),
               ),
@@ -352,51 +383,76 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
             ],
           ),
           SizedBox(height: 5),
-          ContactOptionsSheet.buildIconLink(context, icContactDetailPhone, "Phone", () {
-            _navigateToAddContact(
-              ContactDetailArgs(
-                dataContact: widget.args.dataContact,
-                page: 0,
-                namePage: "Call",
-              ),
-            );
-          }),
-          ContactOptionsSheet.buildIconLink(context, icContactDetailWA, "WhatsApp", () {
-            _navigateToAddContact(
-              ContactDetailArgs(
-                dataContact: widget.args.dataContact,
-                page: 1,
-                namePage: "WhatsApp",
-              ),
-            );
-          }),
-          ContactOptionsSheet.buildIconLink(context, icContactDetailMeeting, "Meeting", () {
-            _navigateToAddContact(
-              ContactDetailArgs(
-                dataContact: widget.args.dataContact,
-                page: 2,
-                namePage: "Meeting",
-              ),
-            );
-          }),
-          ContactOptionsSheet.buildIconLink(context, icContactDetailReminder, "Task", () {
-            _navigateToAddContact(
-              ContactDetailArgs(
-                dataContact: widget.args.dataContact,
-                page: 3,
-                namePage: "Task",
-              ),
-            );
-          }),
-          ContactOptionsSheet.buildIconLink(context, icContactDetailVisit, "Visit", () {
-            _navigateToAddContact(
-              ContactDetailArgs(
-                dataContact: widget.args.dataContact,
-                page: 4,
-                namePage: "Visit",
-              ),
-            );
-          }),
+          ContactOptionsSheet.buildIconLink(
+            context,
+            icContactDetailPhone,
+            "Phone",
+            () {
+              _navigateToAddContact(
+                ContactDetailArgs(
+                  dataContact: widget.args.dataContact,
+                  page: 0,
+                  namePage: "Call",
+                ),
+              );
+            },
+          ),
+          ContactOptionsSheet.buildIconLink(
+            context,
+            icContactDetailWA,
+            "WhatsApp",
+            () {
+              _navigateToAddContact(
+                ContactDetailArgs(
+                  dataContact: widget.args.dataContact,
+                  page: 1,
+                  namePage: "WhatsApp",
+                ),
+              );
+            },
+          ),
+          ContactOptionsSheet.buildIconLink(
+            context,
+            icContactDetailMeeting,
+            "Meeting",
+            () {
+              _navigateToAddContact(
+                ContactDetailArgs(
+                  dataContact: widget.args.dataContact,
+                  page: 2,
+                  namePage: "Meeting",
+                ),
+              );
+            },
+          ),
+          ContactOptionsSheet.buildIconLink(
+            context,
+            icContactDetailReminder,
+            "Task",
+            () {
+              _navigateToAddContact(
+                ContactDetailArgs(
+                  dataContact: widget.args.dataContact,
+                  page: 3,
+                  namePage: "Task",
+                ),
+              );
+            },
+          ),
+          ContactOptionsSheet.buildIconLink(
+            context,
+            icContactDetailVisit,
+            "Visit",
+            () {
+              _navigateToAddContact(
+                ContactDetailArgs(
+                  dataContact: widget.args.dataContact,
+                  page: 4,
+                  namePage: "Visit",
+                ),
+              );
+            },
+          ),
           ContactOptionsSheet.buildIconLink(
             context,
             icSidebarSalesKit,
@@ -412,7 +468,6 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
             },
             color: Color(primaryColor),
           ),
-
         ],
       ),
     );
@@ -457,8 +512,14 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
     );
   }
 
-
-  Widget _buildStackTab({required int index,required double left,required double tabWidth,required double height,required List<String> tabs,required double page,}) {
+  Widget _buildStackTab({
+    required int index,
+    required double left,
+    required double tabWidth,
+    required double height,
+    required List<String> tabs,
+    required double page,
+  }) {
     final isActive = (page - index).abs() < 0.5;
 
     return Positioned(
@@ -486,12 +547,10 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                       color: Colors.black.withOpacity(0.1),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
-                    )
+                    ),
                   ]
                 : [],
           ),
-
-
 
           child: Text(
             tabs[index],
@@ -505,156 +564,150 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
       ),
     );
   }
-  
+
   Widget _buildActivityContent() {
     return BlocBuilder<ActivityBloc, ActivityState>(
       builder: (context, activityState) {
-        return BlocBuilder<ActivityProspectStatusBloc, ActivityProspectStatusState>(
+        return BlocBuilder<
+          ActivityProspectStatusBloc,
+          ActivityProspectStatusState
+        >(
           builder: (context, prospectState) {
             return BlocBuilder<WhatsappActivityBloc, WhatsappActivityState>(
               builder: (context, whatsappState) {
-
                 return BlocBuilder<InboxContactBloc, InboxContactState>(
                   builder: (context, inboxState) {
-                    return BlocBuilder<WhatsappActivityBloc, WhatsappActivityState>(
+                    return BlocBuilder<
+                      WhatsappActivityBloc,
+                      WhatsappActivityState
+                    >(
                       builder: (context, unreadState) {
-
-                    // =========================
-                    // LOADING
-                    // =========================
-                    if (activityState.status == ActivityStatus.loading &&
-                        activityState.activities.isEmpty) {
-                      return const Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    }
-
-                    // =========================
-                    // MERGE TIMELINE
-                    // =========================
-                    List<ActivityTimelineItem> timeline = [];
-
-                    // =========================
-                    // ACTIVITY
-                    // =========================
-                    for (var item in activityState.activities) {
-
-                      final date = DateTime.tryParse(
-                        item.activityDate,
-                      );
-
-                      if (date != null) {
-                        timeline.add(
-                          ActivityTimelineItem(
-                            date: date,
-                            type: 'activity',
-                            data: item,
-                          ),
-                        );
-                      }
-                    }
-
-                    // =========================
-                    // PROSPECT
-                    // =========================
-                    for (var item in prospectState.data) {
-
-                      final date = DateTime.tryParse(
-                        item.createdAt,
-                      );
-
-                      if (date != null) {
-                        timeline.add(
-                          ActivityTimelineItem(
-                            date: date,
-                            type: 'prospect',
-                            data: item,
-                          ),
-                        );
-                      }
-                    }
-
-                    // =========================
-                    // WHATSAPP
-                    // =========================
-                    for (var item in whatsappState.data) {
-
-                      final date = DateTime.tryParse(
-                        item.lastMessageAt,
-                      );
-
-                      if (date != null) {
-                        timeline.add(
-                          ActivityTimelineItem(
-                            date: date,
-                            type: 'whatsapp',
-                            data: item,
-                          ),
-                        );
-                      }
-                    }
-
-                    // =========================
-                    // INBOX CONTACT
-                    // =========================
-                    if (inboxState is InboxContactLoaded) {
-
-                      for (var item in inboxState.contacts) {
-
-                        final date = DateTime.tryParse(
-                          item.lastConversationDate ?? '',
-                        );
-
-                        if (date != null) {
-                          timeline.add(
-                            ActivityTimelineItem(
-                              date: date,
-                              type: 'inbox_contact',
-                              data: item,
-                            ),
+                        // =========================
+                        // LOADING
+                        // =========================
+                        if (activityState.status == ActivityStatus.loading &&
+                            activityState.activities.isEmpty) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
                           );
                         }
-                      }
-                    }
 
-                    // =========================
-                    // SORT DESC
-                    // =========================
-                    timeline.sort(
-                      (a, b) => b.date.compareTo(a.date),
-                    );
+                        // =========================
+                        // MERGE TIMELINE
+                        // =========================
+                        List<ActivityTimelineItem> timeline = [];
 
-                    // =========================
-                    // GROUP BY DATE
-                    // =========================
-                    final Map<String, List<ActivityTimelineItem>> grouped = {};
+                        // =========================
+                        // ACTIVITY
+                        // =========================
+                        for (var item in activityState.activities) {
+                          final date = DateTime.tryParse(item.activityDate);
 
-                    for (var item in timeline) {
+                          if (date != null) {
+                            timeline.add(
+                              ActivityTimelineItem(
+                                date: date,
+                                type: 'activity',
+                                data: item,
+                              ),
+                            );
+                          }
+                        }
 
-                      final key = DateFormat(
-                        'dd MMM yyyy',
-                      ).format(item.date);
+                        // =========================
+                        // PROSPECT
+                        // =========================
+                        for (var item in prospectState.data) {
+                          final date = DateTime.tryParse(item.createdAt);
 
-                      grouped.putIfAbsent(key, () => []);
+                          if (date != null) {
+                            timeline.add(
+                              ActivityTimelineItem(
+                                date: date,
+                                type: 'prospect',
+                                data: item,
+                              ),
+                            );
+                          }
+                        }
 
-                      grouped[key]!.add(item);
-                    }
+                        // =========================
+                        // WHATSAPP
+                        // =========================
+                        for (var item in whatsappState.data) {
+                          final date = DateTime.tryParse(item.lastMessageAt);
+
+                          if (date != null) {
+                            timeline.add(
+                              ActivityTimelineItem(
+                                date: date,
+                                type: 'whatsapp',
+                                data: item,
+                              ),
+                            );
+                          }
+                        }
+
+                        // =========================
+                        // INBOX CONTACT
+                        // =========================
+                        if (inboxState is InboxContactLoaded) {
+                          for (var item in inboxState.contacts) {
+                            final date = DateTime.tryParse(
+                              item.lastConversationDate ?? '',
+                            );
+
+                            if (date != null) {
+                              timeline.add(
+                                ActivityTimelineItem(
+                                  date: date,
+                                  type: 'inbox_contact',
+                                  data: item,
+                                ),
+                              );
+                            }
+                          }
+                        }
+
+                        // =========================
+                        // SORT DESC
+                        // =========================
+                        timeline.sort((a, b) => b.date.compareTo(a.date));
+
+                        // =========================
+                        // GROUP BY DATE
+                        // =========================
+                        final Map<String, List<ActivityTimelineItem>> grouped =
+                            {};
+
+                        for (var item in timeline) {
+                          final key = DateFormat(
+                            'dd MMM yyyy',
+                          ).format(item.date);
+
+                          grouped.putIfAbsent(key, () => []);
+
+                          grouped[key]!.add(item);
+                        }
 
                         // =========================
                         // UI
                         // =========================
                         return ListView(
                           controller: _activityScrollController,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
                           children: [
-                           
                             // TIMELINE ITEMS
                             ...grouped.entries.map((entry) {
                               final date = entry.key;
                               final items = entry.value.where((e) {
                                 if (e.type == 'inbox_contact') {
                                   final item = e.data;
-                                  return item.crmContactId == widget.args.dataContact?.contactId;
+                                  return item.crmContactId ==
+                                      widget.args.dataContact?.contactId;
                                 }
                                 return true;
                               }).toList();
@@ -664,12 +717,21 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(date, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                  Text(
+                                    date,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
                                   const SizedBox(height: 10),
                                   Column(
                                     children: items.map((item) {
                                       if (item.type == 'activity') {
-                                        return ActivityItem(item: item.data, activityColor: Color(purpleColor));
+                                        return ActivityItem(
+                                          item: item.data,
+                                          activityColor: Color(purpleColor),
+                                        );
                                       } else if (item.type == 'prospect') {
                                         return _prospectItem(item.data);
                                       } else if (item.type == 'inbox_contact') {
@@ -697,19 +759,13 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
   }
 
   Widget _inboxContactItem(InboxContact item) {
-
     if (item.crmContactId != widget.args.dataContact?.contactId) {
       return const SizedBox();
     }
 
     return GestureDetector(
       onTap: () {
-        context.pushNamed(
-          'detailInbox',
-          extra: InboxDetailArgs(
-            data: item,
-          ),
-        );
+        context.pushNamed('detailInbox', extra: InboxDetailArgs(data: item));
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
@@ -725,16 +781,33 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
               child: Container(
                 padding: EdgeInsets.only(left: 12),
                 decoration: BoxDecoration(
-                  border: Border(left: BorderSide(color: Color(successColor), width: 5)),
+                  border: Border(
+                    left: BorderSide(color: Color(successColor), width: 5),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Chat with ${item.ownerName ?? '-'}",style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    Text(DateFormat('HH:mm').format(DateTime.parse(item.lastConversationDate ?? '-')), style: TextStyle(fontSize: 11),),
+                    Text(
+                      "Chat with ${item.ownerName ?? '-'}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                    Text(
+                      DateFormat('HH:mm').format(
+                        DateTime.parse(item.lastConversationDate ?? '-'),
+                      ),
+                      style: TextStyle(fontSize: 11),
+                    ),
                     SizedBox(
                       width: double.infinity,
-                      child: Text("${item.lastMessage ?? '-'}",maxLines:1,overflow: TextOverflow.ellipsis,style: TextStyle(fontSize: 11,),
+                      child: Text(
+                        "${item.lastMessage ?? '-'}",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 11),
                       ),
                     ),
                   ],
@@ -747,8 +820,7 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
     );
   }
 
-
-  Widget _prospectItem(dynamic item) {
+  Widget _prospectItem(ActivityProspectStatusEntity item) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
@@ -759,27 +831,43 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-        
           Expanded(
-              child: Container(
-                padding: EdgeInsets.only(left: 12),
-                decoration: BoxDecoration(
-                  border: Border(left: BorderSide(color: Color(warningColor), width: 5)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("${item.projectName}",style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    Text(DateFormat('HH:mm').format(DateTime.parse(item.createdAt ?? '-')), style: TextStyle(fontSize: 11),),
-                    SizedBox(
-                      width: double.infinity,
-                      child: Text("Status changed from ${item.previousStatusName ?? '-'} to ${item.statusName ?? '-'}",maxLines:2,overflow: TextOverflow.ellipsis,style: TextStyle(fontSize: 11,),
-                      ),
-                    ),
-                  ],
+            child: Container(
+              padding: EdgeInsets.only(left: 12),
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: Color(warningColor), width: 5),
                 ),
               ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "${item.projectName}",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                  Text(
+                    DateFormat(
+                      'HH:mm',
+                    ).format(DateTime.parse(item.createdAt ?? '-')),
+                    style: TextStyle(fontSize: 11),
+                  ),
+                  SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      "Status changed from ${item.previousStatusValue ?? ''} - ${item.previousStatusName ?? ''}  to ${item.statusValue ?? ''} - ${item.statusName??""} ",
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11),
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ),
         ],
       ),
     );
@@ -850,7 +938,7 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
               listener: (context, state) {
                 if (state is UploadAttachmentSuccess) {
                   context.read<AttachmentCubit>().fetch(
-                    widget.args.dataContact!.contactId,
+                    widget.args.dataContact!.contactId!,
                     widget.args.dataContact!.dealId,
                   );
                 }
@@ -883,14 +971,19 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                           return GestureDetector(
                             onTap: () {
                               if (item.attachmentUrl.isNotEmpty) {
-                                context.pushNamed('attachmentWebView', extra: item.attachmentUrl);
+                                context.pushNamed(
+                                  'attachmentWebView',
+                                  extra: item.attachmentUrl,
+                                );
                               } else {
                                 _navigateToAddContact(
                                   ContactDetailArgs(
                                     page: 6,
                                     dataContact: Contact(
-                                      contactId: widget.args.dataContact!.contactId,
-                                      fullName: widget.args.dataContact?.fullName,
+                                      contactId:
+                                          widget.args.dataContact!.contactId,
+                                      fullName:
+                                          widget.args.dataContact?.fullName,
                                     ),
                                   ),
                                 );
@@ -916,41 +1009,43 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[300],
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Image.network(
-                                      convertDriveUrl(item.attachmentUrl),
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                            return Container(
-                                              width: 58,
-                                              height: 44,
-                                              decoration: BoxDecoration(
-                                                color: Color(whiteColor),
-                                                borderRadius: BorderRadius.circular(14),
-                                                border: Border.all(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[300],
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.network(
+                                        convertDriveUrl(item.attachmentUrl),
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return Container(
+                                                width: 58,
+                                                height: 44,
+                                                decoration: BoxDecoration(
+                                                  color: Color(whiteColor),
+                                                  borderRadius:
+                                                      BorderRadius.circular(14),
+                                                  border: Border.all(
+                                                    color: Color(primaryColor),
+                                                  ),
+                                                ),
+                                                child: Icon(
+                                                  Icons.picture_as_pdf,
                                                   color: Color(primaryColor),
                                                 ),
-                                              ),
-                                              child: Icon(
-                                                Icons.picture_as_pdf,
-                                                color: Color(primaryColor),
-                                              ),
-                                            );
-                                          },
+                                              );
+                                            },
+                                      ),
                                     ),
                                   ),
-                                                                    ),
                                   SizedBox(width: 10),
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
@@ -971,7 +1066,7 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                                       ),
                                     ],
                                   ),
-                            
+
                                   Spacer(),
                                   PopupMenuButton<String>(
                                     icon: Container(
@@ -984,12 +1079,13 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
                                       ),
                                       child: Icon(Icons.more_vert, size: 30),
                                     ),
-                            
+
                                     onSelected: (value) {
                                       if (value == 'edit') {
                                         _navigateToAddContact(
                                           ContactDetailArgs(
-                                            dataContact: widget.args.dataContact,
+                                            dataContact:
+                                                widget.args.dataContact,
                                             dataAttachment: item,
                                             page: 6,
                                             namePage: "Attachment",
@@ -1047,102 +1143,105 @@ class _ContactDetailPageState extends State<ContactDetailPage> with TickerProvid
     );
   }
 
-Widget _buildContactOptions(BuildContext context, Contact contact) {
-  return Container(
-    width: double.infinity,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildIconLink(context, icEdit, "Edit Contact", () async {
-          final result = await context.pushNamed(
-            'formContact',
-            extra: ContactDetailArgs(dataContact: contact, page: 1, initialTab: currentTab),
-          );
-          if (result != null && result is int) {
-            setState(() {
-              currentTab = result;
-              _tabController.animateTo(result);
-            });
-          }
-        }),
-        _buildIconLink(context, icDelete, "Delete Contact", () {
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: Text('Confirm'),
-              content: Text('Delete this contact?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    context.replace("/contact");
-                    context.pop();
-                    context.read<ContactBloc>().add(
-                      DeleteContactEvent(contact.contactId),
-                    );
-                  },
-                  child: Text('Delete'),
-                ),
-              ],
-            ),
-          );
-        }),
-        _buildIconLink(context, icShare, "Share Contact", () {
-          ShareHelper.shareContact(contact);
-        }),
-      ],
-    ),
-  );
-}
-
-Widget _buildIconLink(
-  BuildContext context,
-  String asset,
-  String label,
-  VoidCallback onTap, {
-  Color? color,
-}) {
-  return InkWell(
-    onTap: () {
-      Navigator.pop(context);
-      onTap();
-    },
-    child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
+  Widget _buildContactOptions(BuildContext context, Contact contact) {
+    return Container(
+      width: double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          BgIcon(asset: asset, onTap: null, color: color),
-          const SizedBox(width: 10),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 16,
-              color: Color(blue2Color),
-              fontWeight: FontWeight.w400,
-            ),
-          ),
+          _buildIconLink(context, icEdit, "Edit Contact", () async {
+            final result = await context.pushNamed(
+              'formContact',
+              extra: ContactDetailArgs(
+                dataContact: contact,
+                page: 1,
+                initialTab: currentTab,
+              ),
+            );
+            if (result != null && result is int) {
+              setState(() {
+                currentTab = result;
+                _tabController.animateTo(result);
+              });
+            }
+          }),
+          _buildIconLink(context, icDelete, "Delete Contact", () {
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: Text('Confirm'),
+                content: Text('Delete this contact?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      context.replace("/contact");
+                      context.pop();
+                      context.read<ContactBloc>().add(
+                        DeleteContactEvent(contact.contactId!),
+                      );
+                    },
+                    child: Text('Delete'),
+                  ),
+                ],
+              ),
+            );
+          }),
+          _buildIconLink(context, icShare, "Share Contact", () {
+            ShareHelper.shareContact(contact);
+          }),
         ],
       ),
-    ),
-  );
-}
+    );
+  }
 
+  Widget _buildIconLink(
+    BuildContext context,
+    String asset,
+    String label,
+    VoidCallback onTap, {
+    Color? color,
+  }) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(context);
+        onTap();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            BgIcon(asset: asset, onTap: null, color: color),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                color: Color(blue2Color),
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   void _showImagePreview(BuildContext context, String imageUrl) {
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.8),
-      builder: (_) => Dialog(
+      builder: (dialogContext) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(10),
         child: Stack(
           alignment: Alignment.center,
           children: [
             GestureDetector(
-              onTap: () => Navigator.pop(context),
+              onTap: () => Navigator.pop(dialogContext),
               child: InteractiveViewer(
                 child: Image.network(
                   convertDriveUrl(imageUrl),
@@ -1150,7 +1249,11 @@ Widget _buildIconLink(
                   errorBuilder: (context, error, stackTrace) => Container(
                     color: Colors.white,
                     padding: const EdgeInsets.all(20),
-                    child: const Icon(Icons.broken_image, size: 100, color: Colors.grey),
+                    child: const Icon(
+                      Icons.broken_image,
+                      size: 100,
+                      color: Colors.grey,
+                    ),
                   ),
                 ),
               ),
@@ -1160,7 +1263,7 @@ Widget _buildIconLink(
               right: 10,
               child: IconButton(
                 icon: const Icon(Icons.close, color: Colors.white, size: 30),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(dialogContext),
               ),
             ),
           ],
@@ -1193,14 +1296,11 @@ Widget _buildIconLink(
   }
 }
 
-
-
 String convertDriveUrl(String url) {
   final uri = Uri.parse(url);
   final id = uri.pathSegments[2];
   return 'https://drive.google.com/uc?export=view&id=$id';
 }
-
 
 class ActivityItem extends StatefulWidget {
   final ActivityEntity item;
@@ -1260,7 +1360,10 @@ class _ActivityItemState extends State<ActivityItem> {
   }
 
   void _scrollLeft() {
-    final newOffset = (_scrollController.offset - 250).clamp(0.0, _scrollController.position.maxScrollExtent);
+    final newOffset = (_scrollController.offset - 250).clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
+    );
 
     _scrollController.animateTo(
       newOffset,
@@ -1270,8 +1373,10 @@ class _ActivityItemState extends State<ActivityItem> {
   }
 
   void _scrollRight() {
-    final newOffset = (_scrollController.offset + 250)
-        .clamp(0.0, _scrollController.position.maxScrollExtent);
+    final newOffset = (_scrollController.offset + 250).clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
+    );
 
     _scrollController.animateTo(
       newOffset,
@@ -1319,7 +1424,8 @@ class _ActivityItemState extends State<ActivityItem> {
         }
 
         // Find the parent state to get dataContact
-        final parentState = context.findAncestorStateOfType<_ContactDetailPageState>();
+        final parentState = context
+            .findAncestorStateOfType<_ContactDetailPageState>();
         if (parentState != null) {
           parentState._navigateToAddContact(
             ContactDetailArgs(
@@ -1340,121 +1446,144 @@ class _ActivityItemState extends State<ActivityItem> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          /// ================= HEADER =================
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-               child: Container(
-                  padding: EdgeInsets.only(left: 12),
-                  decoration: BoxDecoration(
-                    border: Border(left: BorderSide(color: Color(purpleColor), width: 5)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.activityType,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            /// ================= HEADER =================
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: EdgeInsets.only(left: 12),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        left: BorderSide(color: Color(purpleColor), width: 5),
                       ),
-                      Text(
-                        DateFormat('HH:mm').format(DateTime.parse(item.activityDate)),
-                        style: TextStyle(fontSize: 11),
-                      ),
-                      if (item.notes != null) SizedBox(width: double.infinity,child: Text(item.notes!, maxLines: 1,overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11))),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          /// ================= IMAGES =================
-          if (item.imagePaths != null && item.imagePaths!.isNotEmpty)
-            Container(
-              height: 200,
-              margin: const EdgeInsets.only(top: 10),
-              child: Stack(
-                children: [
-                  ListView.builder(
-                    controller: _scrollController,
-                    scrollDirection: Axis.horizontal,
-                    itemCount: item.imagePaths!.length,
-                    itemBuilder: (context, index) {
-                      return Container(
-                        margin: const EdgeInsets.only(right: 10),
-                        child: GestureDetector(
-                          onTap: () {
-                            // Find the parent state to call _showImagePreview
-                            final parentState = context.findAncestorStateOfType<_ContactDetailPageState>();
-                            if (parentState != null) {
-                              parentState._showImagePreview(context, item.imagePaths![index]);
-                            }
-                          },
-                          child: ClipRRect(
-                            child: Image.network(
-                              convertDriveUrl(item.imagePaths![index]),
-                              fit: BoxFit.fill,
-                              loadingBuilder: (context, child, progress) {
-                                if (progress == null) return child;
-                                return Container(
-                                  color: Colors.grey.shade200,
-                                  alignment: Alignment.center,
-                                  child: const CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Colors.grey.shade200,
-                                  alignment: Alignment.center,
-                                  child: const Icon(
-                                    Icons.broken_image,
-                                    size: 30,
-                                    color: Colors.grey,
-                                  ),
-                                );
-                              },
-                            ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.activityType,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
                           ),
                         ),
-                      );
-                    },
+                        Text(
+                          DateFormat(
+                            'HH:mm',
+                          ).format(DateTime.parse(item.activityDate)),
+                          style: TextStyle(fontSize: 11),
+                        ),
+                        if (item.notes != null)
+                          SizedBox(
+                            width: double.infinity,
+                            child: Text(
+                              item.notes!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 11),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-
-                  /// 🔥 LEFT ARROW
-                  if (!isAtStart)
-                    Positioned(
-                      left: 5,
-                      top: 0,
-                      bottom: 0,
-                      child: Center(
-                        child: GestureDetector(
-                          onTap: _scrollLeft,
-                          child: _arrowButton(Icons.arrow_back_ios),
-                        ),
-                      ),
-                    ),
-
-                  /// 🔥 RIGHT ARROW
-                  if (!isAtEnd)
-                    Positioned(
-                      right: 5,
-                      top: 0,
-                      bottom: 0,
-                      child: Center(
-                        child: GestureDetector(
-                          onTap: _scrollRight,
-                          child: _arrowButton(Icons.arrow_forward_ios),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+                ),
+              ],
             ),
-        ],
+
+            /// ================= IMAGES =================
+            if (item.imagePaths != null && item.imagePaths!.isNotEmpty)
+              Container(
+                height: 200,
+                margin: const EdgeInsets.only(top: 10),
+                child: Stack(
+                  children: [
+                    ListView.builder(
+                      controller: _scrollController,
+                      scrollDirection: Axis.horizontal,
+                      itemCount: item.imagePaths!.length,
+                      itemBuilder: (context, index) {
+                        return Container(
+                          margin: const EdgeInsets.only(right: 10),
+                          child: GestureDetector(
+                            onTap: () {
+                              // Find the parent state to call _showImagePreview
+                              final parentState = context
+                                  .findAncestorStateOfType<
+                                    _ContactDetailPageState
+                                  >();
+                              if (parentState != null) {
+                                parentState._showImagePreview(
+                                  context,
+                                  item.imagePaths![index],
+                                );
+                              }
+                            },
+                            child: ClipRRect(
+                              child: Image.network(
+                                convertDriveUrl(item.imagePaths![index]),
+                                fit: BoxFit.fill,
+                                loadingBuilder: (context, child, progress) {
+                                  if (progress == null) return child;
+                                  return Container(
+                                    color: Colors.grey.shade200,
+                                    alignment: Alignment.center,
+                                    child: const CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: Colors.grey.shade200,
+                                    alignment: Alignment.center,
+                                    child: const Icon(
+                                      Icons.broken_image,
+                                      size: 30,
+                                      color: Colors.grey,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
+                    /// 🔥 LEFT ARROW
+                    if (!isAtStart)
+                      Positioned(
+                        left: 5,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: GestureDetector(
+                            onTap: _scrollLeft,
+                            child: _arrowButton(Icons.arrow_back_ios),
+                          ),
+                        ),
+                      ),
+
+                    /// 🔥 RIGHT ARROW
+                    if (!isAtEnd)
+                      Positioned(
+                        right: 5,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: GestureDetector(
+                            onTap: _scrollRight,
+                            child: _arrowButton(Icons.arrow_forward_ios),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
-    ));
+    );
   }
 }

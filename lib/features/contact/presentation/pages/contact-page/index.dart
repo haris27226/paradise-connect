@@ -41,6 +41,8 @@ class _ContactPageState extends State<ContactPage> {
   Timer? _debounce;
   String? selectedDateLabel;
 
+  List<Contact> contactEntity = [];
+
   @override
   void initState() {
     super.initState();
@@ -55,6 +57,7 @@ class _ContactPageState extends State<ContactPage> {
     _scrollController.dispose();
     _searchController.dispose();
     _searchFocus.dispose();
+    contactEntity = [];
     super.dispose();
   }
 
@@ -90,6 +93,7 @@ class _ContactPageState extends State<ContactPage> {
                       onChanged: (value) {
                         if (_debounce?.isActive ?? false) _debounce?.cancel();
                         _debounce = Timer(const Duration(milliseconds: 500), () {
+                          contactEntity.clear();
                           context.read<ContactBloc>().add(
                             FetchContactsEvent(search: value, isRefresh: true),
                           );
@@ -356,14 +360,15 @@ class _ContactPageState extends State<ContactPage> {
                     Expanded(
                       child: BlocBuilder<ContactBloc, ContactState>(
                         builder: (context, state) {
+                          contactEntity = state.contacts;
                           if (state.status == ContactStatus.loading &&
-                              state.contacts.isEmpty) {
+                              contactEntity.isEmpty) {
                             return const Center(
                               child: CircularProgressIndicator(),
                             );
                           }
                           if (state.status == ContactStatus.error &&
-                              state.contacts.isEmpty) {
+                             contactEntity.isEmpty) {
                             return Center(
                               child: Text(
                                 state.errorMessage ?? 'Error loading contacts',
@@ -378,21 +383,13 @@ class _ContactPageState extends State<ContactPage> {
                             child: ListView.separated(
                               controller: _scrollController,
                               physics: const AlwaysScrollableScrollPhysics(),
-                              itemCount: state.hasReachedMax
-                                  ? state.contacts.length
-                                  : state.contacts.length + 1,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 10),
+                              itemCount: state.hasReachedMax?contactEntity.length: contactEntity.length + 1,
+                              separatorBuilder: (_, __) =>const SizedBox(height: 10),
                               itemBuilder: (context, index) {
                                 if (index >= state.contacts.length) {
-                                  return const Center(
-                                    child: Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 16),
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  );
+                                  return const Center(child: Padding(padding: EdgeInsets.symmetric(vertical: 16),child: CircularProgressIndicator(),),);
                                 }
-                                final contact = state.contacts[index];
+                              final contact = state.contacts[index];
                                 return _buildListContacts(context, contact);
                               },
                             ),
@@ -533,7 +530,7 @@ Widget _buildContactOptions(BuildContext context, Contact contact) {
                   onPressed: () {
                     Navigator.pop(ctx);
                     context.read<ContactBloc>().add(
-                      DeleteContactEvent(contact.contactId),
+                      DeleteContactEvent(contact.contactId!),
                     );
                   },
                   child: Text('Delete'),

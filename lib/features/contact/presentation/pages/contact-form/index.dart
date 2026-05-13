@@ -85,7 +85,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
   String? selectedSourceName;
   int? selectedSourceId;
 
-
   List<Map<String, dynamic>> salesInfoFields = [];
   final Map<int, TextEditingController> _propertyControllers = {};
 
@@ -112,23 +111,117 @@ class _ContactFormPageState extends State<ContactFormPage> {
   FocusNode lossReasonNoteFN = FocusNode();
   FocusNode fspFN = FocusNode();
   FocusNode lspFN = FocusNode();
-  
+
   bool _showValidation = false;
-  
-  List<OwnerDropdownItem> itemsProject = [OwnerDropdownItem(name: "Paradise Serpong City 1"), OwnerDropdownItem(name:"Paradise Serpong City 2" ), OwnerDropdownItem(name: "Paradise Resort City")];
-  List<OwnerDropdownItem> itemsProjectCategory = [OwnerDropdownItem(name: "Residential"), OwnerDropdownItem(name:"Commercial" )];
+
+  List<OwnerDropdownItem> itemsProject = [
+    OwnerDropdownItem(name: "Paradise Serpong City 1"),
+    OwnerDropdownItem(name: "Paradise Serpong City 2"),
+    OwnerDropdownItem(name: "Paradise Resort City"),
+  ];
+  List<OwnerDropdownItem> itemsProjectCategory = [
+    OwnerDropdownItem(name: "Residential"),
+    OwnerDropdownItem(name: "Commercial"),
+  ];
   final Map<String, Map<String, List<String>>> projectData = {
-    "Paradise Serpong City 2": {"Residential": ["Hampton","Lilac","Woodle","Sandwood","Ariawood | Ecoardence",],},
-    "Paradise Serpong City 1": {"Residential": ["Envato",    "Omnia",    "Grayson",    "Solavita",    "Everest",    "Clivia",    "Florida",    "Solavista",  ],"Commercial": ["Terrace Corner A",    "Terrace Corner B",    "Standard",    "Terrace",    "Standard Corner A",    "Standard Corner B",  ],},
-    "Paradise Resort City": {  "Residential": [    "Arabelle",    "Bella",    "Calan",    "Elowyn",    "Bryn",    "Calaya",    "Cayenne",    "Cove",    "Cavara",    "Coral",  ],},
+    "Paradise Serpong City 2": {
+      "Residential": [
+        "Hampton",
+        "Lilac",
+        "Woodle",
+        "Sandwood",
+        "Ariawood | Ecoardence",
+      ],
+    },
+    "Paradise Serpong City 1": {
+      "Residential": [
+        "Envato",
+        "Omnia",
+        "Grayson",
+        "Solavita",
+        "Everest",
+        "Clivia",
+        "Florida",
+        "Solavista",
+      ],
+      "Commercial": [
+        "Terrace Corner A",
+        "Terrace Corner B",
+        "Standard",
+        "Terrace",
+        "Standard Corner A",
+        "Standard Corner B",
+      ],
+    },
+    "Paradise Resort City": {
+      "Residential": [
+        "Arabelle",
+        "Bella",
+        "Calan",
+        "Elowyn",
+        "Bryn",
+        "Calaya",
+        "Cayenne",
+        "Cove",
+        "Cavara",
+        "Coral",
+      ],
+    },
   };
 
-  List<OwnerDropdownItem> itemsLastProject = [OwnerDropdownItem(name: "Paradise Serpong City 1"), OwnerDropdownItem(name:"Paradise Serpong City 2" ), OwnerDropdownItem(name: "Paradise Resort City")];
-  List<OwnerDropdownItem> itemsLastProjectCategory = [OwnerDropdownItem(name: "Residential"), OwnerDropdownItem(name:"Commercial" )];
+  List<OwnerDropdownItem> itemsLastProject = [
+    OwnerDropdownItem(name: "Paradise Serpong City 1"),
+    OwnerDropdownItem(name: "Paradise Serpong City 2"),
+    OwnerDropdownItem(name: "Paradise Resort City"),
+  ];
+  List<OwnerDropdownItem> itemsLastProjectCategory = [
+    OwnerDropdownItem(name: "Residential"),
+    OwnerDropdownItem(name: "Commercial"),
+  ];
   final Map<String, Map<String, List<String>>> projecLasttData = {
-    "Paradise Serpong City 2": {"Residential": ["Hampton","Lilac","Woodle","Sandwood","Ariawood | Ecoardence",],},
-    "Paradise Serpong City 1": {"Residential": ["Envato",    "Omnia",    "Grayson",    "Solavita",    "Everest",    "Clivia",    "Florida",    "Solavista",  ],"Commercial": ["Terrace Corner A",    "Terrace Corner B",    "Standard",    "Terrace",    "Standard Corner A",    "Standard Corner B",  ],},
-    "Paradise Resort City": {  "Residential": [    "Arabelle",    "Bella",    "Calan",    "Elowyn",    "Bryn",    "Calaya",    "Cayenne",    "Cove",    "Cavara",    "Coral",  ],},
+    "Paradise Serpong City 2": {
+      "Residential": [
+        "Hampton",
+        "Lilac",
+        "Woodle",
+        "Sandwood",
+        "Ariawood | Ecoardence",
+      ],
+    },
+    "Paradise Serpong City 1": {
+      "Residential": [
+        "Envato",
+        "Omnia",
+        "Grayson",
+        "Solavita",
+        "Everest",
+        "Clivia",
+        "Florida",
+        "Solavista",
+      ],
+      "Commercial": [
+        "Terrace Corner A",
+        "Terrace Corner B",
+        "Standard",
+        "Terrace",
+        "Standard Corner A",
+        "Standard Corner B",
+      ],
+    },
+    "Paradise Resort City": {
+      "Residential": [
+        "Arabelle",
+        "Bella",
+        "Calan",
+        "Elowyn",
+        "Bryn",
+        "Calaya",
+        "Cayenne",
+        "Cove",
+        "Cavara",
+        "Coral",
+      ],
+    },
   };
 
   @override
@@ -142,7 +235,8 @@ class _ContactFormPageState extends State<ContactFormPage> {
       return [];
     }
 
-    final products = projectData[selectFirstProject]?[selectFirstProjectCategory] ?? [];
+    final products =
+        projectData[selectFirstProject]?[selectFirstProjectCategory] ?? [];
 
     return products.map((e) => OwnerDropdownItem(name: e)).toList();
   }
@@ -151,9 +245,10 @@ class _ContactFormPageState extends State<ContactFormPage> {
     final contactId = widget.args.dataContact?.contactId;
     final contactState = context.read<ContactBloc>().state;
     final currentDetail = contactState.contactDetail;
-    
+
     // Check if we already have the correct detail in state
-    final hasLatestDetail = currentDetail != null && currentDetail.contactId == contactId;
+    final hasLatestDetail =
+        currentDetail != null && currentDetail.contactId == contactId;
 
     if (widget.args.page == 1) {
       // Edit mode: Use latest detail from bloc if available, otherwise fallback to args
@@ -163,27 +258,26 @@ class _ContactFormPageState extends State<ContactFormPage> {
         await _fillForm(widget.args.dataContact!);
       }
     } else if (widget.args.page == 2 && widget.args.dataContact != null) {
-      // About tab (View mode): 
+      // About tab (View mode):
       // If we already have the detail in bloc, just fill form.
       // If not, fetch it.
       if (hasLatestDetail) {
         await _fillForm(currentDetail);
       } else {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          context.read<ContactBloc>().add(
-            FetchContactDetailEvent(contactId!),
-          );
+          context.read<ContactBloc>().add(FetchContactDetailEvent(contactId!));
         });
       }
     }
 
-    if (context.read<ProspectStatusBloc>().state.status != ProspectStatusEnum.loaded) {
+    if (context.read<ProspectStatusBloc>().state.status !=
+        ProspectStatusEnum.loaded) {
       context.read<ProspectStatusBloc>().add(FetchProspectStatusesEvent());
     }
-    if (context.read<ContactPropertiesBloc>().state.status != ContactPropertiesStatus.loaded) {
+    if (context.read<ContactPropertiesBloc>().state.status !=
+        ContactPropertiesStatus.loaded) {
       context.read<ContactPropertiesBloc>().add(FetchContactPropertiesEvent());
     }
-
 
     if (widget.args.page == 0 && widget.args.dataContact == null) {
       final today = DateHelper.formatNumericCompact(DateTime.now());
@@ -192,23 +286,25 @@ class _ContactFormPageState extends State<ContactFormPage> {
         if (firstApptDateTC.text.isEmpty) firstApptDateTC.text = today;
         if (firstVisitorDateTC.text.isEmpty) firstVisitorDateTC.text = today;
         if (fspTC.text.isEmpty) fspTC.text = today;
-        
+
         // Defaults for Deal Value and Visit Count
         if (dealValueTC.text.isEmpty) dealValueTC.text = "0";
         if (vCountTC.text.isEmpty) vCountTC.text = "0";
 
-
         selectedSalutation ??= "Mr.";
         selectFirstProject ??= itemsProject.first.name;
         selectFirstProjectCategory ??= itemsProjectCategory.first.name;
-        final firstProducts = projectData[selectFirstProject]?[selectFirstProjectCategory] ?? [];
+        final firstProducts =
+            projectData[selectFirstProject]?[selectFirstProjectCategory] ?? [];
         if (firstProducts.isNotEmpty) {
           selectFirstProjectProduct ??= firstProducts.first;
         }
 
         selectLastProject ??= itemsLastProject.first.name;
         selectLastProjectCategory ??= itemsLastProjectCategory.first.name;
-        final lastProducts = projecLasttData[selectLastProject]?[selectLastProjectCategory] ?? [];
+        final lastProducts =
+            projecLasttData[selectLastProject]?[selectLastProjectCategory] ??
+            [];
         if (lastProducts.isNotEmpty) {
           selectLastProjectProduct ??= lastProducts.first;
         }
@@ -216,16 +312,14 @@ class _ContactFormPageState extends State<ContactFormPage> {
     }
   }
 
-  
-
   Future<void> _fillForm(Contact contact) async {
     fullNameTC.text = contact.fullName ?? '';
     emailTC.text = contact.primaryEmail ?? '';
     phoneTC.text = contact.primaryPhone ?? '';
     waTC.text = contact.whatsappNumber ?? '';
     fBlockNoTC.text = contact.firstBlokNo ?? '';
-    selectFirstProject = contact.firstProject??'';
-    selectLastProject = contact.lastProject??'';
+    selectFirstProject = contact.firstProject ?? '';
+    selectLastProject = contact.lastProject ?? '';
     selectFirstProjectProduct = contact.firstProduct ?? '';
     selectFirstProjectCategory = contact.firstProjectCategory ?? '';
     generalNotesTC.text = contact.generalNotes ?? '';
@@ -247,7 +341,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
     fspTC.text = _formatFromContact(contact.firstSpDate);
     lspTC.text = _formatFromContact(contact.lastSpDate);
 
-
     print("data contact: $contact");
     setState(() {
       selectedSalutation = contact.salutation;
@@ -255,7 +348,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
       selectedStatusId = contact.statusProspectId;
       selectedSalesExecutiveId = contact.salesExecutiveId;
       selectedSalesManagerId = contact.salesManagerId;
-      
+
       // Update dropdowns if specific project/product info is available
       if ((contact.projectName ?? '').isNotEmpty) {
         selectFirstProject = contact.projectName;
@@ -266,12 +359,10 @@ class _ContactFormPageState extends State<ContactFormPage> {
       if ((contact.lastProject ?? '').isNotEmpty) {
         selectLastProject = contact.lastProject;
       }
-      
+
       if ((contact.blokNo ?? '').isNotEmpty) {
         fBlockNoTC.text = contact.blokNo!;
       }
-
-
 
       final profileState = context.read<ProfileBloc>().state;
       if (profileState is ProfileLoaded) {
@@ -314,10 +405,11 @@ class _ContactFormPageState extends State<ContactFormPage> {
         }
 
         selectedOwnerName = contact.ownerName ?? findName(selectedOwnerId);
-        selectedSalesExecutiveName = contact.salesExecutiveName ?? findName(selectedSalesExecutiveId);
-        selectedSalesManagerName = contact.salesManagerName ?? findName(selectedSalesManagerId);
+        selectedSalesExecutiveName =
+            contact.salesExecutiveName ?? findName(selectedSalesExecutiveId);
+        selectedSalesManagerName =
+            contact.salesManagerName ?? findName(selectedSalesManagerId);
       }
-
 
       final statusState = context.read<ProspectStatusBloc>().state;
       if (statusState.status == ProspectStatusEnum.loaded) {
@@ -500,7 +592,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
     setState(() {
       salesInfoFields.clear();
       if (chain.isNotEmpty) {
-
         List<HierarchyNodeEntity> displayChain;
         if (subordinatePath != null) {
           displayChain = chain.reversed.toList();
@@ -585,7 +676,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
     selectedChannelId = null;
     selectedOwnerId = null;
     selectedProject = null;
- 
+
     for (final c in _propertyControllers.values) {
       c.dispose();
     }
@@ -600,20 +691,16 @@ class _ContactFormPageState extends State<ContactFormPage> {
       _showValidation = true;
     });
 
-    if (
-      isCreate &&
-      (
-        selectedOwnerId == null ||
-        (selectedSalutation?.isEmpty ?? true) ||
-        fullNameTC.text.isEmpty ||
-        phoneTC.text.isEmpty ||
-        waTC.text.isEmpty ||
-        (selectFirstProject?.isEmpty ?? true) ||
-        (selectFirstProjectCategory?.isEmpty ?? true) ||
-        (selectFirstProjectProduct?.isEmpty ?? true) ||
-        selectedStatusId == null
-      )
-    ) {
+    if (isCreate &&
+        (selectedOwnerId == null ||
+            (selectedSalutation?.isEmpty ?? true) ||
+            fullNameTC.text.isEmpty ||
+            phoneTC.text.isEmpty ||
+            waTC.text.isEmpty ||
+            (selectFirstProject?.isEmpty ?? true) ||
+            (selectFirstProjectCategory?.isEmpty ?? true) ||
+            (selectFirstProjectProduct?.isEmpty ?? true) ||
+            selectedStatusId == null)) {
       return;
     }
     // Auto-fill first-date fields for new contacts
@@ -641,7 +728,9 @@ class _ContactFormPageState extends State<ContactFormPage> {
       salesTeamId: selectedTeamId,
       salesChannelId: selectedChannelId,
       statusProspectId: selectedStatusId,
-      sumberInformasi2: selectedSourceName?.isNotEmpty == true ? selectedSourceName : null,
+      sumberInformasi2: selectedSourceName?.isNotEmpty == true
+          ? selectedSourceName
+          : null,
       generalNotes: generalNotesTC.text.isNotEmpty ? generalNotesTC.text : null,
       propertiesJson: propertiesJson.isNotEmpty ? propertiesJson : null,
       fullName: fullNameTC.text.isNotEmpty ? fullNameTC.text : null,
@@ -656,26 +745,44 @@ class _ContactFormPageState extends State<ContactFormPage> {
       ktpAddress: ktpAddressTC.text.isNotEmpty ? ktpAddressTC.text : null,
       volumePlan: volumePlanTC.text.isNotEmpty ? volumePlanTC.text : null,
       visitCount: vCountTC.text.isNotEmpty ? int.tryParse(vCountTC.text) : null,
-      lastVisitDate: lastVisitorDateTC.text.isNotEmpty ? lastVisitorDateTC.text : null,
+      lastVisitDate: lastVisitorDateTC.text.isNotEmpty
+          ? lastVisitorDateTC.text
+          : null,
       lastApptDate: lastApptDateTC.text.isNotEmpty ? lastApptDateTC.text : null,
       dealValue: dealValueTC.text.isNotEmpty ? dealValueTC.text : null,
       reserveDate: reserveDateTC.text.isNotEmpty ? reserveDateTC.text : null,
-      lossReasonNote: lossReasonNoteTC.text.isNotEmpty ? lossReasonNoteTC.text : null,
+      lostReasonNote: lossReasonNoteTC.text.isNotEmpty
+          ? lossReasonNoteTC.text
+          : null,
 
       // jangan kirim saat update
       lastSPDate: isUpdate ? null : (lspTC.text.isNotEmpty ? lspTC.text : null),
-      firstBlokNo: isUpdate ? null : (fBlockNoTC.text.isNotEmpty ? fBlockNoTC.text : null),
+      firstBlokNo: isUpdate
+          ? null
+          : (fBlockNoTC.text.isNotEmpty ? fBlockNoTC.text : null),
       firstProduct: isUpdate ? null : selectFirstProjectProduct,
       firstProjectCategory: isUpdate ? null : selectFirstProjectCategory,
       firstProject: isUpdate ? null : selectFirstProject,
-      firstVisitDate: isUpdate ? null : (firstVisitorDateTC.text.isNotEmpty ? firstVisitorDateTC.text : null),
-      firstApptDate: isUpdate ? null : (firstApptDateTC.text.isNotEmpty ? firstApptDateTC.text : null),
-      firstSPDate: isUpdate ? null : (fspTC.text.isNotEmpty ? fspTC.text : null),
+      firstVisitDate: isUpdate
+          ? null
+          : (firstVisitorDateTC.text.isNotEmpty
+                ? firstVisitorDateTC.text
+                : null),
+      firstApptDate: isUpdate
+          ? null
+          : (firstApptDateTC.text.isNotEmpty ? firstApptDateTC.text : null),
+      firstSPDate: isUpdate
+          ? null
+          : (fspTC.text.isNotEmpty ? fspTC.text : null),
     );
 
     if (widget.args.page == 1) {
-      print("data update contact:${widget.args.dataContact!.contactId} $params");
-      context.read<ContactBloc>().add(UpdateContactEvent(widget.args.dataContact!.contactId, params));
+      print(
+        "data update contact:${widget.args.dataContact!.contactId} $params",
+      );
+      context.read<ContactBloc>().add(
+        UpdateContactEvent(widget.args.dataContact!.contactId!, params),
+      );
     } else {
       context.read<ContactBloc>().add(CreateContactEvent(params));
     }
@@ -721,15 +828,15 @@ class _ContactFormPageState extends State<ContactFormPage> {
           showDialog(
             context: context,
             barrierDismissible: false,
-            builder: (context) =>const Center(child: CircularProgressIndicator()),
+            builder: (context) =>
+                const Center(child: CircularProgressIndicator()),
           );
         } else if (state.status == ContactStatus.createSuccess) {
           context.pop();
-          
+
           if (widget.args.page == 1) {
             context.pop(1);
           } else {
-
             context.read<ContactBloc>().add(
               const FetchContactsEvent(isRefresh: true),
             );
@@ -738,12 +845,11 @@ class _ContactFormPageState extends State<ContactFormPage> {
             );
             context.pop();
           }
-
         } else if (state.status == ContactStatus.detailLoaded &&
             state.contactDetail != null) {
           _fillForm(state.contactDetail!);
         } else if (state.status == ContactStatus.error) {
-          context.pop(); 
+          context.pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.errorMessage ?? 'Error creating contact'),
@@ -763,15 +869,20 @@ class _ContactFormPageState extends State<ContactFormPage> {
           BlocListener<ProspectStatusBloc, ProspectStatusState>(
             listener: (context, state) {
               if (state.status == ProspectStatusEnum.loaded) {
-                if (widget.args.page == 0 && selectedStatusId == null && state.statuses.isNotEmpty) {
+                if (widget.args.page == 0 &&
+                    selectedStatusId == null &&
+                    state.statuses.isNotEmpty) {
                   setState(() {
                     selectedStatusId = state.statuses.first.statusProspectId;
-                    selectedStatusProspectName = state.statuses.first.statusProspectName;
+                    selectedStatusProspectName =
+                        state.statuses.first.statusProspectName;
                   });
                 }
 
                 if (widget.args.page != 0) {
-                  final contact =context.read<ContactBloc>().state.contactDetail ??widget.args.dataContact;
+                  final contact =
+                      context.read<ContactBloc>().state.contactDetail ??
+                      widget.args.dataContact;
                   if (contact != null) _fillForm(contact);
                 }
               }
@@ -794,12 +905,17 @@ class _ContactFormPageState extends State<ContactFormPage> {
             }
             return BlocBuilder<ContactBloc, ContactState>(
               builder: (context, contactState) {
+                final statusLoading =
+                    context.watch<ProspectStatusBloc>().state.status !=
+                    ProspectStatusEnum.loaded;
+                final propertiesLoading =
+                    context.watch<ContactPropertiesBloc>().state.status !=
+                    ContactPropertiesStatus.loaded;
+                final detailLoading =
+                    contactState.status == ContactStatus.loadingDetail ||
+                    contactState.status == ContactStatus.initial;
 
-                final statusLoading = context.watch<ProspectStatusBloc>().state.status != ProspectStatusEnum.loaded;
-                final propertiesLoading = context.watch<ContactPropertiesBloc>().state.status != ContactPropertiesStatus.loaded;
-                final detailLoading = contactState.status == ContactStatus.loadingDetail || contactState.status == ContactStatus.initial;
-
-                if ((widget.args.page == 1 || widget.args.page == 2) && 
+                if ((widget.args.page == 1 || widget.args.page == 2) &&
                     (detailLoading || statusLoading || propertiesLoading)) {
                   return const Scaffold(
                     body: Center(child: CircularProgressIndicator()),
@@ -810,13 +926,17 @@ class _ContactFormPageState extends State<ContactFormPage> {
                 if (contactState.status == ContactStatus.error) {
                   return Scaffold(
                     body: Center(
-                      child: Text(contactState.errorMessage ?? 'Error load detail'),
+                      child: Text(
+                        contactState.errorMessage ?? 'Error load detail',
+                      ),
                     ),
                   );
                 }
 
                 return Scaffold(
-                  body:(detailLoading || statusLoading || propertiesLoading)?CircularProgressIndicator(): SafeArea(child: _createContact(profileState)),
+                  body: (detailLoading || statusLoading || propertiesLoading)
+                      ? CircularProgressIndicator()
+                      : SafeArea(child: _createContact(profileState)),
                 );
               },
             );
@@ -954,7 +1074,9 @@ class _ContactFormPageState extends State<ContactFormPage> {
                       _buildFieldDown(
                         label: "Salutation",
                         value: selectedSalutation ?? "Select Salutation",
-                        isError: _showValidation && (selectedSalutation?.isEmpty ?? true),
+                        isError:
+                            _showValidation &&
+                            (selectedSalutation?.isEmpty ?? true),
                         onTap: () async {
                           final items = [
                             OwnerDropdownItem(id: 1, name: 'Mr.'),
@@ -1008,7 +1130,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         fieldType: 'text',
                         isError: _showValidation && emailTC.text.isEmpty,
                       ),
-                     
+
                       _buildField(
                         label: "No KTP",
                         controller: noKTPTC,
@@ -1025,9 +1147,15 @@ class _ContactFormPageState extends State<ContactFormPage> {
                       _buildFieldDown(
                         label: "First Project",
                         value: selectFirstProject,
-                        onTap: () async{ 
-                          
-                         final result =await  context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Project',items:itemsProject,selectedId: selectedStatusId,));
+                        onTap: () async {
+                          final result = await context.pushNamed(
+                            'detailContactDropdown',
+                            extra: ContactDropdownArgs(
+                              title: 'Project',
+                              items: itemsProject,
+                              selectedId: selectedStatusId,
+                            ),
+                          );
                           if (result != null) {
                             final selected = result as OwnerDropdownItem;
 
@@ -1042,9 +1170,15 @@ class _ContactFormPageState extends State<ContactFormPage> {
                       _buildFieldDown(
                         label: "First Project Category",
                         value: selectFirstProjectCategory,
-                         onTap: () async{ 
-                          
-                         final result =await  context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Project Category',items:itemsProjectCategory,selectedId: selectedStatusId,));
+                        onTap: () async {
+                          final result = await context.pushNamed(
+                            'detailContactDropdown',
+                            extra: ContactDropdownArgs(
+                              title: 'Project Category',
+                              items: itemsProjectCategory,
+                              selectedId: selectedStatusId,
+                            ),
+                          );
                           if (result != null) {
                             final selected = result as OwnerDropdownItem;
 
@@ -1084,19 +1218,24 @@ class _ContactFormPageState extends State<ContactFormPage> {
                           }
                         },
                       ),
-                      
-                    
+
                       _buildFieldDown(
                         label: "Sumber Informasi",
                         value: selectedSourceName,
                         onTap: () async {
-                          final sourceState = context.read<InfoSourceBloc>().state;
+                          final sourceState = context
+                              .read<InfoSourceBloc>()
+                              .state;
                           if (sourceState.status == InfoSourceStatus.loaded) {
                             final sourceItems = sourceState.sources
-                                .map((e) => OwnerDropdownItem(id: e.id, name: e.name))
+                                .map(
+                                  (e) =>
+                                      OwnerDropdownItem(id: e.id, name: e.name),
+                                )
                                 .toList();
 
-                            final result = await context.pushNamed('detailContactDropdown', 
+                            final result = await context.pushNamed(
+                              'detailContactDropdown',
                               extra: ContactDropdownArgs(
                                 title: 'Pilih Sumber',
                                 items: sourceItems,
@@ -1112,7 +1251,9 @@ class _ContactFormPageState extends State<ContactFormPage> {
                               });
                             }
                           } else {
-                            context.read<InfoSourceBloc>().add(FetchInfoSourcesEvent());
+                            context.read<InfoSourceBloc>().add(
+                              FetchInfoSourcesEvent(),
+                            );
                           }
                         },
                       ),
@@ -1121,13 +1262,13 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         controller: generalNotesTC,
                         focusNode: generalNotesFN,
                       ),
-                       _buildField(
-                        label: "First Block No",
+                      _buildField(
+                        label: "First Blok No",
                         controller: fBlockNoTC,
                         focusNode: fBlockNoFN,
                         isError: _showValidation && fBlockNoTC.text.isEmpty,
                       ),
-                      
+
                       _buildField(
                         label: "Visitor Count",
                         controller: vCountTC,
@@ -1140,7 +1281,8 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         controller: firstApptDateTC,
                         focusNode: firstApptDateFN,
                         fieldType: 'date',
-                        isError: _showValidation && firstApptDateTC.text.isEmpty,
+                        isError:
+                            _showValidation && firstApptDateTC.text.isEmpty,
                       ),
                       _buildField(
                         label: "First Visitor Date",
@@ -1148,13 +1290,13 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         focusNode: firstVisitorDateFN,
                         fieldType: 'date',
                       ),
-                       _buildField(
+                      _buildField(
                         label: "First SP Date",
                         controller: fspTC,
                         focusNode: fspFN,
                         fieldType: 'date',
                       ),
-                       _buildField(
+                      _buildField(
                         label: "Deal Value",
                         controller: dealValueTC,
                         focusNode: dealValueFN,
@@ -1174,21 +1316,44 @@ class _ContactFormPageState extends State<ContactFormPage> {
                       _buildFieldDown(
                         label: "Status Prospect",
                         value: selectedStatusProspectName,
-                        isError: _showValidation && selectedStatusId ==null,
+                        isError: _showValidation && selectedStatusId == null,
                         onTap: () async {
-                          final statusState = context.read<ProspectStatusBloc>().state;
-                          if (statusState.status == ProspectStatusEnum.loaded) {
-                            final statusItems = statusState.statuses .map((e) => OwnerDropdownItem(id: e.statusProspectId,name: e.statusProspectName)).toList();
-
-                            final result = await context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Pilih Status',items: statusItems,selectedId: selectedStatusId,),);
-
+                          final statusState = context
+                              .read<ProspectStatusBloc>()
+                              .state;
+                          if (statusState.status ==
+                              ProspectStatusEnum.loaded) {
+                            final statusItems = statusState.statuses
+                                .map(
+                                  (e) => OwnerDropdownItem(
+                                    id: e.statusProspectId,
+                                    name: e.statusProspectName,
+                                  ),
+                                )
+                                .toList();
+                      
+                            final result = await context.pushNamed(
+                              'detailContactDropdown',
+                              extra: ContactDropdownArgs(
+                                title: 'Pilih Status',
+                                items: statusItems,
+                                selectedId: selectedStatusId,
+                              ),
+                            );
+                      
                             if (result != null) {
                               final selected = result as OwnerDropdownItem;
-                              final picked = statusState.statuses.cast<ProspectStatusEntity?>().firstWhere((e) => e?.statusProspectId == selected.id,orElse: () => null,);
+                              final picked = statusState.statuses
+                                  .cast<ProspectStatusEntity?>()
+                                  .firstWhere(
+                                    (e) => e?.statusProspectId == selected.id,
+                                    orElse: () => null,
+                                  );
                               if (picked != null) {
                                 setState(() {
                                   selectedStatusId = picked.statusProspectId;
-                                  selectedStatusProspectName = picked.statusProspectName;
+                                  selectedStatusProspectName =
+                                      picked.statusProspectName;
                                 });
                               }
                             }
@@ -1211,13 +1376,18 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         fieldType: 'int',
                       ),
 
-
                       _buildFieldDown(
                         label: "Last Project",
                         value: selectLastProject,
-                        onTap: () async{ 
-                          
-                         final result =await  context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Project',items:itemsLastProject,selectedId: selectedStatusId,));
+                        onTap: () async {
+                          final result = await context.pushNamed(
+                            'detailContactDropdown',
+                            extra: ContactDropdownArgs(
+                              title: 'Project',
+                              items: itemsLastProject,
+                              selectedId: selectedStatusId,
+                            ),
+                          );
                           if (result != null) {
                             final selected = result as OwnerDropdownItem;
 
@@ -1230,13 +1400,18 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         },
                       ),
 
-                      
                       _buildFieldDown(
                         label: "Last Project Product",
                         value: selectLastProjectProduct,
-                         onTap: () async{ 
-                          
-                         final result =await  context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Project',items:itemsLastProject,selectedId: selectedStatusId,));
+                        onTap: () async {
+                          final result = await context.pushNamed(
+                            'detailContactDropdown',
+                            extra: ContactDropdownArgs(
+                              title: 'Project',
+                              items: itemsLastProject,
+                              selectedId: selectedStatusId,
+                            ),
+                          );
                           if (result != null) {
                             final selected = result as OwnerDropdownItem;
 
@@ -1246,13 +1421,19 @@ class _ContactFormPageState extends State<ContactFormPage> {
                           }
                         },
                       ),
-                      
+
                       _buildFieldDown(
                         label: "Last Project Category",
                         value: selectLastProjectCategory,
-                        onTap: () async{ 
-                          
-                         final result =await  context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Project',items:itemsLastProject,selectedId: selectedStatusId,));
+                        onTap: () async {
+                          final result = await context.pushNamed(
+                            'detailContactDropdown',
+                            extra: ContactDropdownArgs(
+                              title: 'Project',
+                              items: itemsLastProject,
+                              selectedId: selectedStatusId,
+                            ),
+                          );
                           if (result != null) {
                             final selected = result as OwnerDropdownItem;
 
@@ -1262,7 +1443,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
                           }
                         },
                       ),
-                     
+
                       _buildField(
                         label: "Last Block No",
                         controller: lBlockNoTC,
@@ -1276,24 +1457,19 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         fieldType: 'date',
                       ),
 
-                      
-
-                      
                       _buildField(
                         label: "Last Visitor Date",
                         controller: lastVisitorDateTC,
                         focusNode: lastVisitorDateFN,
                         fieldType: 'date',
                       ),
-                     
+
                       _buildField(
                         label: "Last SP Date",
                         controller: lspTC,
                         focusNode: lspFN,
                         fieldType: 'date',
                       ),
-
-                     
 
                       // // Dynamic property groups: render each group separately
                       BlocBuilder<
@@ -1404,12 +1580,19 @@ class _ContactFormPageState extends State<ContactFormPage> {
     );
   }
 
-  Widget _buildFieldDown({  required String label,  String? value,  bool isError = false,  VoidCallback? onTap,}) {
+  Widget _buildFieldDown({
+    required String label,
+    String? value,
+    bool isError = false,
+    VoidCallback? onTap,
+  }) {
     final isEmpty = value == null || value.isEmpty;
     final bool isReadOnly = widget.args.page == 2;
 
     return GestureDetector(
-      onTap: isReadOnly ? _goToEdit : onTap,
+    onTap: (label == 'Status Prospect' && widget.args.dataContact != null)
+    ? () => _goEditStatus()
+    : (isReadOnly ? () => _goToEdit(isUpdate: false) : onTap),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         constraints: const BoxConstraints(minHeight: 50),
@@ -1418,8 +1601,8 @@ class _ContactFormPageState extends State<ContactFormPage> {
           color: Color(whiteColor),
           border: Border(
             bottom: BorderSide(
-              width: 1, 
-              color: isError ? Color(redColor) : Color(grey9Color)
+              width: 1,
+              color: isError ? Color(redColor) : Color(grey9Color),
             ),
           ),
         ),
@@ -1446,7 +1629,11 @@ class _ContactFormPageState extends State<ContactFormPage> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color:isError?Color(redColor): isEmpty ? Color(grey2Color) : Color(blackColor),
+                      color: isError
+                          ? Color(redColor)
+                          : isEmpty
+                          ? Color(grey2Color)
+                          : Color(blackColor),
                     ),
                   ),
                 ],
@@ -1459,7 +1646,15 @@ class _ContactFormPageState extends State<ContactFormPage> {
     );
   }
 
-  void _goToEdit() async {
+  void _goToEdit({bool isUpdate = false}) async {
+    if (!isUpdate) {
+      _goEditForm();
+    } else {
+      _goEditStatus();
+    }
+  }
+
+  void _goEditForm() async {
     await context.pushNamed(
       'formContact',
       extra: ContactDetailArgs(
@@ -1470,12 +1665,31 @@ class _ContactFormPageState extends State<ContactFormPage> {
     );
     if (mounted && widget.args.dataContact != null) {
       context.read<ContactBloc>().add(
-        FetchContactDetailEvent(widget.args.dataContact!.contactId),
+        FetchContactDetailEvent(widget.args.dataContact!.contactId!),
       );
     }
   }
 
-  Widget _buildField({  required String label,  required TextEditingController controller,  required FocusNode focusNode,  String fieldType = 'text', bool isError = false,}) {
+  void _goEditStatus() async {
+    final contact = widget.args.dataContact;
+    if (contact == null) return;
+
+    await context.pushNamed(
+      'addContact',
+      extra: ContactDetailArgs(
+        dataContact: contact.copyWith(statusProspectId: selectedStatusId),
+        page: 6,
+      ),
+    );
+  }
+
+  Widget _buildField({
+    required String label,
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    String fieldType = 'text',
+    bool isError = false,
+  }) {
     final bool isReadOnly = widget.args.page == 2;
 
     return GestureDetector(
@@ -1486,7 +1700,12 @@ class _ContactFormPageState extends State<ContactFormPage> {
 
         decoration: BoxDecoration(
           color: Color(whiteColor),
-          border:Border(bottom: BorderSide(width: 1, color: isError ? Color(redColor) : Color(grey9Color))),
+          border: Border(
+            bottom: BorderSide(
+              width: 1,
+              color: isError ? Color(redColor) : Color(grey9Color),
+            ),
+          ),
         ),
         child: Row(
           children: [
@@ -1504,20 +1723,20 @@ class _ContactFormPageState extends State<ContactFormPage> {
                           onTap: isReadOnly
                               ? null
                               : () async {
-                            focusNode.unfocus();
-                            final DateTime? picked = await showDatePicker(
-                              context: context,
-                              initialDate: _parseDateOrToday(controller.text),
-                              firstDate: DateTime(1900),
-                              lastDate: DateTime(2100),
-                            );
-                            if (picked != null) {
-                              controller.text =
-                                  DateHelper.formatNumericCompact(
-                                picked,
-                              );
-                            }
-                          },
+                                  focusNode.unfocus();
+                                  final DateTime? picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: _parseDateOrToday(
+                                      controller.text,
+                                    ),
+                                    firstDate: DateTime(1900),
+                                    lastDate: DateTime(2100),
+                                  );
+                                  if (picked != null) {
+                                    controller.text =
+                                        DateHelper.formatNumericCompact(picked);
+                                  }
+                                },
                           child: AbsorbPointer(
                             child: TextFormField(
                               controller: controller,
@@ -1526,7 +1745,9 @@ class _ContactFormPageState extends State<ContactFormPage> {
                               maxLines: null,
                               style: TextStyle(
                                 fontSize: 12,
-                                color:isError?Color(redColor): Color(blackColor),
+                                color: isError
+                                    ? Color(redColor)
+                                    : Color(blackColor),
                                 fontWeight: FontWeight.w700,
                               ),
                               decoration: InputDecoration(
@@ -1536,13 +1757,17 @@ class _ContactFormPageState extends State<ContactFormPage> {
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
-                                    color:isError?Color(redColor): Color(grey2Color),
+                                    color: isError
+                                        ? Color(redColor)
+                                        : Color(grey2Color),
                                   ),
                                 ),
                                 floatingLabelStyle: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color:isError?Color(redColor): Color(grey2Color),
+                                  color: isError
+                                      ? Color(redColor)
+                                      : Color(grey2Color),
                                 ),
                                 border: InputBorder.none,
                                 enabledBorder: InputBorder.none,
@@ -1581,16 +1806,18 @@ class _ContactFormPageState extends State<ContactFormPage> {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color:isError?Color(redColor): Color(grey2Color),
+                                color: isError
+                                    ? Color(redColor)
+                                    : Color(grey2Color),
                               ),
                             ),
                             floatingLabelStyle: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color:isError?Color(redColor): Color(grey2Color),
+                              color: isError
+                                  ? Color(redColor)
+                                  : Color(grey2Color),
                             ),
-
-
 
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
@@ -1622,16 +1849,18 @@ class _ContactFormPageState extends State<ContactFormPage> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color:isError?Color(redColor): Color(grey2Color),
+                              color: isError
+                                  ? Color(redColor)
+                                  : Color(grey2Color),
                             ),
                           ),
                           floatingLabelStyle: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color:isError?Color(redColor): Color(grey2Color),
+                            color: isError
+                                ? Color(redColor)
+                                : Color(grey2Color),
                           ),
-
-
 
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,

@@ -2,21 +2,21 @@ import 'package:progress_group/features/contact/domain/entities/lost_reason/lost
 
 class LostReasonModel extends LostReasonEntity {
   const LostReasonModel({
-    required super.id,
-    required super.text,
+    required super.lostReasonId,
+    required super.lostReasonName,
   });
 
   factory LostReasonModel.fromJson(Map<String, dynamic> json) {
     return LostReasonModel(
-      id: json['id'] as int,
-      text: json['text'] as String,
+      lostReasonId: json['lost_reason_id'] as int,
+      lostReasonName: json['lost_reason_name'] as String,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'text': text,
+      'lost_reason_id': lostReasonId,
+      'lost_reason_name': lostReasonName,
     };
   }
 }

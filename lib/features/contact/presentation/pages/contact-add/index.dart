@@ -1,8 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -15,6 +15,7 @@ import 'package:progress_group/features/contact/data/arguments/contact_dropdown_
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_params.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_visit_params.dart';
 import 'package:progress_group/features/contact/domain/entities/contact/create_contact_params.dart';
+import 'package:progress_group/features/contact/domain/entities/lost_reason/lost_reason_entity.dart';
 import 'package:progress_group/features/contact/domain/entities/prospect/prospect_status.dart';
 import 'package:progress_group/features/contact/presentation/state/activity/activity_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/activity/activity_event.dart';
@@ -36,7 +37,6 @@ import 'package:progress_group/features/contact/presentation/state/prospect_stat
 import 'package:progress_group/features/contact/presentation/state/contact/contact_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/contact/contact_event.dart';
 
-
 import '../../../../../core/constants/colors.dart';
 import '../../../../../core/utils/helpers/date_helper.dart';
 import '../../../../../core/utils/widget/custom_header.dart';
@@ -52,10 +52,12 @@ class ContactAddPage extends StatefulWidget {
 
 class _ContactAddPageState extends State<ContactAddPage> {
   TextEditingController descTC = TextEditingController();
+  TextEditingController lostReasonNoteTC = TextEditingController();
   TextEditingController lBlockNoTC = TextEditingController();
   TextEditingController volumeTC = TextEditingController();
   TextEditingController nameSPTC = TextEditingController();
   FocusNode descFN = FocusNode();
+  FocusNode lostReasonNoteFN = FocusNode();
   FocusNode lBlockNoFN = FocusNode();
   FocusNode volumeFN = FocusNode();
   FocusNode spNameFN = FocusNode();
@@ -71,7 +73,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
   String selectedStatusName = "Select status";
 
   int? selectedTypeId;
-  int?selectedLostReasonId;
+  int? selectedLostReasonId;
   String? selectedLostReasonName;
   int? selectedStatusId;
   String? selectedStatusValueProspect;
@@ -95,17 +97,15 @@ class _ContactAddPageState extends State<ContactAddPage> {
     OwnerDropdownItem(name: ">5"),
   ];
 
-
-
   List<OwnerDropdownItem> itemsProject = [
     OwnerDropdownItem(id: 1, name: "Paradise Serpong City 1"),
     OwnerDropdownItem(id: 2, name: "Paradise Serpong City 2"),
-    OwnerDropdownItem(id: 3, name: "Paradise Resort City")
+    OwnerDropdownItem(id: 3, name: "Paradise Resort City"),
   ];
 
   List<OwnerDropdownItem> itemsProjectCategory = [
     OwnerDropdownItem(id: 1, name: "Residential"),
-    OwnerDropdownItem(id: 2, name: "Commercial")
+    OwnerDropdownItem(id: 2, name: "Commercial"),
   ];
 
   List<OwnerDropdownItem> itemsProduct = [
@@ -114,7 +114,6 @@ class _ContactAddPageState extends State<ContactAddPage> {
     OwnerDropdownItem(id: 3, name: "Vireo"),
     OwnerDropdownItem(id: 4, name: "The Althea"),
   ];
-  
 
   @override
   void initState() {
@@ -123,12 +122,92 @@ class _ContactAddPageState extends State<ContactAddPage> {
     _init();
   }
 
+  DateTime? _getSelectedDateByStatus(dynamic data) {
+    final statusId = data.statusProspectId;
+
+    try {
+      // APPOINTMENT
+      if (statusId == 60 || statusId == 53) {
+        if (data.lastApptDate != null && data.lastApptDate.isNotEmpty) {
+          return DateTime.parse(data.lastApptDate);
+        }
+      }
+
+      // RESERVE
+      if ([54, 70, 71, 72].contains(statusId)) {
+        if (data.lastReserveDate != null && data.lastReserveDate.isNotEmpty) {
+          return DateTime.parse(data.lastReserveDate);
+        }
+      }
+
+      // VISIT
+      if ([63, 64, 65, 66].contains(statusId)) {
+        if (data.lastVisitDate != null && data.lastVisitDate.isNotEmpty) {
+          return DateTime.parse(data.lastVisitDate);
+        }
+      }
+
+      // SP
+      if (statusId == 74) {
+        if (data.lastSpDate != null && data.lastSpDate.isNotEmpty) {
+          return DateTime.parse(data.lastSpDate);
+        }
+      }
+
+      // LOST
+      if ([
+        55,
+        56,
+        57,
+        58,
+        61,
+        62,
+        67,
+        68,
+        69,
+        73,
+        75,
+        77,
+        78,
+      ].contains(statusId)) {
+        if (data.lostDate != null && data.lostDate.isNotEmpty) {
+          return DateTime.parse(data.lostDate);
+        }
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
+  void _autoSelectStatusIfNeeded(List<ProspectStatusEntity> statuses) {
+    if (widget.args.page != 4) return;
+
+    const allowedIds = [63, 64, 65];
+
+    final isValid =
+        selectedStatusId != null && allowedIds.contains(selectedStatusId);
+
+    if (!isValid && statuses.isNotEmpty) {
+      final firstValid = statuses
+          .where((e) => allowedIds.contains(e.statusProspectId))
+          .toList();
+
+      if (firstValid.isNotEmpty) {
+        setState(() {
+          selectedStatusId = firstValid.first.statusProspectId;
+          selectedStatusName = firstValid.first.statusProspectName;
+        });
+      }
+    }
+  }
+
   void _init() async {
     if (widget.args.dataActivity != null) {
       final activity = widget.args.dataActivity!;
       setState(() {
         descTC.text = activity.notes ?? "";
-        if (activity.nextFollowUpDate != null && activity.nextFollowUpDate!.isNotEmpty) {
+        if (activity.nextFollowUpDate != null &&
+            activity.nextFollowUpDate!.isNotEmpty) {
           try {
             isFollowUp = true;
             selectedDate = DateTime.parse(activity.nextFollowUpDate!);
@@ -141,31 +220,54 @@ class _ContactAddPageState extends State<ContactAddPage> {
       });
     }
 
-    if (widget.args.page == 6 && widget.args.dataContact != null) {
+    if ((widget.args.page == 6 || widget.args.page <= 4) &&
+        widget.args.dataContact != null) {
       final data = widget.args.dataContact!;
 
       setState(() {
         selectedProject = data.lastProject ?? data.firstProject;
         selectedProduct = data.lastProduct;
         selectedStatusId = data.statusProspectId;
-        selectedStatusName = selectedStatusName;
         selectedBlockNo = data.lastBlokNo;
         selectedProjectCategory = data.lastProjectCategory;
         lBlockNoTC.text = data.lastBlokNo ?? '';
         jmlDatang = data.visitCount?.toString() ?? "1";
         descTC.text = data.generalNotes ?? "";
-        volumeTC.text = data.volumePlan!=null?data.volumePlan.toString():'0';
+        volumeTC.text = data.volumePlan != null
+            ? data.volumePlan.toString()
+            : '0';
         selectedLostReasonId = data.lostReasonId;
-        selectedLostReasonName = data.lostReasonNote??'';
-        selectedBlockNo = data.lastBlokNo;
-        if (data.lastApptDate != null) {
-          try {
-            selectedDate = DateTime.parse(data.lastApptDate!);
-          } catch (_) {}
+        lostReasonNoteTC.text = data.lostReasonNote ?? '';
+
+        // Resolusi Nama Status
+        final statusState = context.read<ProspectStatusBloc>().state;
+        if (statusState.status == ProspectStatusEnum.loaded) {
+          for (final s in statusState.statuses) {
+            if (s.statusProspectId == data.statusProspectId) {
+              selectedStatusName = s.statusProspectName;
+              break;
+            }
+          }
+        }
+
+        // Resolusi Nama Alasan Lost
+        final reasonState = context.read<LostReasonBloc>().state;
+        if (reasonState.status == LostReasonStatus.loaded) {
+          for (final r in reasonState.reasons) {
+            if (r.lostReasonId == data.lostReasonId) {
+              selectedLostReasonName = r.lostReasonName;
+              break;
+            }
+          }
+        }
+
+        final autoDate = _getSelectedDateByStatus(data);
+        if (autoDate != null) {
+          selectedDate = autoDate;
         }
       });
 
-      context.read<ContactBloc>().add(FetchContactDetailEvent(data.contactId),);
+      context.read<ContactBloc>().add(FetchContactDetailEvent(data.contactId!));
     }
 
     if (widget.args.page == 5 && widget.args.dataAttachment != null) {
@@ -181,6 +283,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
 
     context.read<AttachmentTypeBloc>().add(FetchAttachmentTypesEvent());
     context.read<ProspectStatusBloc>().add(const FetchProspectStatusesEvent());
+    context.read<LostReasonBloc>().add(FetchLostReasonsEvent());
   }
 
   Future<void> pickFile() async {
@@ -204,18 +307,24 @@ class _ContactAddPageState extends State<ContactAddPage> {
     final result = await context.pushNamed(
       'camera',
       extra: AttandanceArgs(
-        type: widget.args.page == 4 ? "Visit" : "Attachment",
+        type:
+            (widget.args.page == 4 || widget.args.page == 6) &&
+                (selectedStatusId == 65 || selectedStatusId == 64)
+            ? "Visit"
+            : "Attachment",
         time: DateFormat('HH:mm').format(DateTime.now()),
         isReturnImage: true,
-        skipPreview: widget.args.page == 4,
+        skipPreview:
+            (widget.args.page == 4 || widget.args.page == 6) &&
+            (selectedStatusId == 65 || selectedStatusId == 64),
       ),
     );
-
 
     if (result != null) {
       final file = File(result as String);
       setState(() {
-        if (widget.args.page == 4) {
+        if ((widget.args.page == 4 || widget.args.page == 6) &&
+            (selectedStatusId == 65 || selectedStatusId == 64)) {
           selectedImages.add(file);
         } else {
           selectedImage = file;
@@ -223,8 +332,6 @@ class _ContactAddPageState extends State<ContactAddPage> {
       });
     }
   }
-
-
 
   Future<void> pickDateTime(BuildContext context) async {
     final now = DateTime.now();
@@ -256,14 +363,29 @@ class _ContactAddPageState extends State<ContactAddPage> {
     });
   }
 
-  void _submitActivity({  required String activityType,  required DateTime activityDate,  required TextEditingController notesTC,  required bool isFollowUp,  required DateTime? followUpDate,}) {
+  void _submitActivity({
+    required String activityType,
+    required DateTime activityDate,
+    required TextEditingController notesTC,
+    required bool isFollowUp,
+    required DateTime? followUpDate,
+  }) {
     final contactId = widget.args.dataContact?.contactId;
     if (contactId == null) return;
 
     String mappedType = activityType;
     String finalNotes = notesTC.text.trim();
 
-    if (!['Call','WhatsApp','Visit','Meeting','Note','Email','Task','Other'].contains(activityType)) {
+    if (![
+      'Call',
+      'WhatsApp',
+      'Visit',
+      'Meeting',
+      'Note',
+      'Email',
+      'Task',
+      'Other',
+    ].contains(activityType)) {
       mappedType = 'Other';
       finalNotes = '[$activityType] $finalNotes'.trim();
     }
@@ -274,7 +396,9 @@ class _ContactAddPageState extends State<ContactAddPage> {
       activityType: mappedType,
       activityDate: DateFormat('yyyy-MM-dd HH:mm:ss').format(activityDate),
       notes: finalNotes.isEmpty ? null : finalNotes,
-      nextFollowUpDate: isFollowUp && followUpDate != null? DateFormat('yyyy-MM-dd HH:mm:ss').format(followUpDate): null,
+      nextFollowUpDate: isFollowUp && followUpDate != null
+          ? DateFormat('yyyy-MM-dd HH:mm:ss').format(followUpDate)
+          : null,
     );
 
     context.read<ActivityBloc>().add(CreateActivityEvent(params));
@@ -319,31 +443,134 @@ class _ContactAddPageState extends State<ContactAddPage> {
 
   void _submitUpdateStatus(BuildContext context) {
     final contact = widget.args.dataContact;
-    final firstLostDate = contact?.firstLostDate != null ?selectedDate != null ? DateFormat('yyyy-MM-dd').format(selectedDate!) : null: null;
-    final lostLostDateDeal = selectedDate != null ? DateFormat('yyyy-MM-dd').format(selectedDate!) :null;
-    final lostDate = selectedDate != null ? DateFormat('yyyy-MM-dd').format(selectedDate!) : null;
-    
+
+    final firstApptDate =
+        (selectedStatusId == 60 || selectedStatusId == 53) &&
+            (contact?.firstApptDate == null && selectedDate != null)
+        ? DateFormat('yyyy-MM-dd').format(selectedDate!)
+        : null;
+    final lastApptDate =
+        (selectedStatusId == 60 || selectedStatusId == 53) &&
+            selectedDate != null
+        ? DateFormat('yyyy-MM-dd').format(selectedDate!)
+        : null;
+
+    final firstReserveDate =
+        (selectedStatusId == 54 ||
+                selectedStatusId == 70 ||
+                selectedStatusId == 71 ||
+                selectedStatusId == 72) &&
+            (contact?.firstReserveDate == null && selectedDate != null)
+        ? DateFormat('yyyy-MM-dd').format(selectedDate!)
+        : null;
+    final lastReserveDate =
+        (selectedStatusId == 54 ||
+                selectedStatusId == 70 ||
+                selectedStatusId == 71 ||
+                selectedStatusId == 72) &&
+            (selectedDate != null)
+        ? DateFormat('yyyy-MM-dd').format(selectedDate!)
+        : null;
+
+    final firstVisitDate =
+        (selectedStatusId == 63 ||
+                selectedStatusId == 64 ||
+                selectedStatusId == 65 ||
+                selectedStatusId == 66) &&
+            (contact?.firstVisitDate == null && selectedDate != null)
+        ? DateFormat('yyyy-MM-dd').format(selectedDate!)
+        : null;
+    final lastVisitDate =
+        (selectedStatusId == 63 ||
+                selectedStatusId == 64 ||
+                selectedStatusId == 65 ||
+                selectedStatusId == 66) &&
+            (selectedDate != null)
+        ? DateFormat('yyyy-MM-dd').format(selectedDate!)
+        : null;
+
+    final firstSPDate =
+        (selectedStatusId == 74) &&
+            (contact?.firstSpDate == null && selectedDate != null)
+        ? DateFormat('yyyy-MM-dd').format(selectedDate!)
+        : null;
+    final lastSPDate = (selectedStatusId == 74) && (selectedDate != null)
+        ? DateFormat('yyyy-MM-dd').format(selectedDate!)
+        : null;
+
+    final firstLostDate = contact?.firstLostDate != null && selectedDate != null
+        ? DateFormat('yyyy-MM-dd').format(selectedDate!)
+        : null;
+    final lostDate =
+        (selectedStatusId == 55 ||
+                selectedStatusId == 56 ||
+                selectedStatusId == 57 ||
+                selectedStatusId == 58 ||
+                selectedStatusId == 61 ||
+                selectedStatusId == 62 ||
+                selectedStatusId == 67 ||
+                selectedStatusId == 68 ||
+                selectedStatusId == 69 ||
+                selectedStatusId == 73 ||
+                selectedStatusId == 77 ||
+                selectedStatusId == 78 ||
+                selectedStatusId == 75) &&
+            (selectedDate != null)
+        ? DateFormat('yyyy-MM-dd').format(selectedDate!)
+        : null;
+
     if (contact == null) return;
 
     final params = CreateContactParams(
       statusProspectId: selectedStatusId,
+
+      firstApptDate: firstApptDate,
+      firstLostDate: firstLostDate,
+      firstReserveDate: firstReserveDate,
+      firstSPDate: firstSPDate,
+      firstVisitDate: firstVisitDate,
+
+      lastApptDate: lastApptDate,
+      lastLostDate: lostDate,
+      lastReserveDate: lastReserveDate,
+      lastSPDate: lastSPDate,
+      lastVisitDate: lastVisitDate,
+
+      lostDate: lostDate,
+
       visitCount: int.tryParse(jmlDatang),
-      lastApptDate: selectedDate != null ? DateFormat('yyyy-MM-dd').format(selectedDate!) : null,
       lastBlokNo: lBlockNoTC.text,
       lastProject: selectedProject,
       lastProduct: selectedProduct,
       lastProjectCategory: selectedProjectCategory,
       generalNotes: descTC.text,
       lostReasonId: selectedLostReasonId,
-      firstLostDate: firstLostDate,
-      lostDate: lostDate,
-      lostLostDate: lostLostDateDeal,
       nameSP: nameSPTC.text,
+      lostReasonNote: lostReasonNoteTC.text,
     );
 
-    print("data update: ${params.toString()}");
+    print(
+      "data update Status Prospect: \n${const JsonEncoder.withIndent('  ').convert(params.toJson())}",
+    );
 
-    context.read<ContactBloc>().add(UpdateContactEvent(contact.contactId, params));
+    const visitStatusIds = [63, 64, 65, 66, 67, 68, 69];
+    final isVisitStatus = visitStatusIds.contains(selectedStatusId);
+
+    if (isVisitStatus) {
+      final paramsVisit = CreateVisitParams(
+        contactId: widget.args.dataContact!.contactId!,
+        statusProspectId: selectedStatusId!,
+        visitCount: int.parse(jmlDatang),
+        activityDate: DateFormat('yyyy-MM-dd HH:mm:ss').format(selectedDate!),
+        notes: descTC.text,
+        files: selectedImages,
+      );
+      context.read<ActivityVisitBloc>().add(CreateVisitEvent(paramsVisit));
+    } else {
+      context.read<ContactBloc>().add(
+        UpdateContactEvent(contact.contactId!, params),
+      );
+    }
   }
 
   void _submitVisit(BuildContext context) {
@@ -354,9 +581,8 @@ class _ContactAddPageState extends State<ContactAddPage> {
       return;
     }
 
-
     final params = CreateVisitParams(
-      contactId: widget.args.dataContact!.contactId,
+      contactId: widget.args.dataContact!.contactId!,
       statusProspectId: selectedStatusId!,
       visitCount: int.parse(jmlDatang),
       activityDate: DateFormat('yyyy-MM-dd HH:mm:ss').format(selectedDate!),
@@ -367,8 +593,10 @@ class _ContactAddPageState extends State<ContactAddPage> {
     context.read<ActivityVisitBloc>().add(CreateVisitEvent(params));
   }
 
-  dispose(){
+  @override
+  void dispose() {
     descTC.dispose();
+    lostReasonNoteTC.dispose();
     lBlockNoTC.dispose();
     volumeTC.dispose();
     descFN.dispose();
@@ -376,6 +604,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
     volumeFN.dispose();
     nameSPTC.dispose();
     spNameFN.dispose();
+    lostReasonNoteFN.dispose();
     super.dispose();
   }
 
@@ -386,7 +615,19 @@ class _ContactAddPageState extends State<ContactAddPage> {
         BlocListener<ActivityBloc, ActivityState>(
           listener: (ctx, state) {
             if (state.status == ActivityStatus.createSuccess) {
-              context.replaceNamed('detailContact',extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 2),);
+              final contactId = widget.args.dataContact?.contactId;
+              // if (contactId != null) {
+              //   context.read<ContactBloc>().add(FetchContactDetailEvent(contactId));
+              //   context.read<ContactBloc>().add(const FetchContactsEvent(isRefresh: true));
+              //   context.read<ActivityBloc>().add(FetchActivitiesEvent(contactId: contactId, isRefresh: true));
+              // }
+              context.replaceNamed(
+                'detailContact',
+                extra: ContactDetailArgs(
+                  dataContact: widget.args.dataContact,
+                  page: 2,
+                ),
+              );
             } else if (state.status == ActivityStatus.error) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -415,36 +656,58 @@ class _ContactAddPageState extends State<ContactAddPage> {
         BlocListener<ContactBloc, ContactState>(
           listener: (ctx, state) {
             if (state.status == ContactStatus.createSuccess) {
-              print("Contact status success, popping with 0");
-                
-              context.replaceNamed('detailContact',extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 2),);
-            } else if (state.status == ContactStatus.detailLoaded && state.contactDetail != null) {
+              final contactId = widget.args.dataContact?.contactId;
+              // if (contactId != null) {
+              //   context.read<ContactBloc>().add(FetchContactDetailEvent(contactId));
+              //   context.read<ContactBloc>().add(const FetchContactsEvent(isRefresh: true));
+              // }
+
+              context.replaceNamed(
+                'detailContact',
+                extra: ContactDetailArgs(
+                  dataContact: widget.args.dataContact,
+                  page: 2,
+                ),
+              );
+            } else if (state.status == ContactStatus.detailLoaded &&
+                state.contactDetail != null) {
               final data = state.contactDetail!;
               setState(() {
                 selectedProject = data.projectName ?? data.firstProject;
                 selectedStatusId = data.statusProspectId;
                 final statusState = context.read<ProspectStatusBloc>().state;
                 if (statusState.status == ProspectStatusEnum.loaded) {
-                  final matched = statusState.statuses.cast<ProspectStatusEntity?>().firstWhere(
-                    (e) => e?.statusProspectId == data.statusProspectId,
-                    orElse: () => null,
-                  );
-                  if (matched != null) {
-                    selectedStatusName = matched.statusProspectName;
+                  for (final s in statusState.statuses) {
+                    if (s.statusProspectId == data.statusProspectId) {
+                      selectedStatusName = s.statusProspectName;
+                      break;
+                    }
                   }
                 }
-                
+
+                selectedLostReasonId = data.lostReasonId;
+                lostReasonNoteTC.text = data.lostReasonNote ?? '';
+                final lostReasonState = context.read<LostReasonBloc>().state;
+                if (lostReasonState.status == LostReasonStatus.loaded) {
+                  for (final r in lostReasonState.reasons) {
+                    if (r.lostReasonId == data.lostReasonId) {
+                      selectedLostReasonName = r.lostReasonName;
+                      break;
+                    }
+                  }
+                }
+
                 selectedBlockNo = data.lastBlokNo;
                 selectedProject = data.lastProject ?? data.firstProject;
                 selectedProduct = data.lastProduct;
                 selectedProjectCategory = data.lastProjectCategory;
                 lBlockNoTC.text = data.lastBlokNo ?? '';
                 jmlDatang = data.visitCount?.toString() ?? "1";
+                volumeTC.text = data.volumePlan?.toString() ?? "0";
                 descTC.text = data.generalNotes ?? "";
-                if (data.lastApptDate != null) {
-                  try {
-                    selectedDate = DateTime.parse(data.lastApptDate!);
-                  } catch (_) {}
+                final autoDate = _getSelectedDateByStatus(data);
+                if (autoDate != null) {
+                  selectedDate = autoDate;
                 }
               });
             } else if (state.status == ContactStatus.error) {
@@ -460,11 +723,19 @@ class _ContactAddPageState extends State<ContactAddPage> {
         BlocListener<ActivityVisitBloc, VisitState>(
           listener: (ctx, state) {
             if (state is VisitSuccess) {
-
-                
-                
-
-              context.replaceNamed('detailContact',extra: ContactDetailArgs(dataContact: widget.args.dataContact, page: 2),);
+              final contactId = widget.args.dataContact?.contactId;
+              // if (contactId != null) {
+              //   context.read<ContactBloc>().add(FetchContactDetailEvent(contactId));
+              //   context.read<ContactBloc>().add(const FetchContactsEvent(isRefresh: true));
+              //   context.read<ActivityBloc>().add(FetchActivitiesEvent(contactId: contactId, isRefresh: true));
+              // }
+              context.replaceNamed(
+                'detailContact',
+                extra: ContactDetailArgs(
+                  dataContact: widget.args.dataContact,
+                  page: 2,
+                ),
+              );
             } else if (state is VisitError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -475,6 +746,39 @@ class _ContactAddPageState extends State<ContactAddPage> {
             }
           },
         ),
+        BlocListener<ProspectStatusBloc, ProspectStatusState>(
+          listener: (context, state) {
+            if (state.status == ProspectStatusEnum.loaded &&
+                selectedStatusId != null) {
+              for (final s in state.statuses) {
+                if (s.statusProspectId == selectedStatusId) {
+                  setState(() {
+                    selectedStatusName = s.statusProspectName;
+                  });
+                  break;
+                }
+              }
+            }
+            if (state.status == ProspectStatusEnum.loaded) {
+              _autoSelectStatusIfNeeded(state.statuses);
+            }
+          },
+        ),
+        BlocListener<LostReasonBloc, LostReasonState>(
+          listener: (context, state) {
+            if (state.status == LostReasonStatus.loaded &&
+                selectedLostReasonId != null) {
+              for (final r in state.reasons) {
+                if (r.lostReasonId == selectedLostReasonId) {
+                  setState(() {
+                    selectedLostReasonName = r.lostReasonName;
+                  });
+                  break;
+                }
+              }
+            }
+          },
+        ),
       ],
 
       child: Scaffold(
@@ -482,10 +786,13 @@ class _ContactAddPageState extends State<ContactAddPage> {
           child: Builder(
             builder: (context) {
               final activityState = context.watch<ActivityBloc>().state;
-              final attachmentState = context.watch<UploadAttachmentBloc>().state;
+              final attachmentState = context
+                  .watch<UploadAttachmentBloc>()
+                  .state;
               final visitState = context.watch<ActivityVisitBloc>().state;
 
-              final isLoading = activityState.status == ActivityStatus.creating ||
+              final isLoading =
+                  activityState.status == ActivityStatus.creating ||
                   attachmentState is UploadAttachmentLoading ||
                   visitState is VisitLoading;
 
@@ -495,7 +802,19 @@ class _ContactAddPageState extends State<ContactAddPage> {
                     children: [
                       customHeader(
                         context,
-                        widget.args.page == 0? "Call": widget.args.page == 1? "WhatsApp": widget.args.page == 2? "Meeting": widget.args.page == 3? "Task": widget.args.page == 4? "Visit": widget.args.page == 5? "Attachment": selectedStatusName,
+                        widget.args.page == 0
+                            ? "Call"
+                            : widget.args.page == 1
+                            ? "WhatsApp"
+                            : widget.args.page == 2
+                            ? "Meeting"
+                            : widget.args.page == 3
+                            ? "Task"
+                            : widget.args.page == 4
+                            ? "Visit"
+                            : widget.args.page == 5
+                            ? "Attachment"
+                            : selectedStatusName,
                         isBack: true,
                         colorBack: Color(primaryColor),
                       ),
@@ -524,10 +843,8 @@ class _ContactAddPageState extends State<ContactAddPage> {
                   if (isLoading)
                     Positioned.fill(
                       child: Container(
-                        color: Colors.black.withOpacity(0.4),
-                        child: Center(
-                          child: CircularProgressIndicator(),
-                        ),
+                        color: Colors.white,
+                        child: Center(child: CircularProgressIndicator()),
                       ),
                     ),
                 ],
@@ -539,7 +856,36 @@ class _ContactAddPageState extends State<ContactAddPage> {
     );
   }
 
-  Widget _buildFormSP(){
+  Widget _buildFormVisit2() {
+    return Column(
+      children: [
+        if (selectedStatusId != 66) _buildVisitPhotos(),
+        _fieldStatusProspect(),
+        SizedBox(height: 12),
+        _fieldDate(),
+        SizedBox(height: 12),
+        if (selectedStatusId != 66) _fieldJumlahDatang(),
+        SizedBox(height: 12),
+        _fieldProject(),
+        SizedBox(height: 12),
+        _fieldBlockUnitSelected(),
+        SizedBox(height: 12),
+        _fieldNote(),
+        SizedBox(height: 12),
+        Container(
+          child:
+              selectedStatusId == 77 ||
+                  selectedStatusId == 78 ||
+                  selectedStatusId == 75
+              ? _buildLostForm()
+              : Container(),
+        ),
+        _buildButtonSave(),
+      ],
+    );
+  }
+
+  Widget _buildFormSP() {
     return Column(
       children: [
         _fieldStatusProspect(),
@@ -552,15 +898,17 @@ class _ContactAddPageState extends State<ContactAddPage> {
         SizedBox(height: 12),
         _fieldNameSP(),
         SizedBox(height: 12),
-         _fieldNote(),
+        _fieldNote(),
         SizedBox(height: 12),
-        Container(child: selectedStatusId == 77||selectedStatusId == 78||selectedStatusId == 75?_buildLostForm():Container()),
+        Container(
+          child:selectedStatusId == 77 ||selectedStatusId == 78 ||selectedStatusId == 75? _buildLostForm(): Container(),
+        ),
         _buildButtonSave(),
-        
-    ]);
+      ],
+    );
   }
 
-  Widget _buildFormReserved(){
+  Widget _buildFormReserved() {
     return Column(
       children: [
         _fieldStatusProspect(),
@@ -573,19 +921,22 @@ class _ContactAddPageState extends State<ContactAddPage> {
         SizedBox(height: 12),
         _fieldNote(),
         SizedBox(height: 12),
-        Container(child: selectedStatusId == 73||selectedStatusId == 43?_buildLostForm():Container()),
+        Container(
+          child: selectedStatusId == 73 || selectedStatusId == 43 
+              ? _buildLostForm()
+              : Container(),
+        ),
         _buildButtonSave(),
       ],
     );
   }
-  
 
-  Widget _buildFormAppt(){
+  Widget _buildFormAppt() {
     return Column(
       children: [
-        _fieldProject(),
-        SizedBox(height: 12),
         _fieldStatusProspect(),
+        SizedBox(height: 12),
+        _fieldProject(),
         SizedBox(height: 12),
         _fieldDate(),
         SizedBox(height: 12),
@@ -593,34 +944,45 @@ class _ContactAddPageState extends State<ContactAddPage> {
         SizedBox(height: 12),
         _fieldVolume(),
         SizedBox(height: 12),
-        Container(child: selectedStatusId == 61||selectedStatusId == 62?_buildLostForm():Container()),
+        Container(
+          child: selectedStatusId == 61 || selectedStatusId == 62
+              ? _buildLostForm()
+              : Container(),
+        ),
         _buildButtonSave(),
       ],
     );
   }
 
-  Widget _buildFormDB(){
+  Widget _buildFormDB() {
     return Column(
       children: [
-        _fieldProject(),
-        SizedBox(height: 12),
         _fieldStatusProspect(),
+        SizedBox(height: 12),
+        _fieldProject(),
         SizedBox(height: 12),
         _fieldDate(),
         SizedBox(height: 12),
         _fieldNote(),
         SizedBox(height: 12),
-        Container(child: selectedStatusId == 55||selectedStatusId == 56||selectedStatusId == 57||selectedStatusId == 58?_buildLostForm():Container()),
+        Container(
+          child:
+              selectedStatusId == 55 ||
+                  selectedStatusId == 56 ||
+                  selectedStatusId == 57 ||
+                  selectedStatusId == 58
+              ? _buildLostForm()
+              : Container(),
+        ),
         _buildButtonSave(),
       ],
     );
   }
 
-
-  Widget _fieldNameSP(){
+  Widget _fieldNameSP() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children:[
+      children: [
         Text(
           "Name SP",
           style: TextStyle(
@@ -638,16 +1000,25 @@ class _ContactAddPageState extends State<ContactAddPage> {
           style: TextStyle(fontSize: 14),
           decoration: InputDecoration(
             hintText: "Name SP...",
-            hintStyle: TextStyle(color: Color(grey2Color),fontSize: 14,),
-            contentPadding: EdgeInsets.symmetric(horizontal: 16,vertical: 12,),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey7Color)),),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey7Color)),),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(primaryColor)),),
-          ),),
-      ]
+            hintStyle: TextStyle(color: Color(grey2Color), fontSize: 14),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Color(grey7Color)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Color(grey7Color)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Color(primaryColor)),
+            ),
+          ),
+        ),
+      ],
     );
   }
-
 
   Widget _buildUpdateStatusProspect() {
     return Container(
@@ -662,25 +1033,61 @@ class _ContactAddPageState extends State<ContactAddPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("selectstatusProspect: $selectedStatusId"),
             Container(
-              child:selectedStatusId == 48 ||selectedStatusId == 49||selectedStatusId == 50||selectedStatusId == 51||selectedStatusId ==52|| selectedStatusId == 55||selectedStatusId == 56||selectedStatusId == 57||selectedStatusId == 58? _buildFormDB():
-              selectedStatusId == 54 ||selectedStatusId == 76||selectedStatusId == 53||selectedStatusId == 60 || selectedStatusId == 61||selectedStatusId == 62? _buildFormAppt():
-              selectedStatusId == 70 || selectedStatusId == 71 ||selectedStatusId == 72 || selectedStatusId == 73||selectedStatusId == 43? _buildFormReserved():
-              selectedStatusId == 74 ? _buildFormSP():
-             Container() ,
-            )
-            
+              child:
+                  (selectedStatusId == 48 ||
+                      selectedStatusId == 49 ||
+                      selectedStatusId == 50 ||
+                      selectedStatusId == 51 ||
+                      selectedStatusId == 52 ||
+                      selectedStatusId == 55 ||
+                      selectedStatusId == 56 ||
+                      selectedStatusId == 57 ||
+                      selectedStatusId == 58)
+                  ? _buildFormDB()
+                  : (selectedStatusId == 54 ||
+                        selectedStatusId == 76 ||
+                        selectedStatusId == 53 ||
+                        selectedStatusId == 60 ||
+                        selectedStatusId == 61 ||
+                        selectedStatusId == 62)
+                  ? _buildFormAppt()
+                  : (selectedStatusId == 70 ||
+                        selectedStatusId == 71 ||
+                        selectedStatusId == 72 ||
+                        selectedStatusId == 73 ||
+                        selectedStatusId == 43)
+                  ? _buildFormReserved()
+                  : (selectedStatusId == 74 || selectedStatusId == 75)
+                  ? _buildFormSP()
+                  : (selectedStatusId == 63 ||
+                        selectedStatusId == 64 ||
+                        selectedStatusId == 65 ||
+                        selectedStatusId == 66 ||
+                        selectedStatusId == 67 ||
+                        selectedStatusId == 68 ||
+                        selectedStatusId == 69)
+                  ? _buildFormVisit2()
+                  :
+                    // selectedStatusId == null? CircularProgressIndicator():
+                    selectedStatusId == null
+                  ? Center(child: CircularProgressIndicator())
+                  : Container(
+                      child: Text(
+                        "not found ${selectedStatusId} ${selectedStatusName} form",
+                      ),
+                    ),
+            ),
           ],
         ),
       ),
     );
   }
-  
-  Widget _fieldVolume(){
+
+  Widget _fieldVolume() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children :[
+      children: [
         Text(
           "Appt Volume",
           style: TextStyle(
@@ -700,42 +1107,122 @@ class _ContactAddPageState extends State<ContactAddPage> {
           keyboardType: TextInputType.number,
           decoration: InputDecoration(
             hintText: "Volume...",
-            hintStyle: TextStyle(color: Color(grey2Color),fontSize: 14,),
-            contentPadding: EdgeInsets.symmetric(horizontal: 16,vertical: 12,),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey7Color)),),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey7Color)),),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(primaryColor)),),
+            hintStyle: TextStyle(color: Color(grey2Color), fontSize: 14),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Color(grey7Color)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Color(grey7Color)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Color(primaryColor)),
+            ),
           ),
         ),
-      ]
-    );
-
-  }
-
-  Widget _buildLostForm(){
-    return Column(
-      children: [
-        _fieldLostReason(),
-        SizedBox(height: 12),
-
       ],
     );
   }
 
-  Widget _buildButtonSave(){
-    return BlocConsumer<ContactBloc, ContactState>(
-      listener: (context, state) {},
-      builder: (context, state) {
-        return customButton(() => _submitUpdateStatus(context),'Save');
+  Widget _buildLostForm() {
+    return Column(
+      children: [
+        _fieldLostReason(),
+        SizedBox(height: 12),
+        _fieldLostReasonNote(),
+        SizedBox(height: 12),
+      ],
+    );
+  }
+
+  // Widget _buildButtonSave(){
+  //   return BlocConsumer<ContactBloc, ContactState>(
+  //     listener: (context, state) {},
+  //     builder: (context, state) {
+  //       return customButton(() => _submitUpdateStatus(context),'Save');
+  //     },
+  //   );
+  // }
+  // Perubahan pada _buildButtonSave
+
+  Widget _buildButtonSave() {
+    return BlocBuilder<ContactBloc, ContactState>(
+      builder: (context, contactState) {
+        return BlocBuilder<ActivityVisitBloc, VisitState>(
+          builder: (context, visitState) {
+            const visitStatusIds = [63, 64, 65, 66, 67, 68, 69];
+            final isVisitFlow =
+                widget.args.page == 4 ||
+                visitStatusIds.contains(selectedStatusId);
+
+            final isContactLoading =
+                contactState.status == ContactStatus.creating;
+            final isVisitLoading = visitState is VisitLoading;
+            final isLoading = isVisitFlow ? isVisitLoading : isContactLoading;
+
+            return customButton(
+              isLoading
+                  ? null
+                  : () => widget.args.page == 4
+                        ? _submitVisit(context)
+                        : _submitUpdateStatus(context),
+              'Save',
+            );
+          },
+        );
       },
     );
   }
 
-
-  Widget _fieldNote(){
+  Widget _fieldLostReasonNote() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children:[
+      children: [
+        Text(
+          "Alasan Lost",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Color(grey2Color),
+          ),
+        ),
+        SizedBox(height: 6),
+        TextField(
+          maxLines: 4,
+          minLines: 3,
+          controller: lostReasonNoteTC,
+          focusNode: lostReasonNoteFN,
+          onTapOutside: (event) => lostReasonNoteFN.unfocus(),
+          textInputAction: TextInputAction.newline,
+          decoration: InputDecoration(
+            hintText: "Alasan Lost....",
+            hintStyle: TextStyle(color: Color(grey2Color), fontSize: 14),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Color(grey7Color)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Color(grey7Color)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Color(primaryColor)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _fieldNote() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Text(
           "Note",
           style: TextStyle(
@@ -754,27 +1241,37 @@ class _ContactAddPageState extends State<ContactAddPage> {
           textInputAction: TextInputAction.newline,
           decoration: InputDecoration(
             hintText: "Note...",
-            hintStyle: TextStyle(color: Color(grey2Color),fontSize: 14,),
-            contentPadding: EdgeInsets.symmetric(horizontal: 16,vertical: 12,),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey7Color)),),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(grey7Color)),),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),borderSide: BorderSide(color: Color(primaryColor)),),
+            hintStyle: TextStyle(color: Color(grey2Color), fontSize: 14),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Color(grey7Color)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Color(grey7Color)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Color(primaryColor)),
+            ),
           ),
         ),
-      ]
+      ],
     );
   }
 
-  Widget _fieldDate(){
+  Widget _fieldDate() {
     String displayStatus(String? value) {
       if (value == null) return '';
       if (!value.contains('-')) return value;
       return value.split('-').last.trim();
     }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-          Text(
+        Text(
           "Tanggal ${displayStatus(selectedStatusName)}",
           style: TextStyle(
             fontSize: 12,
@@ -817,7 +1314,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
     );
   }
 
-  Widget _fieldStatusProspect(){
+  Widget _fieldStatusProspect() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -834,11 +1331,46 @@ class _ContactAddPageState extends State<ContactAddPage> {
           onTap: () async {
             final statusState = context.read<ProspectStatusBloc>().state;
             if (statusState.status == ProspectStatusEnum.loaded) {
-              final statusItems = statusState.statuses.map((e) => OwnerDropdownItem(id: e.statusProspectId,name: e.statusProspectName,),).toList();
-              final result = await context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Pilih Status',items: statusItems,selectedId: selectedStatusId,),);
+              final allowedIds = widget.args.page == 4 ? [63, 64, 65] : null;
+              final statusItems = statusState.statuses
+                  .where(
+                    (e) => allowedIds == null
+                        ? true
+                        : allowedIds.contains(e.statusProspectId),
+                  )
+                  .map(
+                    (e) => OwnerDropdownItem(
+                      id: e.statusProspectId,
+                      name: e.statusProspectName,
+                    ),
+                  )
+                  .toList();
+
+              if (widget.args.page == 4) {
+                final allowedIds = [63, 64, 65];
+                final isValid = allowedIds.contains(selectedStatusId);
+
+                if (!isValid && statusItems.isNotEmpty) {
+                  selectedStatusId = statusItems.first.id;
+                  selectedStatusName = statusItems.first.name;
+                }
+              }
+              final result = await context.pushNamed(
+                'detailContactDropdown',
+                extra: ContactDropdownArgs(
+                  title: 'Pilih Status',
+                  items: statusItems,
+                  selectedId: selectedStatusId,
+                ),
+              );
               if (result != null) {
                 final selected = result as OwnerDropdownItem;
-                final picked = statusState.statuses.cast<ProspectStatusEntity?>().firstWhere((e) => e?.statusProspectId == selected.id,orElse: () => null,);
+                final picked = statusState.statuses
+                    .cast<ProspectStatusEntity?>()
+                    .firstWhere(
+                      (e) => e?.statusProspectId == selected.id,
+                      orElse: () => null,
+                    );
                 if (picked != null) {
                   setState(() {
                     selectedStatusId = picked.statusProspectId;
@@ -848,8 +1380,8 @@ class _ContactAddPageState extends State<ContactAddPage> {
               }
             } else {
               context.read<ProspectStatusBloc>().add(
-                    const FetchProspectStatusesEvent(),
-                  );
+                const FetchProspectStatusesEvent(),
+              );
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Memuat daftar status...')),
               );
@@ -907,18 +1439,34 @@ class _ContactAddPageState extends State<ContactAddPage> {
             final state = context.read<LostReasonBloc>().state;
 
             if (state.status == LostReasonStatus.loaded) {
-              final items = state.reasons.map((e) => OwnerDropdownItem(id: e.id,name: e.text,),).toList();
+              final items = state.reasons
+                  .map(
+                    (e) => OwnerDropdownItem(
+                      id: e.lostReasonId,
+                      name: e.lostReasonName,
+                    ),
+                  )
+                  .toList();
 
-              final result = await context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Pilih Alasan',items: items,selectedId: selectedLostReasonId,),);
+              final result = await context.pushNamed(
+                'detailContactDropdown',
+                extra: ContactDropdownArgs(
+                  title: 'Pilih Alasan',
+                  items: items,
+                  selectedId: selectedLostReasonId,
+                ),
+              );
 
               if (result != null) {
                 final selected = result as OwnerDropdownItem;
 
-                final picked = state.reasons.firstWhere((e) => e.id == selected.id);
+                final picked = state.reasons.firstWhere(
+                  (e) => e.lostReasonId == selected.id,
+                );
 
                 setState(() {
-                  selectedLostReasonId = picked.id;
-                  selectedLostReasonName = picked.text;
+                  selectedLostReasonId = picked.lostReasonId;
+                  selectedLostReasonName = picked.lostReasonName;
                 });
               }
             } else {
@@ -942,7 +1490,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  selectedLostReasonName??'',
+                  selectedLostReasonName ?? '',
                   style: TextStyle(
                     fontSize: 14,
                     color: selectedLostReasonName == null
@@ -963,78 +1511,12 @@ class _ContactAddPageState extends State<ContactAddPage> {
     );
   }
 
-  Widget _fieldProject(){
-   return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-       children: [
-         Text(
-           "Project",
-           style: TextStyle(
-             fontSize: 12,
-             fontWeight: FontWeight.bold,
-             color: Color(grey2Color),
-           ),
-         ),
-         SizedBox(height: 6),
-         GestureDetector(
-           onTap: () async {
-             final selectedItem = itemsProject.firstWhere(
-                (e) => e.name == selectedProject,
-                orElse: () => OwnerDropdownItem(id: 0, name: ''),
-              );
-             final result = await context.pushNamed(
-                'detailContactDropdown',
-                extra: ContactDropdownArgs(
-                  title: 'Project',
-                  items: itemsProject,
-                  selectedId: selectedItem.id,
-                ),
-              );
-               if (result != null) {
-                  final selected = result as OwnerDropdownItem;
-                 setState(() {
-                   selectedProject = selected.name;
-                 });
-               }
-           },
-           child: Container(
-             width: double.infinity,
-             height: 40,
-             decoration: BoxDecoration(
-               border: Border.all(color: Color(grey8Color)),
-               borderRadius: BorderRadius.circular(8),
-             ),
-             padding: EdgeInsets.symmetric(horizontal: 16),
-             alignment: Alignment.centerLeft,
-             child: Row(
-               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-               children: [
-                 Text(
-                   selectedProject ?? "Select project",
-                   style: TextStyle(
-                     fontSize: 14,
-                     color: selectedProject == null ? Color(grey2Color) : Colors.black,
-                   ),
-                 ),
-                 Icon(
-                   Icons.keyboard_arrow_down_rounded,
-                   color: Color(grey2Color),
-                   size: 30,
-                 ),
-               ],
-             ),
-           ),
-         ),
-       ],
-     );
-  }
-
-  Widget _fieldAppointmentVolume(){
+  Widget _fieldProject() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Appointment Volume",
+          "Project",
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
@@ -1044,12 +1526,86 @@ class _ContactAddPageState extends State<ContactAddPage> {
         SizedBox(height: 6),
         GestureDetector(
           onTap: () async {
+            final selectedItem = itemsProject.firstWhere(
+              (e) => e.name == selectedProject,
+              orElse: () => OwnerDropdownItem(id: 0, name: ''),
+            );
+            final result = await context.pushNamed(
+              'detailContactDropdown',
+              extra: ContactDropdownArgs(
+                title: 'Project',
+                items: itemsProject,
+                selectedId: selectedItem.id,
+              ),
+            );
+            if (result != null) {
+              final selected = result as OwnerDropdownItem;
+              setState(() {
+                selectedProject = selected.name;
+              });
+            }
+          },
+          child: Container(
+            width: double.infinity,
+            height: 40,
+            decoration: BoxDecoration(
+              border: Border.all(color: Color(grey8Color)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  selectedProject ?? "Select project",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: selectedProject == null
+                        ? Color(grey2Color)
+                        : Colors.black,
+                  ),
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Color(grey2Color),
+                  size: 30,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _fieldJumlahDatang() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Jumlah Datang",
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Color(grey2Color),
+          ),
+        ),
+        SizedBox(height: 6),
+        GestureDetector(
+          onTap: () async {
+            final selectedItem = itemsJmlDatang.firstWhere(
+              (e) => e.name == jmlDatang,
+              orElse: () => OwnerDropdownItem(id: 0, name: ''),
+            );
             final result = await context.pushNamed(
               'detailContactDropdown',
               extra: ContactDropdownArgs(
                 title: 'Appointment Volume',
-                items: itemsJmlDatang,
-                selectedId: null,
+                items: selectedStatusId == 65
+                    ? itemsJmlDatang
+                    : (itemsJmlDatang.isNotEmpty ? [itemsJmlDatang.first] : []),
+                selectedId: selectedItem.id,
               ),
             );
             if (result != null) {
@@ -1094,7 +1650,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Last Project Category",
+          "Project Category",
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
@@ -1156,69 +1712,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
         ),
         SizedBox(height: 12),
         Text(
-          "Last Project",
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Color(grey2Color),
-          ),
-        ),
-        SizedBox(height: 6),
-        GestureDetector(
-          onTap: () async {
-            final selectedItem = itemsProject.firstWhere(
-              (e) => e.name == selectedProject,
-              orElse: () => OwnerDropdownItem(id: 0, name: ''),
-            );
-            final result = await context.pushNamed(
-              'detailContactDropdown',
-              extra: ContactDropdownArgs(
-                title: 'Last Project',
-                items: itemsProject,
-                selectedId: selectedItem.id,
-              ),
-            );
-            if (result != null) {
-              final selected = result as OwnerDropdownItem;
-
-              setState(() {
-                selectedProject = selected.name;
-              });
-            }
-          },
-          child: Container(
-            width: double.infinity,
-            height: 40,
-            decoration: BoxDecoration(
-              border: Border.all(color: Color(grey8Color)),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            alignment: Alignment.centerLeft,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  selectedProject ?? "Select project",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: selectedProject == null
-                        ? Color(grey2Color)
-                        : Colors.black,
-                  ),
-                ),
-                Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: Color(grey2Color),
-                  size: 30,
-                ),
-              ],
-            ),
-          ),
-        ),
-        SizedBox(height: 12),
-        Text(
-          "Last Product",
+          "Product",
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
@@ -1235,7 +1729,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
             final result = await context.pushNamed(
               'detailContactDropdown',
               extra: ContactDropdownArgs(
-                title: 'Last Product',
+                title: 'Product',
                 items: itemsProduct,
                 selectedId: selectedItem.id,
               ),
@@ -1280,7 +1774,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
         ),
         SizedBox(height: 12),
         Text(
-          "Last Block No",
+          "Block No",
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
@@ -1294,14 +1788,8 @@ class _ContactAddPageState extends State<ContactAddPage> {
           onTapOutside: (event) => lBlockNoFN.unfocus(),
           decoration: InputDecoration(
             hintText: "Enter block no",
-            hintStyle: TextStyle(
-              color: Color(grey2Color),
-              fontSize: 12,
-            ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 2,
-            ),
+            hintStyle: TextStyle(color: Color(grey2Color), fontSize: 12),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 2),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: Color(grey8Color)),
@@ -1321,9 +1809,6 @@ class _ContactAddPageState extends State<ContactAddPage> {
     );
   }
 
-
-
-
   Widget _buildVisit() {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -1336,246 +1821,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildVisitPhotos(),
-            SizedBox(height: 12),
-            Text(
-              "Status Prospect",
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Color(grey2Color),
-              ),
-            ),
-            SizedBox(height: 6),
-            GestureDetector(
-              onTap: () async {
-                final statusState = context.read<ProspectStatusBloc>().state;
-                if (statusState.status == ProspectStatusEnum.loaded) {
-                  final statusItems = statusState.statuses
-                      .map(
-                        (e) => OwnerDropdownItem(
-                          id: e.statusProspectId,
-                          name: e.statusProspectName,
-                        ),
-                      )
-                      .toList();
-
-                  final result = await context.pushNamed(
-                    'detailContactDropdown',
-                    extra: ContactDropdownArgs(
-                      title: 'Pilih Status',
-                      items: statusItems,
-                      selectedId: selectedStatusId,
-                    ),
-                  );
-
-                  if (result != null) {
-                    final selected = result as OwnerDropdownItem;
-                    final picked = statusState.statuses
-                        .cast<ProspectStatusEntity?>()
-                        .firstWhere(
-                          (e) => e?.statusProspectId == selected.id,
-                          orElse: () => null,
-                        );
-                    if (picked != null) {
-                      setState(() {
-                        selectedStatusId = picked.statusProspectId;
-                        selectedStatusName = picked.statusProspectName;
-                      });
-                    }
-                  }
-                } else {
-                  context.read<ProspectStatusBloc>().add(
-                    FetchProspectStatusesEvent(),
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Memuat daftar status...')),
-                  );
-                }
-              },
-              child: Container(
-                width: double.infinity,
-                height: 40,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Color(grey8Color)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                alignment: Alignment.centerLeft,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      selectedStatusName,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: selectedStatusName == "Select status"
-                            ? Color(grey2Color)
-                            : Colors.black,
-                      ),
-                    ),
-                    Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: Color(grey2Color),
-                      size: 30,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: 12),
-            Text(
-              "Tanggal Visit",
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Color(grey2Color),
-              ),
-            ),
-            SizedBox(height: 6),
-            GestureDetector(
-              onTap: () => pickDateTime(context),
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Color(grey7Color)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      selectedDate != null
-                          ? DateHelper.formatFull(selectedDate!)
-                          : DateHelper.nowFull(),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(blackColor),
-                      ),
-                    ),
-                    Icon(
-                      Icons.calendar_today,
-                      color: Color(primaryColor),
-                      size: 16,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: 12),
-            Text(
-              "Jumlah Kedatangan",
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Color(grey2Color),
-              ),
-            ),
-            SizedBox(height: 6),
-            GestureDetector(
-              onTap: () async {
-                final result = await context.pushNamed(
-                  'detailContactDropdown',
-                  extra: ContactDropdownArgs(
-                    title: 'Project',
-                    items: itemsJmlDatang,
-                    selectedId: selectedStatusId,
-                  ),
-                );
-                if (result != null) {
-                  final selected = result as OwnerDropdownItem;
-                  setState(() {
-                    jmlDatang = selected.name;
-                  });
-                }
-              },
-              child: Container(
-                width: double.infinity,
-                height: 40,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Color(grey8Color)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                alignment: Alignment.centerLeft,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "${jmlDatang}",
-                      style: TextStyle(fontSize: 14, color: Colors.black),
-                    ),
-                    Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: Color(grey2Color),
-                      size: 30,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: 12),
-            Text(
-              "Note",
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Color(grey2Color),
-              ),
-            ),
-            SizedBox(height: 6),
-            TextField(
-              maxLines: 4,
-              minLines: 3,
-              controller: descTC,
-              focusNode: descFN,
-              onTapOutside: (event) => descFN.unfocus(),
-              textInputAction: TextInputAction.newline,
-              decoration: InputDecoration(
-                hintText: "Note the attachment...",
-                hintStyle: TextStyle(
-                  color: Color(grey2Color).withOpacity(0.0),
-                  fontSize: 14,
-                ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(grey7Color)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(grey7Color)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Color(primaryColor)),
-                ),
-              ),
-            ),
-            SizedBox(height: 20),
-            BlocBuilder<ActivityVisitBloc, VisitState>(
-              builder: (context, state) {
-                final isLoading = state is VisitLoading;
-
-                return customButton(
-                  isLoading
-                      ? null
-                      : () {
-                          print(
-                            "Submit Visit with statusId: $selectedStatusId, visitCount: $jmlDatang, date: $selectedDate, notes: ${descTC.text}",
-                          );
-                          _submitVisit(context);
-                        },
-                  isLoading ? 'Saving...' : 'Save',
-                );
-              },
-            ),
-          ],
+          children: [_buildFormVisit2()],
         ),
       ),
     );
@@ -1796,15 +2042,9 @@ class _ContactAddPageState extends State<ContactAddPage> {
             SizedBox(height: 20),
             BlocBuilder<UploadAttachmentBloc, UploadAttachmentState>(
               builder: (context, state) {
-                final isLoading = state is UploadAttachmentLoading;
-                return customButton(
-                  isLoading
-                      ? null
-                      : () {
-                          _submitAttachment();
-                        },
-                  isLoading ? 'Uploading...' : 'Save',
-                );
+                return customButton(() {
+                  _submitAttachment();
+                }, 'Save');
               },
             ),
           ],
@@ -2006,18 +2246,14 @@ class _ContactAddPageState extends State<ContactAddPage> {
         ],
       ),
     );
-}
-// Widget _buildCameraFile() {//   if (selectedFile == null &//       selectedImage == null &//       existingImageUrl == null) //     return Row//       mainAxisAlignment: MainAxisAlignment.center//       children: //         Column//           mainAxisAlignment: MainAxisAlignment.center//           crossAxisAlignment: CrossAxisAlignment.center//           children: //             Container//              padding: EdgeInsets.all(18)//               decoration: BoxDecoration//                 color: Color(whiteColor)//                 borderRadius: BorderRadius.circular(14)//                 border: Border.all(color: Color(primaryColor))//               )//               child: Icon(Icons.camera_alt_rounded, color: Color(primaryColor), size: 40)//             )//             SizedBox(height: 8)//             Text//               "Open Camera"//               style: TextStyle//                 fontSize: 14//                 fontWeight: FontWeight.bold//                 color: Color(blue2Color)//               )//             )//           ]//         )//       ]//     )
-//   }
-//   return ClipRRect//     borderRadius: BorderRadius.circular(8)//     child: _buildInsideContent()//   )// }
-// Widget _buildInsideContent() {//   if (selectedFile != null && isPdf) //     return Column//       mainAxisAlignment: MainAxisAlignment.center//       children: //         Icon(Icons.picture_as_pdf, size: 60, color: Colors.red)//         SizedBox(height: 8)//         Text(selectedFileName ?? "PDF File", textAlign: TextAlign.center)//       ]//     )
-//   }
-//   if (selectedFile != null || selectedImage != null) //     return Center//       child: SizedBox//         height: 120//         child: _buildPreviewWidget(selectedFile ?? selectedImage!)//       )//     )
-//   }
-//   return Image.network//     convertDriveUrl(existingImageUrl!)//     width: double.infinity//     fit: BoxFit.cover//     errorBuilder: (context, error, stackTrace) //       return Center(child: Icon(Icons.broken_image))//     }//   )
-// }
+  }
 
   Widget _buildVisitPhotos() {
+    final isMultiple = (selectedStatusId == 65 || selectedStatusId == 64);
+    final hasImages = isMultiple
+        ? selectedImages.isNotEmpty
+        : selectedImage != null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2032,68 +2268,99 @@ class _ContactAddPageState extends State<ContactAddPage> {
                 color: Color(grey2Color),
               ),
             ),
-            if (selectedImages.isNotEmpty)
-            Row(
-              children: [
-                IconButton(
-                  onPressed: _openCamera,
-                  icon: Icon(Icons.camera_alt, color: Color(primaryColor)),
-                  tooltip: 'Take Photo',
-                ),
-                
-              ],
-            ),
+            if (hasImages && isMultiple)
+              IconButton(
+                onPressed: _openCamera,
+                icon: Icon(Icons.camera_alt, color: Color(primaryColor)),
+                tooltip: 'Take Photo',
+              ),
           ],
         ),
-        if (selectedImages.isNotEmpty)
-          Container(
-            height: 100,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: selectedImages.length,
-              itemBuilder: (context, index) {
-                return Stack(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.file(
-                          selectedImages[index],
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 0,
-                      right: 8,
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedImages.removeAt(index);
-                          });
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.black54,
-                            shape: BoxShape.circle,
+        SizedBox(height: 6),
+        if (hasImages)
+          if (isMultiple)
+            Container(
+              height: 100,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: selectedImages.length,
+                itemBuilder: (context, index) {
+                  return Stack(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            selectedImages[index],
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
                           ),
-                          child: Icon(Icons.close, color: Colors.white, size: 20),
                         ),
                       ),
+                      Positioned(
+                        top: 0,
+                        right: 8,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedImages.removeAt(index);
+                            });
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            )
+          else
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.file(
+                    selectedImage!,
+                    width: double.infinity,
+                    height: 150,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedImage = null;
+                      });
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.close, color: Colors.white, size: 20),
                     ),
-                  ],
-                );
-              },
-            ),
-          )
+                  ),
+                ),
+              ],
+            )
         else
           GestureDetector(
-            onTap: () {
-              _openCamera();
-            },
+            onTap: _openCamera,
             child: Container(
               width: double.infinity,
               height: 100,
@@ -2108,15 +2375,15 @@ class _ContactAddPageState extends State<ContactAddPage> {
                   Icon(Icons.add_a_photo, color: Color(primaryColor)),
                   SizedBox(height: 4),
                   Text(
-                    "Add Photos",
+                    isMultiple ? "Add Photos (Multiple)" : "Add Photo",
                     style: TextStyle(color: Color(grey2Color), fontSize: 12),
                   ),
                 ],
               ),
             ),
           ),
+        SizedBox(height: 12),
       ],
     );
   }
-
 }

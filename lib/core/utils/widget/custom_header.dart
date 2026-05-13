@@ -40,7 +40,7 @@ Widget customHeader(BuildContext context, String title, {bool isBack = false, Co
                   SizedBox(width: 10),
                 ],
               ),
-              Text(title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorTitle)),
+              Container(width:200,child: Text(title, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorTitle))),
             ],
           ),
           if(iconLeft != null)

@@ -9,6 +9,8 @@ class ActivityProspectStatusEntity extends Equatable {
   final int? previousStatusId;
   final String? previousStatusName;
   final String createdAt;
+  final String? statusValue;
+  final String? previousStatusValue;
 
   const ActivityProspectStatusEntity({
     required this.historyId,
@@ -19,6 +21,8 @@ class ActivityProspectStatusEntity extends Equatable {
     this.previousStatusId,
     this.previousStatusName,
     required this.createdAt,
+    this.statusValue,
+    this.previousStatusValue,
   });
 
   @override
@@ -31,5 +35,7 @@ class ActivityProspectStatusEntity extends Equatable {
         previousStatusId,
         previousStatusName,
         createdAt,
+        statusValue,
+        previousStatusValue,
       ];
 }

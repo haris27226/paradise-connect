@@ -9,6 +9,8 @@ class ActivityProspectStatusModel {
   final int? previousStatusId;
   final String? previousStatusName;
   final String createdAt;
+  final String? statusValue;
+  final String? previousStatusValue;
 
   ActivityProspectStatusModel({
     required this.historyId,
@@ -19,6 +21,8 @@ class ActivityProspectStatusModel {
     this.previousStatusId,
     this.previousStatusName,
     required this.createdAt,
+    this.statusValue,
+    this.previousStatusValue,
   });
 
   factory ActivityProspectStatusModel.fromJson(Map<String, dynamic> json) {
@@ -31,6 +35,8 @@ class ActivityProspectStatusModel {
       previousStatusId: json['previous_status_id'],
       previousStatusName: json['previous_status_name'],
       createdAt: json['created_at'],
+      statusValue: json['status_value'],
+      previousStatusValue: json['previous_status_value'],
     );
   }
 
@@ -44,6 +50,8 @@ class ActivityProspectStatusModel {
       previousStatusId: previousStatusId,
       previousStatusName: previousStatusName,
       createdAt: createdAt,
+      statusValue: statusValue,
+      previousStatusValue: previousStatusValue,
     );
   }
 }
