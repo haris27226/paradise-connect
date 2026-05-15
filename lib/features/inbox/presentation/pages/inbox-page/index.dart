@@ -101,7 +101,7 @@ class _InboxPageState extends State<InboxPage> {
       search: search ?? searchTC.text,
       cPage: _cPage,
       gPage: _gPage,
-      salesExecutiveId: (contactState.ownerIds != null && contactState.ownerIds!.isNotEmpty) ? contactState.ownerIds!.first : null,
+      salesExecutiveIds: contactState.ownerIds,
       statusProspectId: (contactState.statusProspectIds != null && contactState.statusProspectIds!.isNotEmpty) ? contactState.statusProspectIds!.first : null,
       startDate: contactState.startDate,
       endDate: contactState.endDate,
@@ -114,7 +114,6 @@ class _InboxPageState extends State<InboxPage> {
   Widget build(BuildContext context) {
     return BlocListener<ContactBloc, ContactState>(
       listener: (context, state) {
-        // Refresh inbox when contact filters change
         if (state.status == ContactStatus.loading) {
           _fetchInbox();
         }
@@ -318,7 +317,7 @@ class _InboxPageState extends State<InboxPage> {
                           BlocBuilder<ContactBloc, ContactState>(
                             builder: (context, contactState) {
                               bool isSelected = contactState.startDate != null && contactState.endDate != null;
-                              String label = selectedDateLabel ?? 'Create Date';
+                              String label = contactState.startDate != null ? (selectedDateLabel ?? 'Create Date') : 'Create Date';
                     
                               return Padding(
                                 padding: const EdgeInsets.only(right: 8),
@@ -326,7 +325,14 @@ class _InboxPageState extends State<InboxPage> {
                                   label: label,
                                   isSelected: isSelected,
                                   onTap: () async {
-                                    final result = await context.pushNamed<DateFilterResult>('dateFilter');
+                                    final result = await context.pushNamed<DateFilterResult>(
+                                      'dateFilter',
+                                      extra: {
+                                        'label': selectedDateLabel,
+                                        'startDate': contactState.startDate,
+                                        'endDate': contactState.endDate,
+                                      },
+                                    );
                     
                                     if (result != null) {
                                       if (result.isClear) {

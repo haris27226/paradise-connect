@@ -75,7 +75,7 @@ class _SitePlanPageState extends State<SitePlanPage> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Color(whiteColor),
                 ),
                 child: Row(
                   children: [

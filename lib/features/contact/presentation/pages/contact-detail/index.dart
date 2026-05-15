@@ -125,10 +125,7 @@ class _ContactDetailPageState extends State<ContactDetailPage>with TickerProvide
         search: search ?? searchTC.text,
         cPage: _cPage,
         gPage: _gPage,
-        salesExecutiveId:
-            (contactState.ownerIds != null && contactState.ownerIds!.isNotEmpty)
-            ? contactState.ownerIds!.first
-            : null,
+        salesExecutiveIds: contactState.ownerIds,
         statusProspectId:
             (contactState.statusProspectIds != null &&
                 contactState.statusProspectIds!.isNotEmpty)
@@ -852,13 +849,13 @@ class _ContactDetailPageState extends State<ContactDetailPage>with TickerProvide
                   Text(
                     DateFormat(
                       'HH:mm',
-                    ).format(DateTime.parse(item.createdAt ?? '-')),
+                    ).format(DateTime.parse(item.createdAt)),
                     style: TextStyle(fontSize: 11),
                   ),
                   SizedBox(
                     width: double.infinity,
                     child: Text(
-                      "Status changed from ${item.previousStatusValue ?? ''} - ${item.previousStatusName ?? ''}  to ${item.statusValue ?? ''} - ${item.statusName??""} ",
+                      "Status changed from ${item.previousStatusValue ?? ''} - ${item.previousStatusName ?? ''}  to ${item.statusValue ?? ''} - ${item.statusName} ",
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 11),

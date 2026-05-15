@@ -33,7 +33,7 @@ class InboxContactBloc extends Bloc<InboxContactEvent, InboxContactState> {
         search: event.search,
         cPage: event.cPage,
         gPage: event.gPage,
-        salesExecutiveId: event.salesExecutiveId,
+        salesExecutiveIds: event.salesExecutiveIds,
         statusProspectId: event.statusProspectId,
         startDate: event.startDate,
         endDate: event.endDate,

@@ -126,6 +126,51 @@ class _DropdownListContactState extends State<DropdownListContact> {
               ),
             ),
 
+            /// SELECT ALL / CLEAR ALL
+            if (widget.args.isMultiSelect)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('${_tempSelectedIds.length} dipilih',
+                        style: TextStyle(fontSize: 13, color: Color(grey5Color))),
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _tempSelectedIds = widget.args.items
+                                  .where((e) => e.id != null)
+                                  .map((e) => e.id!)
+                                  .toList();
+                            });
+                          },
+                          style: TextButton.styleFrom(
+                            minimumSize: Size.zero,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text('Select All',
+                              style: TextStyle(fontSize: 13, color: Color(primaryColor), fontWeight: FontWeight.w600)),
+                        ),
+                        Text('|', style: TextStyle(color: Color(grey5Color))),
+                        TextButton(
+                          onPressed: () => setState(() => _tempSelectedIds = []),
+                          style: TextButton.styleFrom(
+                            minimumSize: Size.zero,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text('Clear All',
+                              style: TextStyle(fontSize: 13, color: Color(grey5Color), fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
             /// 🔥 LIST
             Expanded(
               child: _filteredItems.isEmpty

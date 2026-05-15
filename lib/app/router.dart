@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:progress_group/features/contact/data/arguments/contact_dropdown_args.dart';
 import 'package:progress_group/features/contact/presentation/pages/attachment-view/index.dart';
 import 'package:progress_group/features/contact/presentation/pages/contact-dropdown/index.dart';
-import 'package:progress_group/features/contact/presentation/pages/date-selection/index.dart';
 import 'package:progress_group/features/home/presentation/pages/task/index.dart';
 import 'package:progress_group/features/inbox/presentation/pages/qr/index.dart';
 
@@ -18,6 +17,7 @@ import '../features/contact/data/arguments/contact_detail_args.dart';
 import '../features/contact/presentation/pages/contact-add/index.dart';
 import '../features/contact/presentation/pages/contact-detail/index.dart';
 import '../features/contact/presentation/pages/contact-form/index.dart';
+import 'package:progress_group/features/contact/presentation/pages/date-selection/index.dart';
 import '../features/contact/presentation/pages/contact-page/index.dart';
 import '../features/home/presentation/pages/home/index.dart';
 import '../features/inbox/data/arguments/inbox_detail_args.dart';
@@ -143,7 +143,12 @@ class AppRouter {
                 name: 'dateFilter',
                 path: 'date-filter',
                 builder: (context, state) {
-                  return const DateFilterPage();
+                  final extra = state.extra as Map<String, String?>?;
+                  return DateFilterPage(
+                    selectedLabel: extra?['label'],
+                    startDate: extra?['startDate'],
+                    endDate: extra?['endDate'],
+                  );
                 },
               ),
              

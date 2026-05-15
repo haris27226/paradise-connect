@@ -8,6 +8,8 @@ import 'package:progress_group/features/auth/presentation/state/auth/auth_bloc.d
 import 'package:progress_group/features/auth/presentation/state/auth/auth_event.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_bloc.dart';
 import 'package:progress_group/features/auth/presentation/state/profile/profile_state.dart';
+import 'package:progress_group/features/contact/presentation/state/contact/contact_bloc.dart';
+import 'package:progress_group/features/contact/presentation/state/contact/contact_event.dart';
 import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_state.dart';
 import 'package:progress_group/features/contact/presentation/state/whatsapp_activity/whatsapp_unread_summary_event.dart';
@@ -50,9 +52,16 @@ class _MainLayoutState extends State<MainLayout> {
     super.didChangeDependencies();
     final String newUri = GoRouterState.of(context).uri.toString();
     if (_currentUri != newUri) {
+      final oldUri = _currentUri ?? '';
       _currentUri = newUri;
-      _lastPressedAt = null; 
-      ScaffoldMessenger.of(context).hideCurrentSnackBar(); 
+      _lastPressedAt = null;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      final wasInSection = oldUri.startsWith('/contact') || oldUri.startsWith('/inbox');
+      final isNowInSection = newUri.startsWith('/contact') || newUri.startsWith('/inbox');
+      if (wasInSection && !isNowInSection) {
+        context.read<ContactBloc>().add(const ResetContactFiltersEvent());
+      }
     }
   }
 

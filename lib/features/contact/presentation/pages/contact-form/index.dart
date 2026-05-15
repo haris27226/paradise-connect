@@ -9,7 +9,6 @@ import 'package:go_router/go_router.dart';
 import 'package:progress_group/features/contact/domain/entities/prospect/prospect_status.dart';
 import 'package:progress_group/features/contact/presentation/state/info_source/info_source_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/info_source/info_source_event.dart';
-import 'package:progress_group/features/contact/presentation/state/info_source/info_source_state.dart';
 import 'package:progress_group/features/contact/presentation/state/prospect_status/prospect_status_event.dart';
 
 import '../../../../../core/constants/colors.dart';
@@ -859,7 +858,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
           // Tutup dialog loading
           Navigator.of(context, rootNavigator: true).pop();
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage ?? 'Error processing request')),
+            SnackBar(content: Text(state.errorMessage ?? 'Error creating contact')),
           );
         }
       },
@@ -897,17 +896,19 @@ class _ContactFormPageState extends State<ContactFormPage> {
               builder: (context, contactState) {
                 final statusLoading = context.watch<ProspectStatusBloc>().state.status != ProspectStatusEnum.loaded;
                 final propertiesLoading = context.watch<ContactPropertiesBloc>().state.status != ContactPropertiesStatus.loaded;
-                final detailLoading = contactState.status == ContactStatus.loadingDetail || contactState.status == ContactStatus.initial;
+                final detailLoading = contactState.status == ContactStatus.loadingDetail ||
+                    contactState.status == ContactStatus.initial;
 
                 if ((widget.args.page == 1 || widget.args.page == 2) && (detailLoading || statusLoading || propertiesLoading)) {
                   return const Scaffold(body: Center(child: CircularProgressIndicator()));
                 }
 
                 if (contactState.status == ContactStatus.error) {
-                  return Scaffold(body: Center(child: Text(contactState.errorMessage ?? 'Error load detail')));
+                  return Scaffold(
+                    body: Center(child: Text(contactState.errorMessage ?? 'Error load detail')),
+                  );
                 }
 
-                bool isLoading = detailLoading || statusLoading || propertiesLoading;
                 return Scaffold(
                   body: isLoading ? const Center(child: CircularProgressIndicator()) : SafeArea(child: _createForm?_createContact(profileState): _editContact(profileState)),
                 );
@@ -1678,20 +1679,11 @@ class _ContactFormPageState extends State<ContactFormPage> {
             children: [
               GestureDetector(
                 onTap: () => context.pop(),
-                child: Icon(
-                  Icons.arrow_back,
-                  color: Color(primaryColor),
-                  size: 27,
-                ),
+                child: Icon(Icons.arrow_back, color: Color(primaryColor), size: 27),
               ),
               const SizedBox(width: 10),
-              Text(
-                !_createForm ? "Edit Contact" : "Create Contact",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              Text(widget.args.page != 0 ? "Edit Contact" : "Create Contact",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
             ],
           ),
           GestureDetector(
@@ -1707,13 +1699,8 @@ class _ContactFormPageState extends State<ContactFormPage> {
                 borderRadius: BorderRadius.circular(14),
                 color: Color(blue3Color),
               ),
-              child: Text(
-                "Save",
-                style: TextStyle(
-                  color: Color(whiteColor),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              child: Text("Save",
+                  style: TextStyle(color: Color(whiteColor), fontWeight: FontWeight.w700)),
             ),
           ),
         ],
@@ -1738,12 +1725,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
 
         decoration: BoxDecoration(
           color: Color(whiteColor),
-          border: Border(
-            bottom: BorderSide(
-              width: 1,
-              color: isError ? Color(redColor) : Color(grey9Color),
-            ),
-          ),
+          border: Border(bottom: BorderSide(width: 1, color: isError ? Color(redColor) : Color(grey9Color))),
         ),
         child: Row(
           children: [
@@ -1751,26 +1733,18 @@ class _ContactFormPageState extends State<ContactFormPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
-
                 children: [
                   if (!isEmpty)
-                    Text(
-                      label,
+                    Text(label,
+                        style: TextStyle(
+                            color: isError ? Color(redColor) : Color(grey2Color),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700)),
+                  Text(isEmpty ? label : value,
                       style: TextStyle(
-                        color: isError ? Color(redColor) : Color(grey2Color),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-
-                  Text(
-                    isEmpty ? label : value,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: isError ? Color(redColor) : isEmpty ? Color(grey2Color) : Color(blackColor),
-                    ),
-                  ),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: isError ? Color(redColor) : isEmpty ? Color(grey2Color) : Color(blackColor))),
                 ],
               ),
             ),
@@ -1833,12 +1807,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
 
         decoration: BoxDecoration(
           color: Color(whiteColor),
-          border: Border(
-            bottom: BorderSide(
-              width: 1,
-              color: isError ? Color(redColor) : Color(grey9Color),
-            ),
-          ),
+          border: Border(bottom: BorderSide(width: 1, color: isError ? Color(redColor) : Color(grey9Color))),
         ),
         child: Row(
           children: [
@@ -1872,25 +1841,17 @@ class _ContactFormPageState extends State<ContactFormPage> {
                               readOnly: isReadOnly,
                               maxLines: null,
                               style: TextStyle(
-                                fontSize: 12,
-                                color: isError ? Color(redColor) : Color(blackColor),
-                                fontWeight: FontWeight.w700,
-                              ),
+                                  fontSize: 12, fontWeight: FontWeight.w700,
+                                  color: isError ? Color(redColor) : Color(blackColor)),
                               decoration: InputDecoration(
                                 isDense: true,
-                                label: Text(
-                                  label,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: isError ? Color(redColor) : Color(grey2Color),
-                                  ),
-                                ),
+                                label: Text(label,
+                                    style: TextStyle(
+                                        fontSize: 12, fontWeight: FontWeight.w700,
+                                        color: isError ? Color(redColor) : Color(grey2Color))),
                                 floatingLabelStyle: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: isError ? Color(redColor) : Color(grey2Color),
-                                ),
+                                    fontSize: 12, fontWeight: FontWeight.w700,
+                                    color: isError ? Color(redColor) : Color(grey2Color)),
                                 border: InputBorder.none,
                                 enabledBorder: InputBorder.none,
                                 focusedBorder: InputBorder.none,
@@ -1916,27 +1877,16 @@ class _ContactFormPageState extends State<ContactFormPage> {
                             FilteringTextInputFormatter.digitsOnly,
                           ],
                           keyboardType: TextInputType.number,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(blackColor),
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: TextStyle(fontSize: 12, color: Color(blackColor), fontWeight: FontWeight.w700),
                           decoration: InputDecoration(
                             isDense: true,
-                            label: Text(
-                              label,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: isError ? Color(redColor) : Color(grey2Color),
-                              ),
-                            ),
+                            label: Text(label,
+                                style: TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.w700,
+                                    color: isError ? Color(redColor) : Color(grey2Color))),
                             floatingLabelStyle: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: isError ? Color(redColor) : Color(grey2Color),
-                            ),
-
+                                fontSize: 12, fontWeight: FontWeight.w700,
+                                color: isError ? Color(redColor) : Color(grey2Color)),
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: InputBorder.none,
@@ -1954,28 +1904,16 @@ class _ContactFormPageState extends State<ContactFormPage> {
                         readOnly: isReadOnly,
                         enabled: !isReadOnly,
                         maxLines: null,
-
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(blackColor),
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: TextStyle(fontSize: 12, color: Color(blackColor), fontWeight: FontWeight.w700),
                         decoration: InputDecoration(
                           isDense: true,
-                          label: Text(
-                            label,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: isError ? Color(redColor) : Color(grey2Color),
-                            ),
-                          ),
+                          label: Text(label,
+                              style: TextStyle(
+                                  fontSize: 12, fontWeight: FontWeight.w700,
+                                  color: isError ? Color(redColor) : Color(grey2Color))),
                           floatingLabelStyle: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: isError ? Color(redColor) : Color(grey2Color),
-                          ),
-
+                              fontSize: 12, fontWeight: FontWeight.w700,
+                              color: isError ? Color(redColor) : Color(grey2Color)),
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,

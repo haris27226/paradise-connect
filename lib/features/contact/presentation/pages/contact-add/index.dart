@@ -614,7 +614,6 @@ class _ContactAddPageState extends State<ContactAddPage> {
         BlocListener<ActivityBloc, ActivityState>(
           listener: (ctx, state) {
             if (state.status == ActivityStatus.createSuccess) {
-              final contactId = widget.args.dataContact?.contactId;
               // if (contactId != null) {
               //   context.read<ContactBloc>().add(FetchContactDetailEvent(contactId));
               //   context.read<ContactBloc>().add(const FetchContactsEvent(isRefresh: true));
@@ -655,7 +654,6 @@ class _ContactAddPageState extends State<ContactAddPage> {
         BlocListener<ContactBloc, ContactState>(
           listener: (ctx, state) {
             if (state.status == ContactStatus.createSuccess) {
-              final contactId = widget.args.dataContact?.contactId;
               // if (contactId != null) {
               //   context.read<ContactBloc>().add(FetchContactDetailEvent(contactId));
               //   context.read<ContactBloc>().add(const FetchContactsEvent(isRefresh: true));
@@ -722,7 +720,6 @@ class _ContactAddPageState extends State<ContactAddPage> {
         BlocListener<ActivityVisitBloc, VisitState>(
           listener: (ctx, state) {
             if (state is VisitSuccess) {
-              final contactId = widget.args.dataContact?.contactId;
               // if (contactId != null) {
               //   context.read<ContactBloc>().add(FetchContactDetailEvent(contactId));
               //   context.read<ContactBloc>().add(const FetchContactsEvent(isRefresh: true));

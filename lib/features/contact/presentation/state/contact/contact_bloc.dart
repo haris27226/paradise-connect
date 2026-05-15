@@ -32,6 +32,11 @@ class ContactBloc extends Bloc<ContactEvent, ContactState> {
           status: ContactStatus.initial,
         )));
     on<ClearContactsEvent>((event, emit) => emit(const ContactState()));
+    on<ResetContactFiltersEvent>((event, emit) => emit(state.copyWith(
+          clearDates: true,
+          clearOwner: true,
+          clearStatus: true,
+        )));
   }
 
 

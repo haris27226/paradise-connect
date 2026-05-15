@@ -6,7 +6,7 @@ abstract class InboxContactRepository {
     String? search,
     int? cPage,
     int? gPage,
-    int? salesExecutiveId,
+    List<int>? salesExecutiveIds,
     int? statusProspectId,
     String? startDate,
     String? endDate,

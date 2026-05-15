@@ -92,4 +92,7 @@ class DeleteContactEvent extends ContactEvent {
 }
 class ClearContactDetailEvent extends ContactEvent {}
 class ClearContactsEvent extends ContactEvent {}
+class ResetContactFiltersEvent extends ContactEvent {
+  const ResetContactFiltersEvent();
+}
 
