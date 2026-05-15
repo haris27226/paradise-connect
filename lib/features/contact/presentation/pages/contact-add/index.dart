@@ -306,28 +306,17 @@ class _ContactAddPageState extends State<ContactAddPage> {
     final result = await context.pushNamed(
       'camera',
       extra: AttandanceArgs(
-        type:
-            (widget.args.page == 4 || widget.args.page == 6) &&
-                (selectedStatusId == 65 || selectedStatusId == 64)
-            ? "Visit"
-            : "Attachment",
+        type: "Visit",
         time: DateFormat('HH:mm').format(DateTime.now()),
         isReturnImage: true,
-        skipPreview:
-            (widget.args.page == 4 || widget.args.page == 6) &&
-            (selectedStatusId == 65 || selectedStatusId == 64),
+        skipPreview: true,
       ),
     );
 
     if (result != null) {
       final file = File(result as String);
       setState(() {
-        if ((widget.args.page == 4 || widget.args.page == 6) &&
-            (selectedStatusId == 65 || selectedStatusId == 64)) {
-          selectedImages.add(file);
-        } else {
-          selectedImage = file;
-        }
+        selectedImages.add(file);
       });
     }
   }
@@ -641,6 +630,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
         BlocListener<UploadAttachmentBloc, UploadAttachmentState>(
           listener: (ctx, state) {
             if (state is UploadAttachmentSuccess) {
+              context.pop(2);
             } else if (state is UploadAttachmentError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -776,7 +766,6 @@ class _ContactAddPageState extends State<ContactAddPage> {
           },
         ),
       ],
-
       child: Scaffold(
         body: SafeArea(
           child: Builder(
@@ -2245,10 +2234,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
   }
 
   Widget _buildVisitPhotos() {
-    final isMultiple = (selectedStatusId == 65 || selectedStatusId == 64);
-    final hasImages = isMultiple
-        ? selectedImages.isNotEmpty
-        : selectedImage != null;
+    final hasImages = selectedImages.isNotEmpty && (widget.args.page == 4 || widget.args.page == 6);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2264,7 +2250,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                 color: Color(grey2Color),
               ),
             ),
-            if (hasImages && isMultiple)
+            if (hasImages)
               IconButton(
                 onPressed: _openCamera,
                 icon: Icon(Icons.camera_alt, color: Color(primaryColor)),
@@ -2274,86 +2260,53 @@ class _ContactAddPageState extends State<ContactAddPage> {
         ),
         SizedBox(height: 6),
         if (hasImages)
-          if (isMultiple)
-            Container(
-              height: 100,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: selectedImages.length,
-                itemBuilder: (context, index) {
-                  return Stack(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            selectedImages[index],
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          ),
+          Container(
+            height: 100,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: selectedImages.length,
+              itemBuilder: (context, index) {
+                return Stack(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          selectedImages[index],
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
                         ),
                       ),
-                      Positioned(
-                        top: 0,
-                        right: 8,
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedImages.removeAt(index);
-                            });
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black54,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.close,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            )
-          else
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.file(
-                    selectedImage!,
-                    width: double.infinity,
-                    height: 150,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        selectedImage = null;
-                      });
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.close, color: Colors.white, size: 20),
                     ),
-                  ),
-                ),
-              ],
-            )
+                    Positioned(
+                      top: 0,
+                      right: 8,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedImages.removeAt(index);
+                          });
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          )
         else
           GestureDetector(
             onTap: _openCamera,
@@ -2371,7 +2324,7 @@ class _ContactAddPageState extends State<ContactAddPage> {
                   Icon(Icons.add_a_photo, color: Color(primaryColor)),
                   SizedBox(height: 4),
                   Text(
-                    isMultiple ? "Add Photos (Multiple)" : "Add Photo",
+                    "Add Photos",
                     style: TextStyle(color: Color(grey2Color), fontSize: 12),
                   ),
                 ],

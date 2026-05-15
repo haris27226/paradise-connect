@@ -86,7 +86,7 @@ class ContactModel extends Contact {
 
       salesChannelId: json['sales_channel_id'],
       sumberInformasi1: json['sumber_informasi_1'],
-      sumberInformasi2: json['sumber_informasi_2'],
+      sumberInformasi2: json['sumber_informasi_2']?.toString(),
       sumberInformasi2Name: json['sumber_informasi_2_name'],
       firstProjectCategory: json['first_project_category'],
       lastProjectCategory: json['last_project_category'],

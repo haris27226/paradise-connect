@@ -81,12 +81,12 @@ class _ContactFormPageState extends State<ContactFormPage> {
   String? selectLastProjectProduct;
   String? selectFirstProjectCategory;
   String? selectLastProjectCategory;
+  String? selectedSourceName;
+  int? selectedSourceId;
   String? selectedSource1Name;
   int? selectedSource1Id;
   String? selectedSource2Name;
   int? selectedSource2Id;
-  String? selectedSourceName;
-  int? selectedSourceId;
 
   List<Map<String, dynamic>> salesInfoFields = [];
   final Map<int, TextEditingController> _propertyControllers = {};
@@ -116,7 +116,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
   FocusNode lspFN = FocusNode();
 
   bool _showValidation = false;
-  bool _createForm = false;
 
   List<OwnerDropdownItem> itemsProject = [
     OwnerDropdownItem(name: "Paradise Serpong City 1"),
@@ -245,11 +244,12 @@ class _ContactFormPageState extends State<ContactFormPage> {
     return products.map((e) => OwnerDropdownItem(name: e)).toList();
   }
 
+
+
   void _init() async {
     final contactId = widget.args.dataContact?.contactId;
     final contactState = context.read<ContactBloc>().state;
     final currentDetail = contactState.contactDetail;
-    _createForm = widget.args.page == 0;
 
     // Check if we already have the correct detail in state
     final hasLatestDetail =
@@ -307,7 +307,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
         if (dealValueTC.text.isEmpty) dealValueTC.text = "0";
         if (vCountTC.text.isEmpty) vCountTC.text = "0";
 
-        selectedSalutation ??= "Mr.";
+        selectedSalutation ??= "Bapak";
         selectFirstProject ??= itemsProject.first.name;
         selectFirstProjectCategory ??= itemsProjectCategory.first.name;
         final firstProducts =projectData[selectFirstProject]?[selectFirstProjectCategory] ?? [];
@@ -317,8 +317,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
 
         selectLastProject ??= itemsLastProject.first.name;
         selectLastProjectCategory ??= itemsLastProjectCategory.first.name;
-        final lastProducts =
-            projecLasttData[selectLastProject]?[selectLastProjectCategory] ??
+        final lastProducts = projecLasttData[selectLastProject]?[selectLastProjectCategory] ??
             [];
         if (lastProducts.isNotEmpty) {
           selectLastProjectProduct ??= lastProducts.first;
@@ -343,8 +342,10 @@ class _ContactFormPageState extends State<ContactFormPage> {
     lBlockNoTC.text = contact.lastBlokNo ?? '';
     noKTPTC.text = contact.noKtp ?? '';
     ktpAddressTC.text = contact.ktpAddress ?? '';
-    selectedSource1Name = contact.sumberInformasi1 ?? '';
-    selectedSource2Name = contact.sumberInformasi2Name ?? contact.sumberInformasi2 ?? '';
+    selectedSource1Name = contact.sumberInformasi1;
+    selectedSource1Id = contact.salesChannelId;
+    selectedSource2Name = contact.sumberInformasi2Name;
+    selectedSource2Id = int.tryParse(contact.sumberInformasi2 ?? '');
     volumePlanTC.text = contact.volumePlan?.toString() ?? '';
     vCountTC.text = contact.visitCount?.toString() ?? '';
     firstVisitorDateTC.text = _formatFromContact(contact.firstVisitDate);
@@ -364,8 +365,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
       selectedStatusId = contact.statusProspectId;
       selectedSalesExecutiveId = contact.salesExecutiveId;
       selectedSalesManagerId = contact.salesManagerId;
-      selectedSource1Id = contact.salesChannelId;
-      selectedSource2Id = int.tryParse(contact.sumberInformasi2 ?? '');
 
       // Update dropdowns if specific project/product info is available
       if ((contact.projectName ?? '').isNotEmpty) {
@@ -528,38 +527,38 @@ class _ContactFormPageState extends State<ContactFormPage> {
   }
 
   void _autoFillFromProfile() {
-    final profileState = context.read<ProfileBloc>().state;
+      final profileState = context.read<ProfileBloc>().state;
 
-    if (profileState is ProfileLoaded) {
-      final user = profileState.profile;
+      if (profileState is ProfileLoaded) {
+        final user = profileState.profile;
 
-      if (widget.args.page == 0) {
-        final List<OwnerDropdownItem> ownerItems = [];
+        if (widget.args.page == 0) {
+          final List<OwnerDropdownItem> ownerItems = [];
 
-        ownerItems.add(OwnerDropdownItem(id: user.salesPersonId, name: user.fullName, subtitle: user.positionName));
+          ownerItems.add(OwnerDropdownItem(id: user.salesPersonId, name: user.fullName, subtitle: user.positionName));
 
-        void addSubs(List<HierarchyNodeEntity> subs) {
-          for (var s in subs) {
-            ownerItems.add(OwnerDropdownItem(id: s.salesPersonId, name: s.fullName, subtitle: s.positionName));
+          void addSubs(List<HierarchyNodeEntity> subs) {
+            for (var s in subs) {
+              ownerItems.add(OwnerDropdownItem(id: s.salesPersonId, name: s.fullName, subtitle: s.positionName));
 
-            if (s.subordinates.isNotEmpty) addSubs(s.subordinates);
+              if (s.subordinates.isNotEmpty) addSubs(s.subordinates);
+            }
           }
-        }
 
-        addSubs(user.subordinates);
+          addSubs(user.subordinates);
 
-        /// 🔹 AUTO PILIH INDEX PERTAMA
-        if (selectedOwnerId == null && ownerItems.isNotEmpty) {
-          setState(() {
-            selectedOwnerId = ownerItems.first.id;
-            selectedOwnerName = ownerItems.first.name;
-          });
+          /// 🔹 AUTO PILIH INDEX PERTAMA
+          if (selectedOwnerId == null && ownerItems.isNotEmpty) {
+            setState(() {
+              selectedOwnerId = ownerItems.first.id;
+              selectedOwnerName = ownerItems.first.name;
+            });
 
-          _updateSalesInformation(ownerItems.first.id ?? 0, user);
+            _updateSalesInformation(ownerItems.first.id ?? 0, user);
+          }
         }
       }
     }
-  }
   
   void _updateSalesInformation(int ownerId, UserProfileEntity user) {
     List<HierarchyNodeEntity> chain = [];
@@ -718,7 +717,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
     super.dispose();
   }
 
-
   Future<void> _handleSave() async {
     final today = DateHelper.formatNumericCompact(DateTime.now());
     final isCreate = widget.args.page == 0;
@@ -795,7 +793,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
   }
 
 
-
   DateTime _parseDateOrToday(String? value) {
     if (value == null || value.isEmpty) return DateTime.now();
     try {
@@ -827,8 +824,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
       return v.toString();
     }
   }
-  
-  
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<ContactBloc, ContactState>(
@@ -840,23 +836,24 @@ class _ContactFormPageState extends State<ContactFormPage> {
             builder: (context) => const Center(child: CircularProgressIndicator()),
           );
         } else if (state.status == ContactStatus.createSuccess) {
-          // Tutup dialog loading
-          Navigator.of(context, rootNavigator: true).pop();
-          
+          context.pop();
+
           if (widget.args.page == 1) {
             context.pop(1);
           } else {
-            context.read<ContactBloc>().add(const FetchContactsEvent(isRefresh: true));
+            context.read<ContactBloc>().add(
+              const FetchContactsEvent(isRefresh: true),
+            );
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Contact created successfully')),
             );
             context.pop();
           }
-        } else if (state.status == ContactStatus.detailLoaded && state.contactDetail != null) {
+        } else if (state.status == ContactStatus.detailLoaded &&
+            state.contactDetail != null) {
           _fillForm(state.contactDetail!);
         } else if (state.status == ContactStatus.error) {
-          // Tutup dialog loading
-          Navigator.of(context, rootNavigator: true).pop();
+          context.pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.errorMessage ?? 'Error creating contact')),
           );
@@ -866,18 +863,23 @@ class _ContactFormPageState extends State<ContactFormPage> {
         listeners: [
           BlocListener<ProfileBloc, ProfileState>(
             listener: (context, state) {
-              if (state is ProfileLoaded && widget.args.page == 0) _autoFillFromProfile();
+              if (state is ProfileLoaded && widget.args.page == 0) {
+                _autoFillFromProfile();
+              }
             },
           ),
           BlocListener<ProspectStatusBloc, ProspectStatusState>(
             listener: (context, state) {
               if (state.status == ProspectStatusEnum.loaded) {
-                if (widget.args.page == 0 && selectedStatusId == null && state.statuses.isNotEmpty) {
+                if (widget.args.page == 0 &&
+                    selectedStatusId == null &&
+                    state.statuses.isNotEmpty) {
                   setState(() {
                     selectedStatusId = state.statuses.first.statusProspectId;
                     selectedStatusProspectName = state.statuses.first.statusProspectName;
                   });
                 }
+
                 if (widget.args.page != 0) {
                   final contact = context.read<ContactBloc>().state.contactDetail ?? widget.args.dataContact;
                   if (contact != null) _fillForm(contact);
@@ -888,9 +890,17 @@ class _ContactFormPageState extends State<ContactFormPage> {
         ],
         child: BlocBuilder<ProfileBloc, ProfileState>(
           builder: (context, profileState) {
-            if (profileState is ProfileLoading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-            if (profileState is ProfileLoaded && widget.args.page == 0 && selectedOwnerId == null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) => _autoFillFromProfile());
+            if (profileState is ProfileLoading) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+            if (profileState is ProfileLoaded &&
+                widget.args.page == 0 &&
+                selectedOwnerId == null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _autoFillFromProfile();
+              });
             }
             return BlocBuilder<ContactBloc, ContactState>(
               builder: (context, contactState) {
@@ -899,20 +909,24 @@ class _ContactFormPageState extends State<ContactFormPage> {
                 final detailLoading = contactState.status == ContactStatus.loadingDetail ||
                     contactState.status == ContactStatus.initial;
 
-                if ((widget.args.page == 1 || widget.args.page == 2) && (detailLoading || statusLoading || propertiesLoading)) {
-                  return const Scaffold(body: Center(child: CircularProgressIndicator()));
+                if ((widget.args.page == 1 || widget.args.page == 2) &&
+                    (detailLoading || statusLoading || propertiesLoading)) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
                 }
 
+                // 🔥 ERROR
                 if (contactState.status == ContactStatus.error) {
                   return Scaffold(
                     body: Center(child: Text(contactState.errorMessage ?? 'Error load detail')),
                   );
                 }
 
-                bool isLoading = detailLoading || statusLoading || propertiesLoading;
-
                 return Scaffold(
-                  body: isLoading ? const Center(child: CircularProgressIndicator()) : SafeArea(child: _createForm?_createContact(profileState): _editContact(profileState)),
+                  body: (detailLoading || statusLoading || propertiesLoading)
+                      ? CircularProgressIndicator()
+                      : SafeArea(child: widget.args.page == 0?_createContact(profileState): _editContact(profileState)),
                 );
               },
             );
@@ -922,542 +936,544 @@ class _ContactFormPageState extends State<ContactFormPage> {
     );
   }
 
-
   Widget _editContact(ProfileState profileState) {
     return Column(
       children: [
-        /// 🔹 HEADER
-        if (widget.args.page != 2)
-          _headerContact(title: "Edit Contact"),
 
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.only(bottom: 20),
             child: Column(
               children: [
-                CustomDropdownGroupContact(
-                  hint: "Contact Information",
-                  child: Column(
-                    children: [
-                      _buildFieldDown(
-                        label: "Owner",
-                        value: selectedOwnerName,
-                        isError: _showValidation && selectedOwnerId == null,
-                        onTap: () async {
-                          if (profileState is ProfileLoaded) {
-                            final user = profileState.profile;
-                            final List<OwnerDropdownItem> ownerItems = [];
-                            ownerItems.add(
-                              OwnerDropdownItem(
-                                id: user.salesPersonId,
-                                name: user.fullName,
-                                subtitle: user.positionName,
-                              ),
-                            );
-                            void addSubs(List<HierarchyNodeEntity> subs) {
-                              for (var s in subs) {
-                                ownerItems.add(
-                                  OwnerDropdownItem(
-                                    id: s.salesPersonId,
-                                    name: s.fullName,
-                                    subtitle: s.positionName,
-                                  ),
-                                );
-                                if (s.subordinates.isNotEmpty)
-                                  addSubs(s.subordinates);
-                              }
-                            }
-
-                            addSubs(user.subordinates);
-
-                            if (ownerItems.length == 1) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Anda tidak memiliki bawahan untuk dipilih.',
-                                  ),
+                  if (widget.args.page != 2) _headerContact(title: "Edit Contact"),
+                Column(
+                  children: [
+                    CustomDropdownGroupContact(
+                      hint: "Contact Information",
+                      child: Column(
+                        children: [
+                           _buildFieldDown(
+                            label: "Salutation",
+                            value: selectedSalutation ?? "Select Salutation",
+                            isError: _showValidation && (selectedSalutation?.isEmpty ?? true),
+                            onTap: () async {
+                              final items = [
+                                OwnerDropdownItem(id: 1, name: 'Bapak'),
+                                OwnerDropdownItem(id: 2, name: 'Ibu'),
+                              ];
+                              final result = await context.pushNamed(
+                                'detailContactDropdown',
+                                extra: ContactDropdownArgs(
+                                  title: 'Pilih Salutation',
+                                  items: items,
+                                  selectedId: selectedSalutation == 'Ibu' ? 2 : selectedSalutation == 'Bapak' ? 1 : null,
                                 ),
                               );
-                              return;
-                            }
-
-                            final result = await context.pushNamed(
-                              'detailContactDropdown',
-                              extra: ContactDropdownArgs(
-                                title: 'Pilih Owner',
-                                items: ownerItems,
-                                selectedId: selectedOwnerId,
-                              ),
-                            );
-                            if (result != null) {
-                              final owner = result as OwnerDropdownItem;
-                              setState(() {
-                                selectedOwnerId = owner.id;
-                                selectedOwnerName = owner.name;
-                              });
-                              _updateSalesInformation(owner.id ?? 0, user);
-                            }
-                          }
-                        },
-                      ),
-                      _buildFieldDown(
-                        label: "Salutation",
-                        value: selectedSalutation ?? "Select Salutation",
-                        isError: _showValidation && (selectedSalutation?.isEmpty ?? true),
-                        onTap: () async {
-                          final items = [
-                            OwnerDropdownItem(id: 1, name: 'Mr.'),
-                            OwnerDropdownItem(id: 2, name: 'Mrs.'),
-                          ];
-                          final result = await context.pushNamed(
-                            'detailContactDropdown',
-                            extra: ContactDropdownArgs(
-                              title: 'Pilih Salutation',
-                              items: items,
-                              selectedId: selectedSalutation == 'Mrs.' ? 2 : selectedSalutation == 'Mr.' ? 1 : null,
-                            ),
-                          );
-                          if (result != null) {
-                            final sel = result as OwnerDropdownItem;
-                            setState(() {
-                              selectedSalutation = sel.name;
-                            });
-                          }
-                        },
-                      ),
-                      _buildField(
-                        label: "Full Name",
-                        controller: fullNameTC,
-                        focusNode: fullNameFN,
-                        isError: _showValidation && fullNameTC.text.isEmpty,
-                      ),
-                      _buildField(
-                        label: "Phone",
-                        controller: phoneTC,
-                        focusNode: phoneFN,
-                        isError: _showValidation && phoneTC.text.isEmpty,
-                        fieldType: 'int',
-                      ),
-                      _buildField(
-                        label: "Whatsapp",
-                        controller: waTC,
-                        focusNode: waFN,
-                        isError: _showValidation && waTC.text.isEmpty,
-                        fieldType: 'int',
-                      ),
-
-                      _buildField(
-                        label: "Email",
-                        controller: emailTC,
-                        focusNode: emailFN,
-                        fieldType: 'text',
-                        isError: _showValidation && emailTC.text.isEmpty,
-                      ),
-
-                      _buildField(
-                        label: "No KTP",
-                        controller: noKTPTC,
-                        focusNode: noKTPFN,
-                        fieldType: 'int',
-                        isError: _showValidation && noKTPTC.text.isEmpty,
-                      ),
-                      _buildField(
-                        label: "KTP Address",
-                        controller: ktpAddressTC,
-                        focusNode: ktpAddressFN,
-                        isError: _showValidation && ktpAddressTC.text.isEmpty,
-                      ),
-                      _buildFieldDown(
-                        label: "First Project",
-                        value: selectFirstProject,
-                        onTap: () async {
-                          final result = await context.pushNamed(
-                            'detailContactDropdown',
-                            extra: ContactDropdownArgs(
-                              title: 'Project',
-                              items: itemsProject,
-                              selectedId: selectedStatusId,
-                            ),
-                          );
-                          if (result != null) {
-                            final selected = result as OwnerDropdownItem;
-
-                            setState(() {
-                              selectFirstProject = selected.name;
-                              selectFirstProjectCategory = null;
-                              selectFirstProjectProduct = null;
-                            });
-                          }
-                        },
-                      ),
-                      _buildFieldDown(
-                        label: "First Project Category",
-                        value: selectFirstProjectCategory,
-                        onTap: () async {
-                          final result = await context.pushNamed(
-                            'detailContactDropdown',
-                            extra: ContactDropdownArgs(
-                              title: 'Project Category',
-                              items: itemsProjectCategory,
-                              selectedId: selectedStatusId,
-                            ),
-                          );
-                          if (result != null) {
-                            final selected = result as OwnerDropdownItem;
-
-                            setState(() {
-                              selectFirstProjectCategory = selected.name;
-                              selectFirstProjectProduct = null;
-                            });
-                          }
-                        },
-                      ),
-                      _buildFieldDown(
-                        label: "First Project Product",
-                        value: selectFirstProjectProduct,
-                        onTap: () async {
-                          final items = getProductList();
-
-                          if (items.isEmpty) {
-                            // optional: kasih warning
-                            return;
-                          }
-
-                          final result = await context.pushNamed(
-                            'detailContactDropdown',
-                            extra: ContactDropdownArgs(
-                              title: 'Project Product',
-                              items: items,
-                              selectedId: selectedStatusId,
-                            ),
-                          );
-
-                          if (result != null) {
-                            final selected = result as OwnerDropdownItem;
-
-                            setState(() {
-                              selectFirstProjectProduct = selected.name;
-                            });
-                          }
-                        },
-                      ),
-                      _buildFieldDown(
-                        label: "Sumber Informasi 1",
-                        value: selectedSource1Name,
-                        onTap: () async {
-                          final sourceState = context.read<InfoSourceBloc>().state;
-                          final sources = sourceState.sourcesMap[1];
-                          if (sources != null) {
-                            final sourceItems = sources.map((e) => OwnerDropdownItem(id: e.id, name: e.name)).toList();
-                            final result = await context.pushNamed(
-                              'detailContactDropdown',
-                              extra: ContactDropdownArgs(
-                                title: 'Pilih Sumber',
-                                items: sourceItems,
-                                selectedId: selectedSource1Id,
-                              ),
-                            );
-                            if (result != null) {
-                              final selected = result as OwnerDropdownItem;
-                              setState(() {
-                                selectedSource1Id = selected.id;
-                                selectedSource1Name = selected.name;
-                              });
-                            }
-                          } else {
-                            context.read<InfoSourceBloc>().add(const FetchInfoSourcesEvent(type: 1));
-                          }
-                        },
-                      ),
-                      _buildFieldDown(
-                        label: "Sumber Informasi 2",
-                        value: selectedSource2Name,
-                        onTap: () async {
-                          final sourceState = context.read<InfoSourceBloc>().state;
-                          final sources = sourceState.sourcesMap[2];
-                          if (sources != null) {
-                            final sourceItems = sources.map((e) => OwnerDropdownItem(id: e.id, name: e.name)).toList();
-                            final result = await context.pushNamed(
-                              'detailContactDropdown',
-                              extra: ContactDropdownArgs(
-                                title: 'Pilih Sumber',
-                                items: sourceItems,
-                                selectedId: selectedSource2Id,
-                              ),
-                            );
-                            if (result != null) {
-                              final selected = result as OwnerDropdownItem;
-                              setState(() {
-                                selectedSource2Id = selected.id;
-                                selectedSource2Name = selected.name;
-                              });
-                            }
-                          } else {
-                            context.read<InfoSourceBloc>().add(const FetchInfoSourcesEvent(type: 2));
-                          }
-                        },
-                      ),
-                      _buildField(
-                        label: "General Notes",
-                        controller: generalNotesTC,
-                        focusNode: generalNotesFN,
-                      ),
-                      _buildField(
-                        label: "First Blok No",
-                        controller: fBlockNoTC,
-                        focusNode: fBlockNoFN,
-                        isError: _showValidation && fBlockNoTC.text.isEmpty,
-                      ),
-
-                      _buildField(
-                        label: "Visitor Count",
-                        controller: vCountTC,
-                        focusNode: vCountFN,
-                        fieldType: 'int',
-                        isError: _showValidation && vCountTC.text.isEmpty,
-                      ),
-                      _buildField(
-                        label: "First Appt Date",
-                        controller: firstApptDateTC,
-                        focusNode: firstApptDateFN,
-                        fieldType: 'date',
-                        isError: _showValidation && firstApptDateTC.text.isEmpty,
-                      ),
-                      _buildField(
-                        label: "First Visitor Date",
-                        controller: firstVisitorDateTC,
-                        focusNode: firstVisitorDateFN,
-                        fieldType: 'date',
-                      ),
-                      _buildField(
-                        label: "First SP Date",
-                        controller: fspTC,
-                        focusNode: fspFN,
-                        fieldType: 'date',
-                      ),
-                      _buildField(
-                        label: "Deal Value",
-                        controller: dealValueTC,
-                        focusNode: dealValueFN,
-                        fieldType: 'int',
-                      ),
-                      _buildField(
-                        label: "Reserve Date",
-                        controller: reserveDateTC,
-                        focusNode: reserveDateFN,
-                        fieldType: 'date',
-                      ),
-                      _buildField(
-                        label: "Loss Reason Note",
-                        controller: lossReasonNoteTC,
-                        focusNode: lossReasonNoteFN,
-                      ),
-                      _buildFieldDown(
-                        label: "Status Prospect",
-                        value: selectedStatusProspectName,
-                        isError: _showValidation && selectedStatusId == null,
-                        onTap: () async {
-                          final statusState = context.read<ProspectStatusBloc>().state;
-                          if (statusState.status == ProspectStatusEnum.loaded) {
-                            final statusItems = statusState.statuses.map((e) => OwnerDropdownItem(id: e.statusProspectId, name: e.statusProspectName)).toList();
-                      
-                            final result = await context.pushNamed(
-                              'detailContactDropdown',
-                              extra: ContactDropdownArgs(
-                                title: 'Pilih Status',
-                                items: statusItems,
-                                selectedId: selectedStatusId,
-                              ),
-                            );
-                      
-                            if (result != null) {
-                              final selected = result as OwnerDropdownItem;
-                              final picked = statusState.statuses
-                                  .cast<ProspectStatusEntity?>()
-                                  .firstWhere(
-                                    (e) => e?.statusProspectId == selected.id,
-                                    orElse: () => null,
-                                  );
-                              if (picked != null) {
+                              if (result != null) {
+                                final sel = result as OwnerDropdownItem;
                                 setState(() {
-                                  selectedStatusId = picked.statusProspectId;
-                                  selectedStatusProspectName = picked.statusProspectName;
+                                  selectedSalutation = sel.name;
                                 });
                               }
-                            }
-                          } else {
-                            context.read<ProspectStatusBloc>().add(FetchProspectStatusesEvent());
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Memuat daftar status...')));
-                          }
-                        },
-                      ),
-                      _buildField(
-                        label: "Volume Plan",
-                        controller: volumePlanTC,
-                        focusNode: volumePlanFN,
-                        fieldType: 'int',
-                      ),
-
-                      _buildFieldDown(
-                        label: "Last Project",
-                        value: selectLastProject,
-                        onTap: () async {
-                          final result = await context.pushNamed(
-                            'detailContactDropdown',
-                            extra: ContactDropdownArgs(
-                              title: 'Project',
-                              items: itemsLastProject,
-                              selectedId: selectedStatusId,
-                            ),
-                          );
-                          if (result != null) {
-                            final selected = result as OwnerDropdownItem;
-
-                            setState(() {
-                              selectLastProject = selected.name;
-                              selectLastProjectCategory = null;
-                              selectLastProjectProduct = null;
-                            });
-                          }
-                        },
-                      ),
-
-                      _buildFieldDown(
-                        label: "Last Project Product",
-                        value: selectLastProjectProduct,
-                        onTap: () async {
-                          final result = await context.pushNamed(
-                            'detailContactDropdown',
-                            extra: ContactDropdownArgs(
-                              title: 'Project',
-                              items: itemsLastProject,
-                              selectedId: selectedStatusId,
-                            ),
-                          );
-                          if (result != null) {
-                            final selected = result as OwnerDropdownItem;
-
-                            setState(() {
-                              selectLastProjectProduct = selected.name;
-                            });
-                          }
-                        },
-                      ),
-
-                      _buildFieldDown(
-                        label: "Last Project Category",
-                        value: selectLastProjectCategory,
-                        onTap: () async {
-                          final result = await context.pushNamed(
-                            'detailContactDropdown',
-                            extra: ContactDropdownArgs(
-                              title: 'Project',
-                              items: itemsLastProject,
-                              selectedId: selectedStatusId,
-                            ),
-                          );
-                          if (result != null) {
-                            final selected = result as OwnerDropdownItem;
-
-                            setState(() {
-                              selectLastProjectCategory = selected.name;
-                            });
-                          }
-                        },
-                      ),
-
-                      _buildField(
-                        label: "Last Block No",
-                        controller: lBlockNoTC,
-                        focusNode: lBlockNoFN,
-                      ),
-
-                      _buildField(
-                        label: "Last Appt Date",
-                        controller: lastApptDateTC,
-                        focusNode: lastApptDateFN,
-                        fieldType: 'date',
-                      ),
-
-                      _buildField(
-                        label: "Last Visitor Date",
-                        controller: lastVisitorDateTC,
-                        focusNode: lastVisitorDateFN,
-                        fieldType: 'date',
-                      ),
-
-                      _buildField(
-                        label: "Last SP Date",
-                        controller: lspTC,
-                        focusNode: lspFN,
-                        fieldType: 'date',
-                      ),
-
-                      // // Dynamic property groups: render each group separately
-                      BlocBuilder<ContactPropertiesBloc, ContactPropertiesState>(
-                        builder: (context, state) {
-                          if (state.status == ContactPropertiesStatus.loading) {
-                            return const SizedBox.shrink();
-                          }
-                          if (state.status == ContactPropertiesStatus.error) {
-                            return Padding(padding: const EdgeInsets.all(8.0), child: Text('Failed to load properties: ${state.errorMessage}'));
-                          }
-
-                          final groups = state.groups.where((g) => g.name != 'sales_information' && g.name != 'contact_information').toList();
-
-                          return Column(
-                            children: groups.map((group) {
-                              return CustomDropdownGroupContact(
-                                hint: group.label,
-                                child: Column(
-                                  children: group.properties.map((prop) {
-                                    _propertyControllers.putIfAbsent(
-                                      prop.propertyId,
-                                      () => TextEditingController(),
+                            },
+                          ),
+                          _buildField(
+                            label: "Full Name",
+                            controller: fullNameTC,
+                            focusNode: fullNameFN,
+                            isError: _showValidation && fullNameTC.text.isEmpty,
+                          ),
+                           _buildField(
+                            label: "Phone",
+                            controller: phoneTC,
+                            focusNode: phoneFN,
+                            isError: _showValidation && phoneTC.text.isEmpty,
+                            fieldType: 'int',
+                          ),
+                          _buildField(
+                            label: "Whatsapp",
+                            controller: waTC,
+                            focusNode: waFN,
+                            isError: _showValidation && waTC.text.isEmpty,
+                            fieldType: 'int',
+                          ),
+                          _buildFieldDown(
+                            label: "Owner",
+                            value: selectedOwnerName,
+                            isError: _showValidation && selectedOwnerId == null,
+                            onTap: () async {
+                              if (profileState is ProfileLoaded) {
+                                final user = profileState.profile;
+                                final List<OwnerDropdownItem> ownerItems = [];
+                                ownerItems.add(
+                                  OwnerDropdownItem(
+                                    id: user.salesPersonId,
+                                    name: user.fullName,
+                                    subtitle: user.positionName,
+                                  ),
+                                );
+                                void addSubs(List<HierarchyNodeEntity> subs) {
+                                  for (var s in subs) {
+                                    ownerItems.add(
+                                      OwnerDropdownItem(
+                                        id: s.salesPersonId,
+                                        name: s.fullName,
+                                        subtitle: s.positionName,
+                                      ),
                                     );
-
-                                    if (prop.fieldType == 'date') {
-                                      return _buildField(
-                                        label: prop.label,
-                                        controller: _propertyControllers[prop.propertyId]!,
-                                        focusNode: FocusNode(),
-                                        fieldType: 'date',
+                                    if (s.subordinates.isNotEmpty)
+                                      addSubs(s.subordinates);
+                                  }
+                                }
+                
+                                addSubs(user.subordinates);
+                
+                                if (ownerItems.length == 1) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Anda tidak memiliki bawahan untuk dipilih.',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                
+                                final result = await context.pushNamed(
+                                  'detailContactDropdown',
+                                  extra: ContactDropdownArgs(
+                                    title: 'Pilih Owner',
+                                    items: ownerItems,
+                                    selectedId: selectedOwnerId,
+                                  ),
+                                );
+                                if (result != null) {
+                                  final owner = result as OwnerDropdownItem;
+                                  setState(() {
+                                    selectedOwnerId = owner.id;
+                                    selectedOwnerName = owner.name;
+                                  });
+                                  _updateSalesInformation(owner.id ?? 0, user);
+                                }
+                              }
+                            },
+                          ),
+                         
+                          _buildField(
+                            label: "Email",
+                            controller: emailTC,
+                            focusNode: emailFN,
+                            fieldType: 'text',
+                            isError: _showValidation && emailTC.text.isEmpty,
+                          ),
+                          _buildField(
+                            label: "No KTP",
+                            controller: noKTPTC,
+                            focusNode: noKTPFN,
+                            fieldType: 'int',
+                            isError: _showValidation && noKTPTC.text.isEmpty,
+                          ),
+                          _buildField(
+                            label: "KTP Address",
+                            controller: ktpAddressTC,
+                            focusNode: ktpAddressFN,
+                            isError: _showValidation && ktpAddressTC.text.isEmpty,
+                          ),
+                           _buildFieldDown(
+                            label: "Status Prospect",
+                            value: selectedStatusProspectName,
+                            isError: _showValidation && selectedStatusId == null,
+                            onTap: () async {
+                              final statusState = context.read<ProspectStatusBloc>().state;
+                              if (statusState.status == ProspectStatusEnum.loaded) {
+                                final statusItems = statusState.statuses.map((e) => OwnerDropdownItem(id: e.statusProspectId, name: e.statusProspectName)).toList();
+                          
+                                final result = await context.pushNamed(
+                                  'detailContactDropdown',
+                                  extra: ContactDropdownArgs(
+                                    title: 'Pilih Status',
+                                    items: statusItems,
+                                    selectedId: selectedStatusId,
+                                  ),
+                                );
+                          
+                                if (result != null) {
+                                  final selected = result as OwnerDropdownItem;
+                                  final picked = statusState.statuses
+                                      .cast<ProspectStatusEntity?>()
+                                      .firstWhere(
+                                        (e) => e?.statusProspectId == selected.id,
+                                        orElse: () => null,
                                       );
-                                    }
-
-                                    if (prop.fieldType == 'number') {
-                                      return _buildField(
-                                        label: prop.label,
-                                        controller: _propertyControllers[prop.propertyId]!,
-                                        focusNode: FocusNode(),
-                                        fieldType: 'int',
-                                      );
-                                    }
-
-                                    // default text
+                                  if (picked != null) {
+                                    setState(() {
+                                      selectedStatusId = picked.statusProspectId;
+                                      selectedStatusProspectName = picked.statusProspectName;
+                                    });
+                                  }
+                                }
+                              } else {
+                                context.read<ProspectStatusBloc>().add(FetchProspectStatusesEvent());
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Memuat daftar status...')));
+                              }
+                            },
+                          ),
+                          _buildFieldDown(
+                            label: "First Project",
+                            value: selectFirstProject,
+                            onTap: () async {
+                              final result = await context.pushNamed(
+                                'detailContactDropdown',
+                                extra: ContactDropdownArgs(
+                                  title: 'Project',
+                                  items: itemsProject,
+                                  selectedId: selectedStatusId,
+                                ),
+                              );
+                              if (result != null) {
+                                final selected = result as OwnerDropdownItem;
+                
+                                setState(() {
+                                  selectFirstProject = selected.name;
+                                  selectFirstProjectCategory = null;
+                                  selectFirstProjectProduct = null;
+                                });
+                              }
+                            },
+                          ),
+                          _buildFieldDown(
+                            label: "First Project Category",
+                            value: selectFirstProjectCategory,
+                            onTap: () async {
+                              final result = await context.pushNamed(
+                                'detailContactDropdown',
+                                extra: ContactDropdownArgs(
+                                  title: 'Project Category',
+                                  items: itemsProjectCategory,
+                                  selectedId: selectedStatusId,
+                                ),
+                              );
+                              if (result != null) {
+                                final selected = result as OwnerDropdownItem;
+                
+                                setState(() {
+                                  selectFirstProjectCategory = selected.name;
+                                  selectFirstProjectProduct = null;
+                                });
+                              }
+                            },
+                          ),
+                          _buildFieldDown(
+                            label: "First Project Product",
+                            value: selectFirstProjectProduct,
+                            onTap: () async {
+                              final items = getProductList();
+                
+                              if (items.isEmpty) {
+                                // optional: kasih warning
+                                return;
+                              }
+                
+                              final result = await context.pushNamed(
+                                'detailContactDropdown',
+                                extra: ContactDropdownArgs(
+                                  title: 'Project Product',
+                                  items: items,
+                                  selectedId: selectedStatusId,
+                                ),
+                              );
+                
+                              if (result != null) {
+                                final selected = result as OwnerDropdownItem;
+                
+                                setState(() {
+                                  selectFirstProjectProduct = selected.name;
+                                });
+                              }
+                            },
+                          ),
+                          _buildField(
+                            label: "First Blok No",
+                            controller: fBlockNoTC,
+                            focusNode: fBlockNoFN,
+                            isError: _showValidation && fBlockNoTC.text.isEmpty,
+                          ),
+                          _buildFieldDown(
+                            label: "Sumber Informasi 1",
+                            value: selectedSource1Name,
+                            onTap: () async {
+                              final sourceState = context.read<InfoSourceBloc>().state;
+                              final sources = sourceState.sourcesMap[1];
+                              if (sources != null) {
+                                final sourceItems = sources.map((e) => OwnerDropdownItem(id: e.id, name: e.name)).toList();
+                                final result = await context.pushNamed(
+                                  'detailContactDropdown',
+                                  extra: ContactDropdownArgs(
+                                    title: 'Pilih Sumber',
+                                    items: sourceItems,
+                                    selectedId: selectedSource1Id,
+                                  ),
+                                );
+                                if (result != null) {
+                                  final selected = result as OwnerDropdownItem;
+                                  setState(() {
+                                    selectedSource1Id = selected.id;
+                                    selectedSource1Name = selected.name;
+                                  });
+                                }
+                              } else {
+                                context.read<InfoSourceBloc>().add(const FetchInfoSourcesEvent(type: 1));
+                              }
+                            },
+                          ),
+                          _buildFieldDown(
+                            label: "Sumber Informasi 2",
+                            value: selectedSource2Name,
+                            onTap: () async {
+                              final sourceState = context.read<InfoSourceBloc>().state;
+                              final sources = sourceState.sourcesMap[2];
+                              if (sources != null) {
+                                final sourceItems = sources.map((e) => OwnerDropdownItem(id: e.id, name: e.name)).toList();
+                                final result = await context.pushNamed(
+                                  'detailContactDropdown',
+                                  extra: ContactDropdownArgs(
+                                    title: 'Pilih Sumber',
+                                    items: sourceItems,
+                                    selectedId: selectedSource2Id,
+                                  ),
+                                );
+                                if (result != null) {
+                                  final selected = result as OwnerDropdownItem;
+                                  setState(() {
+                                    selectedSource2Id = selected.id;
+                                    selectedSource2Name = selected.name;
+                                  });
+                                }
+                              } else {
+                                context.read<InfoSourceBloc>().add(const FetchInfoSourcesEvent(type: 2));
+                              }
+                            },
+                          ),
+                        
+                          
+                          _buildField(
+                            label: "General Notes",
+                            controller: generalNotesTC,
+                            focusNode: generalNotesFN,
+                          ),
+                          _buildField(
+                            label: "Visitor Count",
+                            controller: vCountTC,
+                            focusNode: vCountFN,
+                            fieldType: 'int',
+                            isError: _showValidation && vCountTC.text.isEmpty,
+                          ),
+                          _buildField(
+                            label: "First Appt Date",
+                            controller: firstApptDateTC,
+                            focusNode: firstApptDateFN,
+                            fieldType: 'date',
+                            isError: _showValidation && firstApptDateTC.text.isEmpty,
+                          ),
+                          _buildField(
+                            label: "First Visitor Date",
+                            controller: firstVisitorDateTC,
+                            focusNode: firstVisitorDateFN,
+                            fieldType: 'date',
+                          ),
+                          _buildField(
+                            label: "First SP Date",
+                            controller: fspTC,
+                            focusNode: fspFN,
+                            fieldType: 'date',
+                          ),
+                          _buildField(
+                            label: "Deal Value",
+                            controller: dealValueTC,
+                            focusNode: dealValueFN,
+                            fieldType: 'int',
+                          ),
+                          _buildField(
+                            label: "Reserve Date",
+                            controller: reserveDateTC,
+                            focusNode: reserveDateFN,
+                            fieldType: 'date',
+                          ),
+                          _buildField(
+                            label: "Loss Reason Note",
+                            controller: lossReasonNoteTC,
+                            focusNode: lossReasonNoteFN,
+                          ),
+                         
+                          _buildField(
+                            label: "Volume Plan",
+                            controller: volumePlanTC,
+                            focusNode: volumePlanFN,
+                            fieldType: 'int',
+                          ),
+                
+                          _buildFieldDown(
+                            label: "Last Project",
+                            value: selectLastProject,
+                            onTap: () async {
+                              final result = await context.pushNamed(
+                                'detailContactDropdown',
+                                extra: ContactDropdownArgs(
+                                  title: 'Project',
+                                  items: itemsLastProject,
+                                  selectedId: selectedStatusId,
+                                ),
+                              );
+                              if (result != null) {
+                                final selected = result as OwnerDropdownItem;
+                
+                                setState(() {
+                                  selectLastProject = selected.name;
+                                  selectLastProjectCategory = null;
+                                  selectLastProjectProduct = null;
+                                });
+                              }
+                            },
+                          ),
+                
+                          _buildFieldDown(
+                            label: "Last Project Product",
+                            value: selectLastProjectProduct,
+                            onTap: () async {
+                              final result = await context.pushNamed(
+                                'detailContactDropdown',
+                                extra: ContactDropdownArgs(
+                                  title: 'Project',
+                                  items: itemsLastProject,
+                                  selectedId: selectedStatusId,
+                                ),
+                              );
+                              if (result != null) {
+                                final selected = result as OwnerDropdownItem;
+                
+                                setState(() {
+                                  selectLastProjectProduct = selected.name;
+                                });
+                              }
+                            },
+                          ),
+                
+                          _buildFieldDown(
+                            label: "Last Project Category",
+                            value: selectLastProjectCategory,
+                            onTap: () async {
+                              final result = await context.pushNamed(
+                                'detailContactDropdown',
+                                extra: ContactDropdownArgs(
+                                  title: 'Project',
+                                  items: itemsLastProject,
+                                  selectedId: selectedStatusId,
+                                ),
+                              );
+                              if (result != null) {
+                                final selected = result as OwnerDropdownItem;
+                
+                                setState(() {
+                                  selectLastProjectCategory = selected.name;
+                                });
+                              }
+                            },
+                          ),
+                
+                          _buildField(
+                            label: "Last Block No",
+                            controller: lBlockNoTC,
+                            focusNode: lBlockNoFN,
+                          ),
+                
+                          _buildField(
+                            label: "Last Appt Date",
+                            controller: lastApptDateTC,
+                            focusNode: lastApptDateFN,
+                            fieldType: 'date',
+                          ),
+                
+                          _buildField(
+                            label: "Last Visitor Date",
+                            controller: lastVisitorDateTC,
+                            focusNode: lastVisitorDateFN,
+                            fieldType: 'date',
+                          ),
+                
+                          _buildField(
+                            label: "Last SP Date",
+                            controller: lspTC,
+                            focusNode: lspFN,
+                            fieldType: 'date',
+                          ),
+                
+                          // // Dynamic property groups: render each group separately
+                            ],
+                      ),
+                    ),
+                    BlocBuilder<ContactPropertiesBloc, ContactPropertiesState>(
+                      builder: (context, state) {
+                        if (state.status == ContactPropertiesStatus.loading) {
+                          return const SizedBox.shrink();
+                        }
+                        if (state.status == ContactPropertiesStatus.error) {
+                          return Padding(padding: const EdgeInsets.all(8.0), child: Text('Failed to load properties: ${state.errorMessage}'));
+                        }
+                
+                        final groups = state.groups.where((g) => g.name != 'sales_information' && g.name != 'contact_information').toList();
+                
+                        return Column(
+                          children: groups.map((group) {
+                            return CustomDropdownGroupContact(
+                              hint: group.label,
+                              child: Column(
+                                children: group.properties.map((prop) {
+                                  _propertyControllers.putIfAbsent(
+                                    prop.propertyId,
+                                    () => TextEditingController(),
+                                  );
+                
+                                  if (prop.fieldType == 'date') {
                                     return _buildField(
                                       label: prop.label,
                                       controller: _propertyControllers[prop.propertyId]!,
                                       focusNode: FocusNode(),
+                                      fieldType: 'date',
                                     );
-                                  }).toList(),
-                                ),
-                              );
-                            }).toList(),
-                          );
-                        },
+                                  }
+                
+                                  if (prop.fieldType == 'number') {
+                                    return _buildField(
+                                      label: prop.label,
+                                      controller: _propertyControllers[prop.propertyId]!,
+                                      focusNode: FocusNode(),
+                                      fieldType: 'int',
+                                    );
+                                  }
+                
+                                  // default text
+                                  return _buildField(
+                                    label: prop.label,
+                                    controller: _propertyControllers[prop.propertyId]!,
+                                    focusNode: FocusNode(),
+                                  );
+                                }).toList(),
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+                    CustomDropdownGroupContact(
+                      hint: "Sales Information",
+                      child: Column(
+                        children: [
+                          if (salesInfoFields.isEmpty) const Padding(padding: EdgeInsets.all(16.0), child: Text("Pilih owner untuk melihat informasi sales", style: TextStyle(fontSize: 12, color: Colors.grey))),
+                          ...salesInfoFields.map((field) => _buildFieldDown(label: field['label'] ?? "Sales", value: field['name'], onTap: null)).toList(),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                CustomDropdownGroupContact(
-                  hint: "Sales Information",
-                  child: Column(
-                    children: [
-                      if (salesInfoFields.isEmpty) const Padding(padding: EdgeInsets.all(16.0), child: Text("Pilih owner untuk melihat informasi sales", style: TextStyle(fontSize: 12, color: Colors.grey))),
-                      ...salesInfoFields.map((field) => _buildFieldDown(label: field['label'] ?? "Sales", value: field['name'], onTap: null)).toList(),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1483,8 +1499,8 @@ class _ContactFormPageState extends State<ContactFormPage> {
                        value: selectedSalutation ?? "Select Salutation",
                        isError: _showValidation && (selectedSalutation?.isEmpty ?? true),
                        onTap: () async {
-                         final items = [OwnerDropdownItem(id: 1, name: 'Mr.'),OwnerDropdownItem(id: 2, name: 'Mrs.'),];
-                         final result = await context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Pilih Salutation',items: items,selectedId: selectedSalutation == 'Mrs.'? 2: selectedSalutation == 'Mr.'? 1: null));
+                         final items = [OwnerDropdownItem(id: 1, name: 'Bapak'),OwnerDropdownItem(id: 2, name: 'Ibu'),];
+                         final result = await context.pushNamed('detailContactDropdown',extra: ContactDropdownArgs(title: 'Pilih Salutation',items: items,selectedId: selectedSalutation == 'Ibu'? 2: selectedSalutation == 'Bapak'? 1: null));
                          if (result != null) {
                            final sel = result as OwnerDropdownItem;
                            setState(() {
@@ -1602,7 +1618,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
                               });
                             }
                           } else {
-                            context.read<InfoSourceBloc>().add(const FetchInfoSourcesEvent(type: 2));
+                            context.read<InfoSourceBloc>().add( FetchInfoSourcesEvent(type: 2));
                           }
                         },
                       ),
@@ -1614,45 +1630,7 @@ class _ContactFormPageState extends State<ContactFormPage> {
                    ],
                  ),
                ),
-              BlocBuilder<ContactPropertiesBloc,ContactPropertiesState>(
-                builder: (context, state) {
-                  if (state.status == ContactPropertiesStatus.loading) {
-                    return const SizedBox.shrink();
-                  }
-                  if (state.status == ContactPropertiesStatus.error) {
-                    return Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        'Failed to load properties: ${state.errorMessage}',
-                      ),
-                    );
-                  }
-                      
-                  final groups = state.groups.where((g) =>g.name != 'sales_information' &&g.name != 'contact_information',).toList();
-                      
-                  return Column(
-                    children: groups.map((group) {
-                      return CustomDropdownGroupContact(
-                        hint: group.label,
-                        child: Column(
-                          children: group.properties.map((prop) {
-                            _propertyControllers.putIfAbsent(prop.propertyId,() => TextEditingController(),);
-                            if (prop.fieldType == 'date') {
-                              return _buildField(label: prop.label,controller: _propertyControllers[prop.propertyId]!,focusNode: FocusNode(),
-                                fieldType: 'date',
-                              );
-                            }
-                            if (prop.fieldType == 'number') {
-                              return _buildField(label: prop.label,controller:_propertyControllers[prop.propertyId]!,focusNode: FocusNode(),fieldType: 'int',);
-                            }
-                            return _buildField(label: prop.label,controller: _propertyControllers[prop.propertyId]!,focusNode: FocusNode(),);
-                          }).toList(),
-                        ),
-                      );
-                    }).toList(),
-                  );
-                },
-              ),
+             
                CustomDropdownGroupContact(
                  hint: "Sales Information",
                  child: Column(
@@ -1709,7 +1687,6 @@ class _ContactFormPageState extends State<ContactFormPage> {
       ),
     );
   }
-
   Widget _buildFieldDown({
     required String label,
     String? value,
@@ -1720,7 +1697,9 @@ class _ContactFormPageState extends State<ContactFormPage> {
     final bool isReadOnly = widget.args.page == 2;
 
     return GestureDetector(
-    onTap: (label == 'Status Prospect' && widget.args.dataContact != null) ? () => _goEditStatus() : (isReadOnly ? () => _goToEdit(isUpdate: false) : onTap),
+    onTap: (label == 'Status Prospect' && widget.args.dataContact != null)
+    ? () => _goEditStatus()
+    : (isReadOnly ? () => _goToEdit(isUpdate: false) : onTap),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         constraints: const BoxConstraints(minHeight: 50),
@@ -1775,7 +1754,9 @@ class _ContactFormPageState extends State<ContactFormPage> {
       ),
     );
     if (mounted && widget.args.dataContact != null) {
-      context.read<ContactBloc>().add(FetchContactDetailEvent(widget.args.dataContact!.contactId!));
+      context.read<ContactBloc>().add(
+        FetchContactDetailEvent(widget.args.dataContact!.contactId!),
+      );
     }
   }
 
@@ -1824,7 +1805,9 @@ class _ContactFormPageState extends State<ContactFormPage> {
                       // Date field: open date picker and fill controller
                       if (fieldType == 'date') {
                         return GestureDetector(
-                          onTap: isReadOnly ? null : () async {
+                          onTap: isReadOnly
+                              ? null
+                              : () async {
                                   focusNode.unfocus();
                                   final DateTime? picked = await showDatePicker(
                                     context: context,

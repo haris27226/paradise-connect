@@ -123,7 +123,7 @@ class ContactRemoteDataSourceImpl implements ContactRemoteDataSource {
       throw Exception(getErrorMessage(e, 'Gagal memuat sumber informasi'));
     }
   }
- 
+  
   @override
   Future<List<ProspectStatusModel>> getProspectStatuses({String? type}) async {
     try {

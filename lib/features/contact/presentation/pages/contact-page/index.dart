@@ -46,6 +46,9 @@ class _ContactPageState extends State<ContactPage> {
   @override
   void initState() {
     super.initState();
+
+    _searchController.clear();
+
     _scrollController = ScrollController()..addListener(_onScroll);
 
     context.read<ContactBloc>().add(const FetchContactsEvent(search: '', isRefresh: true));
@@ -55,14 +58,23 @@ class _ContactPageState extends State<ContactPage> {
 
   @override
   void dispose() {
+    _searchController.clear();
+
+    context.read<ContactBloc>().add(
+      const FetchContactsEvent(search: '', isRefresh: true),
+    );
+
     context.read<ContactBloc>().add(ClearContactsEvent());
+
+    _debounce?.cancel();
     _scrollController.dispose();
     _searchController.dispose();
     _searchFocus.dispose();
-    contactEntity = [];
+
+    contactEntity.clear();
+
     super.dispose();
   }
-
 
   void _onScroll() {
     if (_scrollController.position.pixels >=
