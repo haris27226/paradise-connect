@@ -1,9 +1,10 @@
 class OwnerDropdownItem {
   final int? id;
   final String name;
+  final String? typeData;
   final String? subtitle;
 
-  OwnerDropdownItem({this.id, required this.name, this.subtitle});
+  OwnerDropdownItem({this.id, required this.name, this.typeData, this.subtitle});
 }
 
 class ContactDropdownArgs {

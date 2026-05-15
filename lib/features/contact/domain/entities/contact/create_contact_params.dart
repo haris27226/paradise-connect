@@ -22,6 +22,7 @@ class CreateContactParams extends Equatable {
   final int? salesTeamId;
   final int? salesChannelId;
   final int? statusProspectId;
+  final String? sumberInformasi1;
   final String? sumberInformasi2;
   final String? volumePlan;
   final int? visitCount;
@@ -67,6 +68,7 @@ class CreateContactParams extends Equatable {
     this.salesTeamId,
     this.salesChannelId,
     this.statusProspectId,
+    this.sumberInformasi1,
     this.sumberInformasi2,
     this.volumePlan,
     this.visitCount,
@@ -115,7 +117,8 @@ class CreateContactParams extends Equatable {
       if (salesTeamId != null) 'sales_team_id': salesTeamId,
       if (salesChannelId != null) 'sales_channel_id': salesChannelId,
       if (statusProspectId != null) 'status_prospect_id': statusProspectId,
-      if (sumberInformasi2 != null) 'sumber_informasi_2': sumberInformasi2,
+      if (sumberInformasi1 != null) 'sumber_informasi1': sumberInformasi1,
+      if (sumberInformasi2 != null) 'sumber_informasi2': sumberInformasi2,
       if (volumePlan != null) 'volume_plan': volumePlan,
       if (visitCount != null) 'visit_count': visitCount,
       if (generalNotes != null) 'general_notes': generalNotes,
@@ -164,6 +167,7 @@ class CreateContactParams extends Equatable {
     salesTeamId,
     salesChannelId,
     statusProspectId,
+    sumberInformasi1,
     sumberInformasi2,
     volumePlan,
     visitCount,

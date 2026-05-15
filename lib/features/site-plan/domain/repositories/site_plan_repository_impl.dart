@@ -12,7 +12,7 @@ class SitePlanRepositoryImpl {
       ProjectSite(
         groupName: 'Paradise Serpong City',
         unitName: 'Vista',
-        url: 'https://connect.paradise.id/', // Ganti dengan URL asli
+        url: 'http://192.168.8.56/Paradise-Dynamics-Web-2.0/paradise_api/siteplan_mobile?pdkey=hoaxprogress&company_id=24&siteplan_id=15', // Ganti dengan URL asli
       ),
       ProjectSite(
         groupName: 'Paradise Serpong City',

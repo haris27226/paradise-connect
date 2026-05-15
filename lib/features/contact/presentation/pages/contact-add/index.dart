@@ -15,7 +15,6 @@ import 'package:progress_group/features/contact/data/arguments/contact_dropdown_
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_params.dart';
 import 'package:progress_group/features/contact/domain/entities/activity/create_activity_visit_params.dart';
 import 'package:progress_group/features/contact/domain/entities/contact/create_contact_params.dart';
-import 'package:progress_group/features/contact/domain/entities/lost_reason/lost_reason_entity.dart';
 import 'package:progress_group/features/contact/domain/entities/prospect/prospect_status.dart';
 import 'package:progress_group/features/contact/presentation/state/activity/activity_bloc.dart';
 import 'package:progress_group/features/contact/presentation/state/activity/activity_event.dart';

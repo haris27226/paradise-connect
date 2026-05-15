@@ -7,4 +7,10 @@ abstract class InfoSourceEvent extends Equatable {
   List<Object> get props => [];
 }
 
-class FetchInfoSourcesEvent extends InfoSourceEvent {}
+class FetchInfoSourcesEvent extends InfoSourceEvent {
+  final int? type;
+  const FetchInfoSourcesEvent({this.type});
+
+  @override
+  List<Object> get props => [type ?? 0];
+}

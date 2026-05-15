@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:progress_group/features/contact/domain/entities/info_source/info_source.dart';
 import 'package:progress_group/features/contact/domain/usecases/info_source/get_info_sources_usecase.dart';
 import 'info_source_event.dart';
 import 'info_source_state.dart';
@@ -16,17 +17,25 @@ class InfoSourceBloc extends Bloc<InfoSourceEvent, InfoSourceState> {
   ) async {
     emit(state.copyWith(status: InfoSourceStatus.loading));
 
-    final result = await getInfoSourcesUseCase();
+    final result = await getInfoSourcesUseCase(type: event.type);
 
     result.fold(
       (failure) => emit(state.copyWith(
         status: InfoSourceStatus.error,
         errorMessage: failure,
       )),
-      (sources) => emit(state.copyWith(
-        status: InfoSourceStatus.loaded,
-        sources: sources,
-      )),
+      (sources) {
+        final newSourcesMap = Map<int, List<InfoSource>>.from(state.sourcesMap);
+        if (event.type != null) {
+          newSourcesMap[event.type!] = sources;
+        }
+        
+        emit(state.copyWith(
+          status: InfoSourceStatus.loaded,
+          sources: sources,
+          sourcesMap: newSourcesMap,
+        ));
+      },
     );
   }
 }

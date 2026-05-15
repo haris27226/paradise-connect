@@ -16,7 +16,9 @@ class Contact extends Equatable {
   final String? firstProduct;
   final String? lastProduct;
   final int? salesChannelId;
+  final String? sumberInformasi1;
   final String? sumberInformasi2;
+  final String? sumberInformasi2Name;
   final String? firstProjectCategory;
   final String? lastProjectCategory;
   final String? firstBlokNo;
@@ -78,7 +80,9 @@ class Contact extends Equatable {
     this.firstProduct,
     this.lastProduct,
     this.salesChannelId,
+    this.sumberInformasi1,
     this.sumberInformasi2,
+    this.sumberInformasi2Name,
     this.firstProjectCategory,
     this.lastProjectCategory,
     this.firstBlokNo,
@@ -141,6 +145,7 @@ class Contact extends Equatable {
     String? firstProduct,
     String? lastProduct,
     int? salesChannelId,
+    String? sumberInformasi1,
     String? sumberInformasi2,
     String? firstProjectCategory,
     String? lastProjectCategory,
@@ -203,7 +208,9 @@ class Contact extends Equatable {
       firstProduct: firstProduct ?? this.firstProduct,
       lastProduct: lastProduct ?? this.lastProduct,
       salesChannelId: salesChannelId ?? this.salesChannelId,
+      sumberInformasi1: sumberInformasi1 ?? this.sumberInformasi1,
       sumberInformasi2: sumberInformasi2 ?? this.sumberInformasi2,
+      sumberInformasi2Name: sumberInformasi2Name ?? this.sumberInformasi2Name,
       firstProjectCategory: firstProjectCategory ?? this.firstProjectCategory,
       lastProjectCategory: lastProjectCategory ?? this.lastProjectCategory,
       firstBlokNo: firstBlokNo ?? this.firstBlokNo,
@@ -269,7 +276,9 @@ class Contact extends Equatable {
     firstProduct,
     lastProduct,
     salesChannelId,
+    sumberInformasi1,
     sumberInformasi2,
+    sumberInformasi2Name,
     firstProjectCategory,
     lastProjectCategory,
     firstBlokNo,
