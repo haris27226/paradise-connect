@@ -909,6 +909,8 @@ class _ContactFormPageState extends State<ContactFormPage> {
                   );
                 }
 
+                bool isLoading = detailLoading || statusLoading || propertiesLoading;
+
                 return Scaffold(
                   body: isLoading ? const Center(child: CircularProgressIndicator()) : SafeArea(child: _createForm?_createContact(profileState): _editContact(profileState)),
                 );
